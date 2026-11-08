@@ -35,7 +35,7 @@ const M = 15;
 const LARG = PAG_L - 2 * M;
 const LIMITE = 280;
 const COR = {
-  principal: [11, 79, 108],
+  principal: [17, 17, 17],
   texto: [17, 17, 17],
   texto2: [80, 90, 98],
   linha: [205, 212, 218],
