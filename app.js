@@ -7,13 +7,22 @@ import { criarAuth } from "./auth.js";
 import { criarSincronizador } from "./sync.js";
 import { DIAS_CACHE_FOTOS } from "./config.js";
 import { $, $$, esc, icone, avisar, confirmar } from "./ui.js";
-import { aoMudarDispositivo, ehComputadorNoNavegador, marcarDocumento } from "./dispositivo.js";
+import { aoMudarDispositivo, ehComputadorNoNavegador, isInstalledApp, marcarDocumento } from "./dispositivo.js";
 import * as viewLogin from "./views/login.js";
 import * as viewNova from "./views/nova.js";
 import * as viewVistorias from "./views/vistorias.js";
 import * as viewDetalhe from "./views/detalhe.js";
+import * as viewInicio from "./views/inicio.js";
 
-const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe };
+const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio };
+
+// Só no app instalado (PWA) existe o menu #/inicio, que vira a página principal.
+// A escolha acontece aqui, antes de qualquer tela ser desenhada (sem piscar).
+const appInstalado = isInstalledApp();
+if (appInstalado) {
+  const tipoNavegacao = performance.getEntriesByType?.("navigation")?.[0]?.type ?? "navigate";
+  if (viewInicio.deveAbrirNoMenu(location.hash, tipoNavegacao)) history.replaceState(history.state, "", "#/inicio");
+}
 let dispositivo = marcarDocumento(); // { tipo, instalado, ios } + atributos no <html>
 const main = $("#main");
 const online = () => navigator.onLine;
@@ -41,7 +50,10 @@ const envConfigurado = () =>
 
 // ---------- Rotas ----------
 // No computador (pelo navegador) não há aba "Nova vistoria": começa na lista.
-const rotaInicial = () => (ehComputadorNoNavegador(dispositivo) ? "/vistorias" : "/nova");
+const rotaInicial = () => {
+  if (appInstalado) return "/inicio";
+  return ehComputadorNoNavegador(dispositivo) ? "/vistorias" : "/nova";
+};
 
 function lerRota() {
   const [caminho, qs] = (location.hash.slice(1) || rotaInicial()).split("?");
@@ -49,6 +61,7 @@ function lerRota() {
   const m = caminho.match(/^\/vistoria\/([\w-]+)$/);
   if (m) return { nome: "detalhe", params: { id: m[1], busca } };
   if (caminho === "/vistorias") return { nome: "vistorias", params: { busca } };
+  if (caminho === "/inicio" && appInstalado) return { nome: "inicio", params: { busca } };
   return { nome: "nova", params: { busca } };
 }
 
@@ -65,7 +78,14 @@ async function renderizar() {
   try { viewAtual?.desmontar?.(); } catch (e) { console.error(e); }
   viewAtual = null;
   document.body.classList.remove("com-acoes");
+  // Fora do app instalado, #/inicio não existe: vai para a tela inicial de sempre.
+  if (!appInstalado && /^#\/inicio(\?|$)/.test(location.hash)) history.replaceState(history.state, "", `#${rotaInicial()}`);
   const { nome, params } = lerRota();
+  if (appInstalado) {
+    // No menu não há barra inferior nem botão de voltar ao menu.
+    document.body.classList.toggle("sem-abas", nome === "inicio");
+    document.body.classList.toggle("na-inicio", nome === "inicio");
+  }
   hashAtual = location.hash;
   marcarAba(nome);
   // Cada tela ganha um contêiner novo: os ouvintes dela somem junto com ela.
@@ -147,6 +167,7 @@ async function mostrarLogin() {
   viewAtual = null;
   document.body.classList.add("sem-abas");
   document.body.classList.remove("com-acoes");
+  tituloComoLinkDoMenu(false);
   $("#btn-menu").hidden = true;
   $("#status-rede").hidden = true;
   $("#faixa-sessao").hidden = true;
@@ -155,9 +176,19 @@ async function mostrarLogin() {
   await viewLogin.montar(raiz, ctx, {});
 }
 
+// Só no app instalado: o título "CD Vistoria" vira o caminho de volta ao menu.
+function tituloComoLinkDoMenu(ligar) {
+  if (!appInstalado) return;
+  const titulo = $(".topo-titulo");
+  titulo.innerHTML = ligar
+    ? `<a class="topo-link" href="#/inicio" aria-label="CD Vistoria — voltar ao menu">${icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`
+    : "CD Vistoria";
+}
+
 function entrarNoApp() {
   noApp = true;
   document.body.classList.remove("sem-abas");
+  tituloComoLinkDoMenu(true);
   $("#btn-menu").hidden = false;
   $("#status-rede").hidden = false;
   if (!location.hash || location.hash === "#") location.replace(`#${rotaInicial()}`);

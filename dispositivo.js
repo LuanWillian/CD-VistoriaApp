@@ -50,6 +50,11 @@ export function detectarDispositivo(amb = ambienteDoNavegador()) {
   return { tipo: movel ? "movel" : "computador", instalado, ios };
 }
 
+// App instalado (PWA aberto pela tela inicial/janela própria). Controla tudo
+// o que existe só no app, como o menu inicial (#/inicio).
+export const isInstalledApp = (amb = ambienteDoNavegador()) =>
+  amb.mm("(display-mode: standalone)") || amb.standaloneIOS;
+
 // Computador usando pelo navegador (não instalado): é aí que o app esconde a
 // faixa de instalação e a aba "Nova vistoria".
 export const ehComputadorNoNavegador = (d = detectarDispositivo()) => d.tipo === "computador" && !d.instalado;

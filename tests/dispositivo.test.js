@@ -76,3 +76,10 @@ test("marcarDocumento escreve os atributos no <html>", () => {
   marcarDocumento({ tipo: "computador", instalado: false, ios: false }, raiz);
   assert.deepEqual(raiz.dataset, { dispositivo: "computador", instalado: "nao" });
 });
+
+test("isInstalledApp: standalone ou navigator.standalone (iOS); nada mais", async () => {
+  const { isInstalledApp } = await import("../dispositivo.js");
+  assert.equal(isInstalledApp(amb({ consultas: ["(display-mode: standalone)"] })), true);
+  assert.equal(isInstalledApp(amb({ standaloneIOS: true })), true);
+  assert.equal(isInstalledApp(amb({ consultas: ["(display-mode: browser)"] })), false);
+});

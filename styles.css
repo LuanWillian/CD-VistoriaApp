@@ -89,6 +89,16 @@ button:disabled { cursor: default; opacity: 0.55; }
 }
 .btn-topo:active { background: rgba(255, 255, 255, 0.16); }
 
+/* Só no app instalado (app.js): título vira link de volta ao menu #/inicio. */
+.topo-link {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: var(--alvo);
+  padding: 0 8px 0 0; border-radius: var(--raio-sm);
+  color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent;
+}
+.topo-link span { overflow: hidden; text-overflow: ellipsis; }
+.topo-link:active { background: rgba(255, 255, 255, 0.16); }
+body.na-inicio .topo-voltar { display: none; }
+
 /* ---------- Conteúdo ---------- */
 .conteudo {
   padding: 16px 16px calc(var(--abas-h) + var(--seguro-baixo) + 24px);
@@ -466,3 +476,34 @@ dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px;
 .gravidade { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px; }
 .cartao-info .entre { flex-wrap: wrap; gap: 4px 8px; justify-content: flex-start; }
 .cartao-info .entre .chassi { white-space: nowrap; margin-right: auto; }
+
+/* ---------- Menu inicial #/inicio (só no app instalado; views/inicio.js) ----------
+   Tudo dentro de .home-app. Cartão = componente .cartao do app; textos,
+   cores e toque seguem o app. Os ícones seguem a referência (bloco abaixo). */
+.home-app {
+  display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  min-height: calc(100dvh - var(--topo-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 48px);
+  padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.home-app .card {
+  display: flex; align-items: stretch; width: 100%; min-height: 96px; padding: 0; overflow: hidden;
+  color: var(--texto); text-align: left; -webkit-tap-highlight-color: transparent;
+}
+.home-app .card:active { background: var(--fundo); }
+.home-app .card-text {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 16px;
+}
+.home-app .card-text h2 { font-size: 18px; font-weight: 700; color: var(--texto); }
+.home-app .sub-dark { font-size: 14px; color: var(--texto); }
+.home-app .sub-gray { font-size: 14px; color: var(--texto-2); }
+.home-app .card > .card-icon { flex-shrink: 0; } /* mantém os 120 px em telas estreitas */
+/* Ícones — copiados da referência (vistoria/style.css) sem mudar valores. */
+.home-app .card-icon {
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-app .card-icon svg { width: 64px; height: 64px; }
+.home-app .icon-black { background: #111; }
+.home-app .icon-gray  { background: #555; }
