@@ -97,3 +97,24 @@ test("falha ao gravar chega em aoErro", async () => {
   await ed.alterar((d) => { d.cor = "Azul"; }, { imediato: true });
   assert.deepEqual(erros, ["Armazenamento do aparelho cheio."]);
 });
+
+test("depois de encerrar, nada mais é gravado (rascunho finalizado não volta)", async () => {
+  const st = storageFalso();
+  const ed = criarEditor({ storage: st, rascunho: novoRascunho("u1", "r1", "x"), agora });
+  ed.encerrar();
+  await ed.alterar((d) => { d.cor = "Azul"; }, { imediato: true });
+  ed.alterar((d) => { d.cor = "Verde"; });
+  await ed.irPara(2);
+  await ed.descarregar();
+  assert.equal(st.salvos.length, 0);
+  assert.equal(ed.temPendente(), false);
+});
+
+test("reabrir volta a gravar (finalização que falhou)", async () => {
+  const st = storageFalso();
+  const ed = criarEditor({ storage: st, rascunho: novoRascunho("u1", "r1", "x"), agora });
+  ed.encerrar();
+  ed.reabrir();
+  await ed.alterar((d) => { d.cor = "Azul"; }, { imediato: true });
+  assert.equal(st.salvos.length, 1);
+});

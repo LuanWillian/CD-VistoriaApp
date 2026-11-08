@@ -1,25 +1,19 @@
 // Aba "Nova vistoria": formulário em 4 etapas com salvamento automático do
 // rascunho, indicador de progresso e botões Voltar/Avançar/Finalizar.
 import { novoRascunho } from "../formatos.js";
-import { situacaoEtapa } from "../validacao.js";
+import { faltandoParaFinalizar, situacaoEtapa } from "../validacao.js";
 import { criarEditor } from "../rascunho.js";
-import { $, $$, carregandoHtml, icone } from "../ui.js";
+import { $, $$, esc, carregandoHtml, icone } from "../ui.js";
 import * as etapaVeiculo from "./etapa-veiculo.js";
 import * as etapaChecklist from "./etapa-checklist.js";
 import * as etapaAvarias from "./etapa-avarias.js";
-
-const provisoria = (titulo) => ({
-  montar(el) {
-    el.innerHTML = `<h2 class="titulo" id="titulo-etapa" tabindex="-1">${titulo}</h2>`;
-    return {};
-  },
-});
+import * as etapaAssinaturas from "./etapa-assinaturas.js";
 
 const ETAPAS = [
   { n: 1, nome: "Veículo", modulo: etapaVeiculo },
   { n: 2, nome: "Checklist", modulo: etapaChecklist },
   { n: 3, nome: "Avarias", modulo: etapaAvarias },
-  { n: 4, nome: "Assinaturas", modulo: provisoria("Assinaturas") },
+  { n: 4, nome: "Assinaturas", modulo: etapaAssinaturas },
 ];
 
 async function carregarRascunho(ctx, usuario, busca) {
@@ -36,8 +30,64 @@ async function carregarRascunho(ctx, usuario, busca) {
   return novoRascunho(usuario.id, crypto.randomUUID(), new Date().toISOString());
 }
 
-export async function finalizar() {
-  return null; // ligado na etapa 4 (tarefa 14)
+// Diálogo "Falta preencher": cada item leva até a etapa e o campo.
+function mostrarFaltas(faltas, { irPara, etapa } = {}) {
+  const d = document.createElement("dialog");
+  d.setAttribute("aria-labelledby", "falta-titulo");
+  const grupos = ETAPAS.filter((e) => faltas.some((f) => f.etapa === e.n));
+  d.innerHTML = `
+    <div class="dialogo-corpo">
+      <h2 id="falta-titulo">Falta preencher</h2>
+      <p class="texto-2">Toque em um item para ir até ele.</p>
+      ${grupos.map((g) => `
+        <div class="falta-grupo">
+          <h3>${g.n} ${g.nome}</h3>
+          ${faltas.filter((f) => f.etapa === g.n).map((f) => `
+            <button type="button" class="falta-item" data-etapa="${f.etapa}" data-campo="${esc(f.campo)}">${icone("alerta")} ${esc(f.mensagem)}</button>`).join("")}
+        </div>`).join("")}
+    </div>
+    <div class="dialogo-acoes"><button type="button" class="btn btn-secundario" data-fechar>Fechar</button></div>`;
+  d.addEventListener("click", async (e) => {
+    if (e.target.closest("[data-fechar]")) {
+      d.close();
+      return;
+    }
+    const item = e.target.closest(".falta-item");
+    if (!item) return;
+    d.close();
+    if (irPara) await irPara(Number(item.dataset.etapa));
+    etapa?.()?.mostrarTodos?.();
+    const alvo = document.getElementById(item.dataset.campo);
+    alvo?.scrollIntoView({ block: "center" });
+    alvo?.focus({ preventScroll: true });
+  });
+  d.addEventListener("close", () => d.remove());
+  document.body.append(d);
+  d.showModal();
+}
+
+// Valida, grava a vistoria como pendente e leva ao detalhe; o envio começa na hora.
+export async function finalizar(editor, ctx, navegacao = {}) {
+  await editor.descarregar();
+  const faltas = faltandoParaFinalizar(editor.rascunho);
+  if (faltas.length) {
+    mostrarFaltas(faltas, navegacao);
+    return null;
+  }
+  try {
+    editor.encerrar();
+    const v = await ctx.storage.finalizarRascunho(editor.rascunho, new Date().toISOString());
+    await ctx.storage.salvarMeta(`ultimoVistoriador:${v.userId}`, v.vistoriadorNome);
+    ctx.storage.pedirPersistencia();
+    ctx.navegar(`#/vistoria/${v.id}?nova=1`);
+    ctx.sync.sincronizar();
+    navigator.serviceWorker?.ready.then((reg) => reg.sync?.register("enviar-vistorias")).catch(() => {});
+    return v.id;
+  } catch (e) {
+    editor.reabrir();
+    ctx.avisar(e.message, "erro");
+    return null;
+  }
 }
 
 export async function montar(el, ctx, params) {

@@ -10,12 +10,14 @@ export function criarEditor({
   const ouvintes = new Set();
   let timer = null;
   let fila = Promise.resolve();
+  let encerrado = false; // depois de finalizar, o rascunho não é mais gravado
 
   const notificar = () => ouvintes.forEach((cb) => cb(r));
 
   function gravar() {
     clearTimeout(timer);
     timer = null;
+    if (encerrado) return fila;
     r.atualizadoEm = agora();
     const copia = structuredClone(r);
     fila = fila.then(() => storage.salvarRascunho(copia)).catch((e) => aoErro(e));
@@ -23,6 +25,7 @@ export function criarEditor({
   }
 
   function agendar() {
+    if (encerrado) return;
     clearTimeout(timer);
     timer = setTimeout(gravar, esperaMs);
   }
@@ -63,6 +66,14 @@ export function criarEditor({
       return timer ? gravar() : fila;
     },
     temPendente: () => timer !== null,
+    encerrar() {
+      clearTimeout(timer);
+      timer = null;
+      encerrado = true;
+    },
+    reabrir() {
+      encerrado = false;
+    },
     aoMudar(cb) {
       ouvintes.add(cb);
       return () => ouvintes.delete(cb);

@@ -3,8 +3,9 @@ import * as storage from "../../storage.js";
 import { novoRascunho } from "../../formatos.js";
 import { criarEditor } from "../../rascunho.js";
 
-export async function montarEtapa(modulo, { confirmar = async () => true, preparar } = {}) {
+export async function montarEtapa(modulo, { confirmar = async () => true, preparar, antes } = {}) {
   await storage.apagarBanco();
+  await antes?.(storage);
   const rascunho = novoRascunho("u-teste", crypto.randomUUID(), new Date().toISOString());
   preparar?.(rascunho);
   const editor = criarEditor({ storage, rascunho });
