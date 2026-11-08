@@ -2,7 +2,8 @@
 // exclusões e preferências. Nenhum acesso ao IndexedDB acontece ao importar.
 import { vistoriaDoRascunho } from "./formatos.js";
 
-const NOME = "vistoria-veicular";
+// A página de testes (tests/navegador) usa um banco separado e nunca toca nos dados reais.
+const NOME = globalThis.location?.pathname?.includes("/tests/") ? "vistoria-veicular-testes" : "vistoria-veicular";
 const VERSAO = 1;
 const DIA = 24 * 60 * 60 * 1000;
 

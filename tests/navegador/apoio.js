@@ -27,3 +27,22 @@ export function digitar(input, valor, init = {}) {
   input.value = valor;
   input.dispatchEvent(new InputEvent("input", { bubbles: true, ...init }));
 }
+
+// Troca o seletor de arquivos por uma foto gerada (a câmera não abre em teste automático).
+export function simularCamera() {
+  const original = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function () {
+    if (this.type !== "file") return original.call(this);
+    const c = document.createElement("canvas");
+    c.width = 400;
+    c.height = 300;
+    c.getContext("2d").fillRect(0, 0, 400, 300);
+    c.toBlob((b) => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([b], "foto.jpg", { type: "image/jpeg" }));
+      this.files = dt.files;
+      this.dispatchEvent(new Event("change"));
+    }, "image/jpeg");
+  };
+  return () => { HTMLInputElement.prototype.click = original; };
+}

@@ -422,3 +422,7 @@ dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px;
   .conteudo { padding-top: 24px; }
   .titulo { font-size: 28px; }
 }
+.avaria-thumb { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.cheio-topo .btn-topo { color: var(--texto); }
+.visualizador .cheio-topo .btn-topo, .visualizador .btn-topo { color: #fff; }
+.gravidade { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px; }

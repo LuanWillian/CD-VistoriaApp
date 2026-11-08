@@ -6,6 +6,7 @@ import { criarEditor } from "../rascunho.js";
 import { $, $$, carregandoHtml, icone } from "../ui.js";
 import * as etapaVeiculo from "./etapa-veiculo.js";
 import * as etapaChecklist from "./etapa-checklist.js";
+import * as etapaAvarias from "./etapa-avarias.js";
 
 const provisoria = (titulo) => ({
   montar(el) {
@@ -17,7 +18,7 @@ const provisoria = (titulo) => ({
 const ETAPAS = [
   { n: 1, nome: "Veículo", modulo: etapaVeiculo },
   { n: 2, nome: "Checklist", modulo: etapaChecklist },
-  { n: 3, nome: "Avarias", modulo: provisoria("Avarias") },
+  { n: 3, nome: "Avarias", modulo: etapaAvarias },
   { n: 4, nome: "Assinaturas", modulo: provisoria("Assinaturas") },
 ];
 
