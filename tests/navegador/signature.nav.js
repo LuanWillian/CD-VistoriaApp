@@ -54,3 +54,31 @@ teste("assinatura: densidade de pixels, traço vira PNG, limpar e carregar", asy
     caixa.remove();
   }
 });
+
+teste("assinatura deitada: recorta em volta do traço e gira para ficar na horizontal", async () => {
+  const { imagemFinal } = await import("../../assinatura-tela.js");
+  const c = document.createElement("canvas");
+  c.width = 400;
+  c.height = 400;
+  const g = c.getContext("2d");
+  g.fillStyle = "#ff0000";
+  g.fillRect(100, 200, 10, 80); // traço em pé na tela
+  g.fillStyle = "#0000ff";
+  g.fillRect(100, 200, 10, 10); // ponta de cima do traço
+  const m = Math.round(16 * (window.devicePixelRatio || 1));
+
+  const emPe = imagemFinal(c, { deitada: false });
+  igual(emPe.width, 10 + 2 * m);
+  igual(emPe.height, 80 + 2 * m);
+
+  const deitada = imagemFinal(c, { deitada: true });
+  igual(deitada.width, 80 + 2 * m, "largura vira a altura do traço");
+  igual(deitada.height, 10 + 2 * m);
+  const cor = (x, y) => [...deitada.getContext("2d").getImageData(x, y, 1, 1).data];
+  igual(cor(m + 5, m + 5).join(), "0,0,255,255", "a ponta de cima vai para a esquerda");
+  igual(cor(75 + m, m + 5).join(), "255,0,0,255");
+
+  const vazio = document.createElement("canvas");
+  vazio.width = vazio.height = 50;
+  igual(imagemFinal(vazio, { deitada: false }), null);
+});

@@ -296,14 +296,42 @@ legend { padding: 0; }
 .gravidade[aria-checked="true"]::before { content: "✓ "; }
 
 /* ---------- Assinatura ---------- */
-.assinatura-quadro {
-  position: relative; height: 180px; border: 2px solid var(--linha-forte); border-radius: var(--raio-sm); background: #fff;
-}
-.assinatura-quadro canvas { width: 100%; height: 100%; display: block; border-radius: var(--raio-sm); }
 .toque-livre { touch-action: none; }
-.assinatura-dica {
-  position: absolute; left: 16px; right: 16px; bottom: 36px; border-bottom: 1px solid var(--linha-forte);
-  color: var(--texto-2); font-size: 14px; pointer-events: none; padding-bottom: 4px;
+.assinatura-previa {
+  height: 120px; border: 2px solid var(--linha-forte); border-radius: var(--raio-sm); background: #fff;
+  padding: 8px; overflow: hidden;
+}
+.assinatura-previa[hidden] { display: none; }
+.assinatura-previa img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* Tela cheia de assinatura. Em pé (.deitada) o layout vem girado: a barra fica
+   à direita com o texto de lado e a linha "Assine aqui" à esquerda. */
+dialog.assinar {
+  max-width: none; max-height: none; width: 100vw; height: 100dvh; margin: 0; border-radius: 0;
+  box-shadow: none; background: #fff; display: none; flex-direction: column;
+}
+dialog.assinar[open] { display: flex; }
+dialog.assinar::backdrop { background: #fff; }
+.assinar-barra {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--linha);
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+.assinar-titulo { flex: 1; font-weight: 700; font-size: 17px; }
+.assinar-area { position: relative; flex: 1; min-height: 0; }
+.assinar-area canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.assinar-linha {
+  position: absolute; left: 24px; right: 24px; bottom: 28%; border-bottom: 1px solid var(--linha-forte);
+  color: var(--texto-2); font-size: 14px; padding-bottom: 4px; pointer-events: none;
+}
+dialog.assinar.deitada { flex-direction: row-reverse; }
+.deitada .assinar-barra {
+  writing-mode: vertical-rl; border-bottom: 0; border-left: 1px solid var(--linha);
+  padding: max(12px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
+}
+.deitada .assinar-barra .btn { min-height: 0; min-width: 48px; padding: 14px 10px; }
+.deitada .assinar-linha {
+  writing-mode: vertical-rl; left: 28%; right: auto; top: 24px; bottom: 24px;
+  border-bottom: 0; border-left: 1px solid var(--linha-forte); padding: 0 0 0 4px;
 }
 
 /* ---------- Diálogos ---------- */

@@ -34,12 +34,17 @@ const definir = (id, valor) => {
 const botao = (texto, raiz = document) => [...raiz.querySelectorAll("button")].find((b) => b.textContent.trim().includes(texto));
 
 async function assinar(quem) {
-  const canvas = document.querySelector(`#${quem}-assinatura canvas`);
+  document.querySelector(`[data-assinar="${quem}"]`).click();
+  await esperar(500);
+  const tela = document.querySelector("dialog.assinar[open]");
+  const canvas = tela.querySelector("canvas");
   const r = canvas.getBoundingClientRect();
   const ev = (t, x, y) => canvas.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 9, button: 0, buttons: 1, clientX: r.left + x, clientY: r.top + y }));
   ev("pointerdown", 30, 100);
   for (let i = 1; i < 12; i++) ev("pointermove", 30 + i * 22, 100 + Math.sin(i) * 40);
   ev("pointerup", 290, 90);
+  await esperar(300);
+  tela.querySelector('[data-acao="confirmar"]').click();
   await esperar(700);
 }
 

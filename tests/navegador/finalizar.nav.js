@@ -91,14 +91,42 @@ teste("etapa 4: nome sugerido, assinatura gravada e limpa", async () => {
     await esperarAte(() => t.el.querySelector("#vistoriador-nome").value);
     igual(t.el.querySelector("#vistoriador-nome").value, "Ana Lima");
     igual(t.editor.rascunho.dados.vistoriadorNome, "Ana Lima");
-    const canvas = t.el.querySelector("#vistoriador-assinatura canvas");
+    ok(!t.el.querySelector("canvas"), "a etapa não deve ter quadro de assinatura embutido");
+    const assinar = t.el.querySelector('[data-assinar="vistoriador"]');
+    ok(assinar && /Assinar/.test(assinar.textContent), "falta o botão Assinar");
+
+    // Cancelar não grava nada.
+    assinar.click();
+    ok(await esperarAte(() => document.querySelector("dialog.assinar[open]")), "a tela de assinatura não abriu");
+    let tela = document.querySelector("dialog.assinar[open]");
+    tela.querySelector('[data-acao="cancelar"]').click();
+    await esperarAte(() => !document.querySelector("dialog.assinar"));
+    igual(t.editor.rascunho.dados.assinaturas.vistoriador, false);
+
+    assinar.click();
+    ok(await esperarAte(() => document.querySelector("dialog.assinar[open]")), "a tela não abriu de novo");
+    tela = document.querySelector("dialog.assinar[open]");
+    const confirmar = tela.querySelector('[data-acao="confirmar"]');
+    ok(confirmar.disabled, "confirmar deve começar desabilitado");
+    const canvas = tela.querySelector("canvas");
     const r = canvas.getBoundingClientRect();
     const ev = (tipo, x, y) => canvas.dispatchEvent(new PointerEvent(tipo, { bubbles: true, pointerId: 3, button: 0, buttons: 1, clientX: r.left + x, clientY: r.top + y }));
-    ev("pointerdown", 20, 40);
-    for (let i = 1; i < 8; i++) ev("pointermove", 20 + i * 25, 40 + (i % 2) * 30);
-    ev("pointerup", 200, 60);
+    ev("pointerdown", 40, 60);
+    for (let i = 1; i < 8; i++) ev("pointermove", 40 + i * 25, 60 + (i % 2) * 30);
+    ev("pointerup", 220, 80);
+    ok(await esperarAte(() => !confirmar.disabled), "confirmar não habilitou após o traço");
+    confirmar.click();
     ok(await esperarAte(() => t.editor.rascunho.dados.assinaturas.vistoriador), "assinatura não marcada");
-    ok(await t.editor.lerArquivo("assinatura_vistoriador.png"), "PNG da assinatura não gravado");
+    ok(!document.querySelector("dialog.assinar"), "a tela de assinatura não fechou");
+    const png = await t.editor.lerArquivo("assinatura_vistoriador.png");
+    ok(png, "PNG da assinatura não gravado");
+    igual(png.type, "image/png");
+    ok(await esperarAte(() => t.el.querySelector("#vistoriador-assinatura img")?.getAttribute("src")), "prévia não apareceu");
+    ok(/Assinar de novo/.test(assinar.textContent), "botão deveria virar Assinar de novo");
+    const previa = t.el.querySelector("#vistoriador-assinatura .assinatura-previa").getBoundingClientRect();
+    await esperarAte(() => t.el.querySelector("#vistoriador-assinatura img").complete);
+    const img = t.el.querySelector("#vistoriador-assinatura img").getBoundingClientRect();
+    ok(img.bottom <= previa.bottom && img.right <= previa.right, "a prévia vaza para fora da caixa");
     [...t.el.querySelectorAll("[data-limpar]")].find((b) => b.dataset.limpar === "vistoriador").click();
     ok(await esperarAte(() => t.editor.rascunho.dados.assinaturas.vistoriador === false), "assinatura não foi limpa");
     igual(await t.editor.lerArquivo("assinatura_vistoriador.png"), undefined);

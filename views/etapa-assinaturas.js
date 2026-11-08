@@ -1,7 +1,7 @@
 // Etapa 4 — Responsáveis e assinaturas (vistoriador e motorista do reboque).
 import { ARQUIVO } from "../formatos.js";
 import { $, $$, icone } from "../ui.js";
-import { montarAssinatura } from "../signature.js";
+import { abrirTelaAssinatura } from "../assinatura-tela.js";
 import { erroDoCampo } from "./etapa-veiculo.js";
 
 const BLOCOS = [
@@ -10,7 +10,7 @@ const BLOCOS = [
 ];
 
 export function montar(el, editor, ctx) {
-  const pads = {};
+  const urls = {}; // URLs das prévias, revogadas ao trocar ou sair
   const tocados = new Set();
 
   el.innerHTML = `
@@ -28,13 +28,13 @@ export function montar(el, editor, ctx) {
             <p class="erro-campo" id="${b.chave}-nome-erro" aria-live="polite"></p>
           </div>
           <div class="campo">
-            <div class="entre">
-              <p class="rotulo" id="${b.chave}-assinatura-rotulo">Assinatura</p>
-              <button type="button" class="btn btn-texto" data-limpar="${b.chave}">${icone("borracha")} Limpar assinatura</button>
-            </div>
-            <div class="assinatura-quadro" id="${b.chave}-assinatura" tabindex="-1" role="group" aria-labelledby="${b.chave}-assinatura-rotulo">
-              <canvas aria-label="Quadro de assinatura: ${b.titulo}"></canvas>
-              <p class="assinatura-dica">Assine aqui</p>
+            <p class="rotulo" id="${b.chave}-assinatura-rotulo">Assinatura</p>
+            <div class="assinatura-caixa pilha" id="${b.chave}-assinatura" tabindex="-1" role="group" aria-labelledby="${b.chave}-assinatura-rotulo">
+              <div class="assinatura-previa" hidden><img alt="Assinatura: ${b.titulo}"></div>
+              <div class="linha-acoes">
+                <button type="button" class="btn btn-primario" data-assinar="${b.chave}">${icone("editar")} <span>Assinar</span></button>
+                <button type="button" class="btn btn-texto" data-limpar="${b.chave}" hidden>${icone("borracha")} Limpar assinatura</button>
+              </div>
             </div>
             <p class="erro-campo" id="${b.chave}-assinatura-erro" aria-live="polite"></p>
           </div>
@@ -58,28 +58,8 @@ export function montar(el, editor, ctx) {
       mostrarErro(`${b.chave}-nome`);
     });
 
-    const quadro = $(`#${b.chave}-assinatura`, el);
-    const dica = $(".assinatura-dica", quadro);
-    const pad = montarAssinatura($("canvas", quadro), {
-      aoMudar: async (blob) => {
-        dica.hidden = Boolean(blob);
-        try {
-          if (blob) await editor.gravarArquivo(b.arquivo, blob, (d) => { d.assinaturas[b.chave] = true; });
-          else await editor.apagarArquivo(b.arquivo, (d) => { d.assinaturas[b.chave] = false; });
-        } catch (e) {
-          ctx.avisar(e.message, "erro");
-        }
-        tocados.add(`${b.chave}-assinatura`);
-        mostrarErro(`${b.chave}-assinatura`);
-      },
-    });
-    pads[b.chave] = pad;
     if (editor.rascunho.dados.assinaturas[b.chave]) {
-      editor.lerArquivo(b.arquivo).then(async (blob) => {
-        if (!blob) return;
-        await pad.carregar(blob);
-        dica.hidden = true;
-      });
+      editor.lerArquivo(b.arquivo).then((blob) => blob && mostrar(b.chave, blob)).catch(() => {});
     }
   }
 
@@ -93,14 +73,54 @@ export function montar(el, editor, ctx) {
     }).catch(() => {});
   }
 
-  el.addEventListener("click", async (e) => {
-    const chave = e.target.closest("[data-limpar]")?.dataset.limpar;
-    if (!chave) return;
-    const pad = pads[chave];
-    if (pad.vazio()) return;
-    const titulo = BLOCOS.find((b) => b.chave === chave).titulo.toLowerCase();
+  // Prévia da assinatura gravada (ou volta ao botão "Assinar" quando blob é null).
+  function mostrar(chave, blob) {
+    const caixa = $(`#${chave}-assinatura`, el);
+    if (!caixa) return;
+    if (urls[chave]) URL.revokeObjectURL(urls[chave]);
+    urls[chave] = blob ? URL.createObjectURL(blob) : null;
+    const previa = $(".assinatura-previa", caixa);
+    previa.hidden = !blob;
+    if (blob) $("img", previa).src = urls[chave];
+    else $("img", previa).removeAttribute("src");
+    const assinar = $("[data-assinar]", caixa);
+    $("span", assinar).textContent = blob ? "Assinar de novo" : "Assinar";
+    assinar.classList.toggle("btn-primario", !blob);
+    assinar.classList.toggle("btn-secundario", Boolean(blob));
+    $("[data-limpar]", caixa).hidden = !blob;
+  }
+
+  async function assinar(b) {
+    const blob = await abrirTelaAssinatura({ titulo: b.titulo });
+    if (!blob) return;
+    try {
+      await editor.gravarArquivo(b.arquivo, blob, (d) => { d.assinaturas[b.chave] = true; });
+      mostrar(b.chave, blob);
+    } catch (e) {
+      ctx.avisar(e.message, "erro");
+    }
+    tocados.add(`${b.chave}-assinatura`);
+    mostrarErro(`${b.chave}-assinatura`);
+  }
+
+  async function limpar(b) {
+    const titulo = b.titulo.toLowerCase();
     if (!(await ctx.confirmar({ titulo: `Apagar a assinatura do ${titulo}?`, ok: "Apagar", perigo: true }))) return;
-    pad.limpar();
+    try {
+      await editor.apagarArquivo(b.arquivo, (d) => { d.assinaturas[b.chave] = false; });
+      mostrar(b.chave, null);
+    } catch (e) {
+      ctx.avisar(e.message, "erro");
+    }
+    tocados.add(`${b.chave}-assinatura`);
+    mostrarErro(`${b.chave}-assinatura`);
+  }
+
+  el.addEventListener("click", (e) => {
+    const chaveAssinar = e.target.closest("[data-assinar]")?.dataset.assinar;
+    if (chaveAssinar) return assinar(BLOCOS.find((b) => b.chave === chaveAssinar));
+    const chaveLimpar = e.target.closest("[data-limpar]")?.dataset.limpar;
+    if (chaveLimpar) return limpar(BLOCOS.find((b) => b.chave === chaveLimpar));
   });
 
   return {
@@ -113,7 +133,7 @@ export function montar(el, editor, ctx) {
       });
     },
     desmontar() {
-      Object.values(pads).forEach((p) => p.destruir());
+      Object.values(urls).forEach((u) => u && URL.revokeObjectURL(u));
     },
   };
 }

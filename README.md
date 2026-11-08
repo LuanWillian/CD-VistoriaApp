@@ -113,7 +113,7 @@ Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check`
 | 3 fotos fixas (Frente, Traseira, Chassi) com Refazer/Remover, tela cheia e obrigatórias ao finalizar; compressão 1280 px / JPEG 0,7 | `views/etapa-veiculo.js`, `photos.js` |
 | Checklist com os 13 itens em Presente/Ausente, "Marcar todos como Presente", "Limpar" e observação; lista em `config.js` | `views/etapa-checklist.js`, `config.js` |
 | Avarias ilimitadas com área, tipo, gravidade colorida, descrição e várias fotos; "Veículo sem avarias"; aviso sem foto | `views/etapa-avarias.js` |
-| Assinaturas do vistoriador e do motorista do reboque (canvas, Pointer Events, `devicePixelRatio`, `touch-action: none`, Limpar) | `signature.js`, `views/etapa-assinaturas.js` |
+| Assinaturas do vistoriador e do motorista do reboque: botão "Assinar" abre tela cheia na horizontal (trava a tela no Android; no iPhone o layout vem de lado e a imagem é girada ao salvar), canvas com Pointer Events, `devicePixelRatio`, `touch-action: none`, Limpar | `assinatura-tela.js`, `signature.js`, `views/etapa-assinaturas.js` |
 | Data e hora registradas ao finalizar (`realizada_em`) | `views/nova.js`, `storage.js` |
 | Etapas com progresso, Voltar/Avançar, rascunho automático e retomada | `views/nova.js`, `rascunho.js` |
 | Finalizar com a lista do que falta e link para cada campo | `views/nova.js`, `validacao.js` |
