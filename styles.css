@@ -234,8 +234,8 @@ legend { padding: 0; }
 @media (min-width: 768px) { .barra-acoes { padding-inline: calc((100% - 688px) / 2); } }
 
 /* ---------- Fotos ---------- */
-.fotos-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.foto-slot { display: grid; gap: 6px; }
+.fotos-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.foto-slot { display: grid; gap: 6px; min-width: 0; align-content: start; }
 .foto-alvo {
   aspect-ratio: 4 / 3; width: 100%; border-radius: var(--raio-sm); overflow: hidden;
   border: 2px dashed var(--linha-forte); background: var(--papel); color: var(--texto-2);
@@ -244,8 +244,9 @@ legend { padding: 0; }
 .foto-alvo img { width: 100%; height: 100%; object-fit: cover; }
 .foto-alvo.cheia { border-style: solid; border-color: var(--linha); }
 .foto-rotulo { font-weight: 650; font-size: 14px; text-align: center; }
-.foto-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.foto-acoes .btn { min-height: 40px; padding: 6px 4px; font-size: 13px; }
+.foto-acoes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.foto-acoes .btn { min-width: 0; min-height: 44px; padding: 6px 4px; font-size: 14px; }
+@media (min-width: 560px) { .foto-acoes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .miniaturas { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
 .miniatura { position: relative; aspect-ratio: 1; border-radius: var(--raio-sm); overflow: hidden; border: 1px solid var(--linha); background: var(--fundo); }
 .miniatura > button:first-child { width: 100%; height: 100%; padding: 0; border: 0; background: none; }
