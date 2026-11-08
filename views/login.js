@@ -1,11 +1,11 @@
 // Tela "Entrar" (e-mail e senha). Não há cadastro público: o administrador
 // cria os usuários no painel do Supabase. Depois do login, o app.js troca de tela.
-import { $, icone } from "../ui.js";
+import { $ } from "../ui.js";
 
 export async function montar(el, ctx) {
   el.innerHTML = `
     <section class="login" aria-labelledby="login-titulo">
-      <p class="login-marca">${icone("prancheta")} CD Vistoria</p>
+      <p class="login-marca"><img src="icons/logo-192.png" alt="" width="56" height="56"> CD Vistoria</p>
       <h1 class="titulo" id="login-titulo">Entrar</h1>
       <p class="texto-2">Seu acesso é criado pelo administrador.</p>
       <form novalidate>

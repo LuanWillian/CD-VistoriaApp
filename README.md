@@ -84,7 +84,7 @@ As listas ficam em `config.js`:
 - parâmetros de foto e de PDF;
 - dias de cache de fotos.
 
-Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check` no banco: se mudar essas listas, ajuste a migration também. Os ícones vêm de `node scripts/gerar-icones.js`.
+Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check` no banco: se mudar essas listas, ajuste a migration também. Os ícones ficam em `icons/` (logo-*.png); ao trocar a logo, use nomes de arquivo novos, porque essa pasta tem cache imutável.
 
 ## 7. Testes
 

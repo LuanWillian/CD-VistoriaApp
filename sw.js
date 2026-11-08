@@ -1,7 +1,7 @@
 // Service Worker do CD Vistoria: guarda o app inteiro para abrir sem
 // internet. Troque CACHE_VERSION a cada deploy (o scripts/gerar-env.js faz isso
 // sozinho quando usado como comando de build no Netlify).
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const CACHE = `vistoria-${CACHE_VERSION}`;
 const LIMITE_ENV_MS = 3000;
 
@@ -34,11 +34,11 @@ const ARQUIVOS = [
   "vendor/supabase-2.118.0.umd.js",
   "vendor/jspdf-4.2.1.umd.min.js",
   "vendor/jspdf-autotable-5.0.9.min.js",
-  "icons/icon.svg",
-  "icons/icon-192.png",
-  "icons/icon-512.png",
-  "icons/maskable-512.png",
-  "icons/apple-touch-icon-180.png",
+  "icons/logo-32.png",
+  "icons/logo-192.png",
+  "icons/logo-512.png",
+  "icons/logo-maskable-512.png",
+  "icons/logo-apple-180.png",
 ];
 
 self.addEventListener("install", (e) => {

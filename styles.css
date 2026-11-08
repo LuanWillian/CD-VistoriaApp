@@ -362,7 +362,7 @@ body.com-acoes .avisos { bottom: calc(var(--abas-h) + var(--acoes-h) + var(--seg
 .tela-centro .pilha { max-width: 420px; }
 .login { max-width: 420px; margin: 8vh auto 0; }
 .login-marca { display: flex; align-items: center; gap: 10px; color: var(--principal); font-weight: 800; font-size: 20px; margin-bottom: 24px; }
-.login-marca .ic { width: 36px; height: 36px; }
+.login-marca img { width: 56px; height: 56px; border-radius: 12px; }
 .login form { margin-top: 20px; }
 .login form .btn { margin-top: 20px; }
 .vazio { text-align: center; padding: 40px 16px; color: var(--texto-2); }
