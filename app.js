@@ -63,10 +63,12 @@ async function renderizar() {
   const { nome, params } = lerRota();
   hashAtual = location.hash;
   marcarAba(nome);
-  main.replaceChildren();
+  // Cada tela ganha um contêiner novo: os ouvintes dela somem junto com ela.
+  const raiz = document.createElement("div");
+  main.replaceChildren(raiz);
   window.scrollTo(0, 0);
   try {
-    const v = (await VIEWS[nome].montar(main, ctx, params)) || {};
+    const v = (await VIEWS[nome].montar(raiz, ctx, params)) || {};
     if (token !== tokenRender) {
       v.desmontar?.();
       return;
@@ -143,8 +145,9 @@ async function mostrarLogin() {
   $("#btn-menu").hidden = true;
   $("#status-rede").hidden = true;
   $("#faixa-sessao").hidden = true;
-  main.replaceChildren();
-  await viewLogin.montar(main, ctx, {});
+  const raiz = document.createElement("div");
+  main.replaceChildren(raiz);
+  await viewLogin.montar(raiz, ctx, {});
 }
 
 function entrarNoApp() {
