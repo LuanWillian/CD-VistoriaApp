@@ -1,4 +1,4 @@
-// Etapa 2 — Checklist de itens do veículo (Presente / Ausente).
+// Etapa 2 — Checklist de itens do veículo (Ok / Ausente).
 // A lista de itens vem de CHECKLIST_ITENS em config.js.
 import { CHECKLIST_ITENS } from "../config.js";
 import { $, $$, esc } from "../ui.js";
@@ -11,7 +11,7 @@ export function montar(el, editor, ctx) {
         <p class="texto-2"><span id="checklist-contador">0 de ${CHECKLIST_ITENS.length}</span> itens marcados</p>
       </div>
       <div class="linha-acoes">
-        <button type="button" class="btn btn-secundario" data-acao="todos">Marcar todos como Presente</button>
+        <button type="button" class="btn btn-secundario" data-acao="todos">Marcar todos como Ok</button>
         <button type="button" class="btn btn-texto" data-acao="limpar">Limpar</button>
       </div>
       <div class="secao checklist">
@@ -19,7 +19,7 @@ export function montar(el, editor, ctx) {
           <fieldset class="item-checklist" id="chk-${i}" tabindex="-1" data-item="${esc(item)}">
             <legend>${esc(item)}</legend>
             <div class="segmentado" role="radiogroup" aria-label="${esc(item)}">
-              <button type="button" role="radio" aria-checked="false" data-valor="presente">Presente</button>
+              <button type="button" role="radio" aria-checked="false" data-valor="presente">Ok</button>
               <button type="button" role="radio" aria-checked="false" data-valor="ausente">Ausente</button>
             </div>
           </fieldset>`).join("")}

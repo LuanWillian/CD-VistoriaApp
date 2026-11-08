@@ -60,7 +60,7 @@ export async function preencherEFinalizar({ chassi, marca, modelo, cor = "Prata"
   }
   document.getElementById("btn-avancar").click();
   await esperar(500);
-  botao("Marcar todos como Presente").click();
+  botao("Marcar todos como Ok").click();
   document.querySelector('#chk-0 [data-valor="ausente"]').click();
   document.getElementById("btn-avancar").click();
   await esperar(500);

@@ -146,7 +146,7 @@ export async function montar(el, ctx, params) {
     ? miniaturaHtml(fontes.get(nome), legenda)
     : `<div class="miniatura"><span class="sem-foto" role="img" aria-label="${esc(legenda)}: foto indisponível">${icone("imagem", "ic ic-lg")}</span></div>`);
 
-  const situacao = (item) => ({ presente: '<span class="presente">Presente</span>', ausente: '<span class="ausente">Ausente</span>' })[v.checklist?.[item]] || "—";
+  const situacao = (item) => ({ presente: '<span class="presente">Ok</span>', ausente: '<span class="ausente">Ausente</span>' })[v.checklist?.[item]] || "—";
   const itens = [...CHECKLIST_ITENS, ...Object.keys(v.checklist || {}).filter((i) => !CHECKLIST_ITENS.includes(i))];
 
   function htmlAvarias() {

@@ -20,14 +20,14 @@ async function carregarRascunho(ctx, usuario, busca) {
   const id = busca.get("rascunho");
   if (id) {
     const r = await ctx.storage.obterRascunho(id);
-    if (r && r.userId === usuario.id) return r;
+    if (r && r.userId === usuario.id) return { rascunho: r, novo: false };
   }
   if (!busca.has("novo")) {
     const [maisRecente] = await ctx.storage.listarRascunhos(usuario.id);
-    if (maisRecente) return maisRecente;
+    if (maisRecente) return { rascunho: maisRecente, novo: false };
   }
   // Só vai para o banco na primeira alteração (não cria rascunhos vazios).
-  return novoRascunho(usuario.id, crypto.randomUUID(), new Date().toISOString());
+  return { rascunho: novoRascunho(usuario.id, crypto.randomUUID(), new Date().toISOString()), novo: true };
 }
 
 // Diálogo "Falta preencher": cada item leva até a etapa e o campo.
@@ -93,10 +93,10 @@ export async function finalizar(editor, ctx, navegacao = {}) {
 export async function montar(el, ctx, params) {
   const usuario = ctx.auth.usuarioAtual();
   el.innerHTML = carregandoHtml();
-  const rascunho = await carregarRascunho(ctx, usuario, params.busca);
+  const { rascunho, novo } = await carregarRascunho(ctx, usuario, params.busca);
   history.replaceState(null, "", `#/nova?rascunho=${rascunho.id}`);
 
-  const editor = criarEditor({ storage: ctx.storage, rascunho, aoErro: (e) => ctx.avisar(e.message, "erro") });
+  const editor = criarEditor({ storage: ctx.storage, rascunho, novo, aoErro: (e) => ctx.avisar(e.message, "erro") });
   document.body.classList.add("com-acoes");
   el.innerHTML = `
     <h1 class="sr-only">Nova vistoria</h1>

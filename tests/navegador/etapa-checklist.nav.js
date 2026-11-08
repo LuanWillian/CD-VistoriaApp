@@ -5,7 +5,7 @@ import { CHECKLIST_ITENS } from "../../config.js";
 
 const botao = (el, texto) => [...el.querySelectorAll("button")].find((b) => b.textContent.trim() === texto);
 
-teste("etapa 2: 13 itens com Presente/Ausente e contador", async () => {
+teste("etapa 2: 13 itens com Ok/Ausente e contador", async () => {
   const t = await montarEtapa(etapa);
   try {
     const grupos = [...t.el.querySelectorAll("fieldset.item-checklist")];
@@ -22,10 +22,10 @@ teste("etapa 2: 13 itens com Presente/Ausente e contador", async () => {
   }
 });
 
-teste("etapa 2: marcar todos como Presente", async () => {
+teste("etapa 2: marcar todos como Ok", async () => {
   const t = await montarEtapa(etapa);
   try {
-    botao(t.el, "Marcar todos como Presente").click();
+    botao(t.el, "Marcar todos como Ok").click();
     igual(Object.values(t.editor.rascunho.dados.checklist), Array(13).fill("presente"));
     igual(t.el.querySelector("#checklist-contador").textContent, "13 de 13");
   } finally {
@@ -37,7 +37,7 @@ teste("etapa 2: Limpar pede confirmação", async () => {
   let resposta = false;
   const t = await montarEtapa(etapa, { confirmar: async () => resposta });
   try {
-    botao(t.el, "Marcar todos como Presente").click();
+    botao(t.el, "Marcar todos como Ok").click();
     botao(t.el, "Limpar").click();
     await esperar(20);
     igual(Object.keys(t.editor.rascunho.dados.checklist).length, 13);

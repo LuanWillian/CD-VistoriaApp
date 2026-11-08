@@ -118,3 +118,40 @@ test("reabrir volta a gravar (finalização que falhou)", async () => {
   await ed.alterar((d) => { d.cor = "Azul"; }, { imediato: true });
   assert.equal(st.salvos.length, 1);
 });
+
+test("rascunho novo não é gravado só por abrir ou trocar de etapa", async () => {
+  const st = storageFalso();
+  const ed = criarEditor({ storage: st, rascunho: novoRascunho("u1", "r1", "x"), novo: true, agora });
+  await ed.irPara(1);
+  await ed.irPara(2);
+  await ed.descarregar();
+  assert.equal(st.salvos.length, 0);
+  assert.equal(ed.rascunho.etapa, 2);
+});
+
+test("rascunho novo: sugestão automática não cria rascunho", async () => {
+  const st = storageFalso();
+  const ed = criarEditor({ storage: st, rascunho: novoRascunho("u1", "r1", "x"), novo: true, agora });
+  await ed.alterar((d) => { d.vistoriadorNome = "Ana"; }, { sugestao: true });
+  await ed.descarregar();
+  assert.equal(st.salvos.length, 0);
+  assert.equal(ed.rascunho.dados.vistoriadorNome, "Ana");
+});
+
+test("rascunho novo passa a ser gravado na primeira alteração, com a etapa atual", async () => {
+  const st = storageFalso();
+  const ed = criarEditor({ storage: st, rascunho: novoRascunho("u1", "r1", "x"), novo: true, agora });
+  await ed.irPara(2);
+  await ed.alterar((d) => { d.combustivel = "Flex"; }, { imediato: true });
+  assert.equal(st.salvos.length, 1);
+  assert.equal(st.salvos[0].etapa, 2);
+  await ed.irPara(3);
+  assert.equal(st.salvos.length, 2);
+});
+
+test("rascunho novo passa a ser gravado ao salvar a primeira foto", async () => {
+  const st = storageFalso();
+  const ed = criarEditor({ storage: st, rascunho: novoRascunho("u1", "r1", "x"), novo: true, agora });
+  await ed.gravarArquivo("frente.jpg", new Blob(["x"]), (d) => { d.fotos.frente = true; });
+  assert.equal(st.salvos.length, 1);
+});

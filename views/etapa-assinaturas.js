@@ -89,7 +89,7 @@ export function montar(el, editor, ctx) {
       const input = $("#vistoriador-nome", el);
       if (!ultimo || !input || input.value) return;
       input.value = ultimo;
-      editor.alterar((d) => { d.vistoriadorNome = ultimo; });
+      editor.alterar((d) => { d.vistoriadorNome = ultimo; }, { sugestao: true });
     }).catch(() => {});
   }
 

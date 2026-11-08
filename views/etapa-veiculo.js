@@ -6,8 +6,8 @@ import { $, $$, esc, icone } from "../ui.js";
 import { comprimir, escolherFoto, gerarMiniatura, verificarCamera, abrirVisualizador, MENSAGEM_CAMERA_NEGADA } from "../photos.js";
 
 const CAMPOS_TEXTO = [
-  { id: "marca", rotulo: "Marca", exemplo: "Ex.: Fiat" },
-  { id: "modelo", rotulo: "Modelo", exemplo: "Ex.: Uno" },
+  { id: "marca", rotulo: "Marca", exemplo: "Ex.: Jeep" },
+  { id: "modelo", rotulo: "Modelo", exemplo: "Ex.: Compass" },
   { id: "cor", rotulo: "Cor", exemplo: "Ex.: Prata" },
 ];
 

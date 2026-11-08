@@ -190,7 +190,7 @@ async function montarPdf(v, obterImagem, depurar) {
 
   // ---------- 4. Checklist ----------
   const itens = [...CHECKLIST_ITENS, ...Object.keys(v.checklist || {}).filter((i) => !CHECKLIST_ITENS.includes(i))];
-  const situacao = (item) => ({ presente: "Presente", ausente: "Ausente" })[v.checklist?.[item]] || "—";
+  const situacao = (item) => ({ presente: "Ok", ausente: "Ausente" })[v.checklist?.[item]] || "—";
   const metade = Math.ceil(itens.length / 2);
   const colunas = [itens.slice(0, metade), itens.slice(metade)];
   const alturaLinha = 6.6;
