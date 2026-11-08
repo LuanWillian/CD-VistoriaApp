@@ -217,9 +217,10 @@ export async function montar(el, ctx) {
       recarregar();
     });
   }
-  $("#btn-atualizar", el).addEventListener("click", () => {
+  $("#btn-atualizar", el).addEventListener("click", async () => {
+    $("#btn-atualizar", el).disabled = true;
+    await (ctx.sincronizar || ctx.sync.sincronizar)();
     recarregar();
-    (ctx.sincronizar || ctx.sync.sincronizar)();
   });
   $("#btn-mais", el).addEventListener("click", async () => {
     const b = $("#btn-mais", el);
@@ -243,7 +244,16 @@ export async function montar(el, ctx) {
     }
   });
 
-  const aoMudar = () => { if (ativo) desenharLista(); };
+  // Quando uma rodada de envio termina, busca o servidor de novo: as vistorias
+  // recém-sincronizadas precisam vir na página do servidor para aparecer.
+  let estavaSincronizando = false;
+  const aoMudar = (e) => {
+    if (!ativo) return;
+    const sincronizando = Boolean(e.detail?.sincronizando);
+    if (estavaSincronizando && !sincronizando) recarregar();
+    else desenharLista();
+    estavaSincronizando = sincronizando;
+  };
   ctx.sync.eventos.addEventListener("mudou", aoMudar);
 
   await desenharRascunhos();
