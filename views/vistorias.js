@@ -108,10 +108,10 @@ export async function montar(el, ctx) {
         <a class="cartao-vistoria-link" href="#/vistoria/${esc(v.id)}">
           <div class="thumb">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : icone("imagem", "ic ic-lg")}</div>
           <div class="cartao-info">
-            <div class="entre"><span class="numero">${esc(nomeVistoria(v))}</span>${seloStatus(v.status)}</div>
+            <div class="entre"><span class="chassi">${esc(v.chassi)}</span>${seloStatus(v.status)}</div>
             <span class="linha"><span>${formatarDataHora(v.realizadaEm)}</span></span>
             <span>${esc([v.marca, v.modelo].filter(Boolean).join(" "))}</span>
-            <span class="linha"><span class="chassi">${esc(v.chassi)}</span><span>${qtd ? `${qtd} ${qtd === 1 ? "avaria" : "avarias"}` : "Sem avarias"}</span></span>
+            <span class="linha"><span>${qtd ? `${qtd} ${qtd === 1 ? "avaria" : "avarias"}` : "Sem avarias"}</span></span>
           </div>
         </a>
         ${v.status === "erro" ? `
