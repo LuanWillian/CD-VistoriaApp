@@ -32,7 +32,8 @@ Para dar a um administrador a leitura de todas as vistorias, veja o comentário 
    ```bash
    npx --yes serve@14.2.6 -l 3000 .
    ```
-3. Abra `http://localhost:3000/index.html`. O `serve.json` aplica localmente os mesmos cabeçalhos do Netlify, inclusive a CSP.
+3. Abra o endereço que o `serve` mostrar no terminal (normalmente `http://localhost:3000`; se a porta 3000 estiver ocupada, ele escolhe outra). O `serve.json` aplica localmente os mesmos cabeçalhos do Netlify, inclusive a CSP.
+   Se aparecer a tela "Configure o arquivo env.js", falta o passo 1.4.
 4. Para testar no celular, use um deploy do Netlify (o Service Worker e a câmera exigem HTTPS fora do `localhost`).
 
 **Supabase local (opcional, exige Docker):**
