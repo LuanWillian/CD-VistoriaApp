@@ -1,0 +1,17 @@
+{
+  "name": "Vistoria Veicular",
+  "short_name": "Vistoria",
+  "description": "Vistoria veicular em campo, com laudo em PDF e funcionamento offline.",
+  "lang": "pt-BR",
+  "start_url": "./#/nova",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0B4F6C",
+  "background_color": "#FFFFFF",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -160,6 +160,7 @@ function entrarNoApp() {
   storage.limparFotosAntigas(DIAS_CACHE_FOTOS).catch(console.error);
   ctx.sync.contar().then((c) => atualizarIndicadores(c)).catch(() => {});
   sincronizar();
+  mostrarFaixaInstalar();
 }
 
 let menu = null;
@@ -250,4 +251,79 @@ async function iniciar() {
   else mostrarLogin();
 }
 
+// ---------- Service Worker: offline e aviso de nova versão ----------
+async function registrarServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register("sw.js");
+    let pediuAtualizacao = false;
+    const avisar = () => { $("#faixa-versao").hidden = false; };
+    if (reg.waiting && navigator.serviceWorker.controller) avisar();
+    reg.addEventListener("updatefound", () => {
+      const novo = reg.installing;
+      novo?.addEventListener("statechange", () => {
+        if (novo.state === "installed" && navigator.serviceWorker.controller) avisar();
+      });
+    });
+    $("#btn-atualizar-versao").addEventListener("click", async () => {
+      pediuAtualizacao = true;
+      if (viewAtual?.podeSair) await viewAtual.podeSair(); // grava o rascunho antes de recarregar
+      reg.waiting?.postMessage({ tipo: "SKIP_WAITING" });
+    });
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (pediuAtualizacao) location.reload();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") reg.update().catch(() => {});
+    });
+  } catch (e) {
+    console.error("Service Worker não registrado:", e);
+  }
+}
+
+// ---------- Instalar app ----------
+let eventoInstalar = null;
+const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const instalado = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const faixaInstalarFechada = () => {
+  try { return localStorage.getItem("faixaInstalarFechada") === "1"; } catch { return false; }
+};
+
+function mostrarFaixaInstalar() {
+  if (!noApp || instalado() || faixaInstalarFechada()) return;
+  if (eventoInstalar) {
+    $("#faixa-instalar-texto").textContent = "Instale o app para usar sem internet e abrir direto da tela inicial.";
+    $("#btn-instalar-faixa").hidden = false;
+    $("#faixa-instalar").hidden = false;
+  } else if (ehIOS) {
+    $("#faixa-instalar-texto").textContent = "Para instalar: toque em Compartilhar e depois em Adicionar à Tela de Início.";
+    $("#btn-instalar-faixa").hidden = true;
+    $("#faixa-instalar").hidden = false;
+  }
+}
+
+async function instalarApp() {
+  if (!eventoInstalar) return;
+  eventoInstalar.prompt();
+  await eventoInstalar.userChoice.catch(() => null);
+  eventoInstalar = null;
+  window.__podeInstalar = false;
+  $("#faixa-instalar").hidden = true;
+}
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  eventoInstalar = e;
+  window.__podeInstalar = true;
+  mostrarFaixaInstalar();
+});
+window.addEventListener("appinstalled", () => { $("#faixa-instalar").hidden = true; });
+window.addEventListener("vistoria:instalar", instalarApp);
+$("#btn-instalar-faixa").addEventListener("click", instalarApp);
+$("#btn-fechar-instalar").addEventListener("click", () => {
+  $("#faixa-instalar").hidden = true;
+  try { localStorage.setItem("faixaInstalarFechada", "1"); } catch { /* sem armazenamento: só esconde */ }
+});
+
+registrarServiceWorker();
 iniciar();
