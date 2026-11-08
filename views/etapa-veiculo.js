@@ -3,7 +3,8 @@ import { COMBUSTIVEIS, FOTOS_VEICULO } from "../config.js";
 import { ARQUIVO, capitalizar, formatarKm, formatarMarca, lerKm, normalizarChassi } from "../formatos.js";
 import { faltandoParaFinalizar } from "../validacao.js";
 import { $, $$, esc, icone } from "../ui.js";
-import { comprimir, escolherFoto, gerarMiniatura, verificarCamera, abrirVisualizador, MENSAGEM_CAMERA_NEGADA } from "../photos.js";
+import { gerarMiniatura, abrirVisualizador } from "../photos.js";
+import { capturarFoto } from "../camera.js";
 
 const CAMPOS_TEXTO = [
   { id: "marca", rotulo: "Marca", exemplo: "Ex.: Jeep", formatar: formatarMarca },
@@ -190,14 +191,19 @@ export function montar(el, editor, ctx) {
 
   async function capturar(slot) {
     const { chave } = slot.dataset;
-    if ((await verificarCamera()) === "negada") ctx.avisar(MENSAGEM_CAMERA_NEGADA, "erro");
-    const arquivo = await escolherFoto();
-    if (!arquivo) return;
+    const rotulo = FOTOS_VEICULO.find((f) => f.chave === chave).rotulo;
+    let blob;
+    try {
+      blob = await capturarFoto({ titulo: `Foto: ${rotulo}`, avisar: ctx.avisar });
+    } catch (e) {
+      ctx.avisar(e.message, "erro");
+      return;
+    }
+    if (!blob) return;
     const alvo = $(".foto-alvo", slot);
     alvo.innerHTML = icone("carregando", "ic ic-lg gira");
     alvo.setAttribute("aria-busy", "true");
     try {
-      const blob = await comprimir(arquivo);
       if (chave === "frente") await editor.gravarArquivo(ARQUIVO.frenteMini, await gerarMiniatura(blob));
       await editor.gravarArquivo(ARQUIVO[chave], blob, (dd) => { dd.fotos[chave] = true; });
     } catch (e) {

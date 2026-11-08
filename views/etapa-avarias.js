@@ -4,7 +4,8 @@ import { AREAS_AVARIA, TIPOS_AVARIA, GRAVIDADES } from "../config.js";
 import { arquivoAvaria } from "../formatos.js";
 import { validarAvaria } from "../validacao.js";
 import { $, $$, esc, icone } from "../ui.js";
-import { comprimir, escolherFoto, verificarCamera, abrirVisualizador, MENSAGEM_CAMERA_NEGADA } from "../photos.js";
+import { abrirVisualizador } from "../photos.js";
+import { capturarFoto } from "../camera.js";
 
 const classeGravidade = (g) => String(g || "").toLowerCase();
 const opcoes = (lista) => `<option value="">Selecione</option>${lista.map((x) => `<option>${esc(x)}</option>`).join("")}`;
@@ -168,11 +169,9 @@ export function montar(el, editor, ctx) {
     }
 
     async function adicionarFoto() {
-      if ((await verificarCamera()) === "negada") ctx.avisar(MENSAGEM_CAMERA_NEGADA, "erro");
-      const arquivo = await escolherFoto();
-      if (!arquivo) return;
       try {
-        const blob = await comprimir(arquivo);
+        const blob = await capturarFoto({ titulo: "Foto da avaria", avisar: ctx.avisar });
+        if (!blob) return;
         const id = crypto.randomUUID();
         await editor.gravarArquivo(arquivoAvaria(id), blob);
         novasFotos.push(id);

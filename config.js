@@ -28,6 +28,9 @@ export const FOTOS_VEICULO = [
 
 // Compressão das fotos no aparelho
 export const FOTO = { maxLado: 1280, qualidade: 0.7, miniLado: 320 };
+// Fotos tiradas pela câmera do próprio app (celular/tablet): sempre 3:4 em pé,
+// com o maior lado igual ao das fotos acima (1280).
+export const FOTO_CAMERA = { largura: 960, altura: 1280, qualidade: 0.92 };
 // Fotos dentro do PDF
 export const PDF_FOTO = { maxLado: 1000, maxLadoMuitas: 800, limiteMuitas: 20, qualidade: 0.75 };
 // Vistorias por página na aba "Vistorias"
