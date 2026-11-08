@@ -483,7 +483,8 @@ dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px;
 html.app-mode .home-app {
   display: flex; flex-direction: column; justify-content: center; gap: 16px;
   min-height: calc(100dvh - var(--topo-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 48px);
-  padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  /* 36vh a mais embaixo: os cartões ficam bem acima do meio da tela. */
+  padding: 0 env(safe-area-inset-right, 0px) calc(36vh + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
 }
 html.app-mode .home-app .card {
   display: flex; align-items: stretch; width: 100%; min-height: 96px; padding: 0; overflow: hidden;
