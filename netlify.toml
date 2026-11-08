@@ -1,0 +1,67 @@
+# Vistoria Veicular — publicação no Netlify (site estático).
+#
+# Caminho PADRÃO: sem build. Preencha o env.js à mão (veja o README) e publique.
+# Caminho OPCIONAL: cadastre SUPABASE_URL e SUPABASE_ANON_KEY em
+# Site settings → Environment variables e descomente a linha `command` abaixo;
+# o script gera o env.js e troca a CACHE_VERSION do sw.js a cada deploy.
+
+[build]
+  publish = "."
+  # command = "node scripts/gerar-env.js"
+
+# Cabeçalhos de segurança em todo o site. A CSP libera só o próprio site e o Supabase.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+# O Service Worker precisa ser sempre revalidado, senão o app não recebe atualizações.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+# Ícones e bibliotecas (com a versão no nome do arquivo) podem ficar em cache por 1 ano.
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Arquivos de desenvolvimento não são servidos em produção.
+[[redirects]]
+  from = "/tests/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/docs/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/scripts/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# Navegação por abas usa rotas com # (index.html única): não há redirect de SPA.
