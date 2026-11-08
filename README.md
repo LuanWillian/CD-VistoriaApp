@@ -113,7 +113,6 @@ Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check`
 |---|---|
 | Campos do veículo: chassi (texto, exatamente 6, maiúsculas, contador "4/6", erro), marca, modelo, cor, km (teclado numérico, milhar), combustível em 5 chips | `views/etapa-veiculo.js`, `formatos.js`, `validacao.js` |
 | 3 fotos fixas (Frente, Traseira, Chassi) com Refazer/Remover, tela cheia e obrigatórias ao finalizar; compressão 1280 px / JPEG 0,7 | `views/etapa-veiculo.js`, `photos.js` |
-| Câmera dentro do app no celular/tablet: traseira, prévia 3:4, "Usar foto" / "Tirar novamente", recorte central e foto final 960×1280 JPEG 0,92. Câmera bloqueada ou sem HTTPS: mensagem e câmera do aparelho (input com `capture`). No computador continua o seletor de arquivos | `camera.js`, `dispositivo.js`, `photos.js` |
 | Checklist com os 13 itens em Presente/Ausente, "Marcar todos como Presente", "Limpar" e observação; lista em `config.js` | `views/etapa-checklist.js`, `config.js` |
 | Avarias ilimitadas com área, tipo, gravidade colorida, descrição e várias fotos; "Veículo sem avarias"; aviso sem foto | `views/etapa-avarias.js` |
 | Assinaturas do vistoriador e do motorista do reboque: botão "Assinar" abre tela cheia na horizontal (trava a tela no Android; no iPhone o layout vem de lado e a imagem é girada ao salvar), canvas com Pointer Events, `devicePixelRatio`, `touch-action: none`, Limpar | `assinatura-tela.js`, `signature.js`, `views/etapa-assinaturas.js` |

@@ -344,43 +344,6 @@ dialog.assinar.deitada { flex-direction: row-reverse; }
   border-bottom: 0; border-left: 1px solid var(--linha-forte); padding: 0 0 0 4px;
 }
 
-/* ---------- Câmera do app (camera.js) ---------- */
-dialog.camera {
-  max-width: none; max-height: none; width: 100vw; height: 100dvh; margin: 0; border-radius: 0;
-  background: #000; color: #fff; box-shadow: none; display: none; flex-direction: column;
-}
-dialog.camera[open] { display: flex; }
-dialog.camera::backdrop { background: #000; }
-.camera-topo { display: flex; align-items: center; gap: 8px; padding: max(8px, env(safe-area-inset-top)) 8px 8px 16px; }
-.camera-topo h2 { flex: 1; font-size: 17px; color: #fff; }
-.camera-topo .btn-topo { color: #fff; }
-.camera-palco { flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 8px; }
-/* O que aparece aqui é exatamente o que será salvo: mesmo 3:4 e mesmo recorte central. */
-.camera-quadro {
-  position: relative; width: min(100%, calc((100dvh - 220px) * 3 / 4)); aspect-ratio: 3 / 4;
-  background: #111; border-radius: var(--raio-sm); overflow: hidden;
-}
-.camera-quadro video, .camera-previa {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
-}
-.camera-status {
-  position: absolute; inset: 0; display: grid; place-items: center; padding: 24px;
-  color: #e5e5e5; font-size: 15px; line-height: 1.5; text-align: center;
-}
-.camera-acoes {
-  display: flex; justify-content: center; align-items: center; gap: 12px; min-height: 124px;
-  padding: 16px 16px max(20px, env(safe-area-inset-bottom));
-}
-.camera-acoes .btn { flex: 1 1 0; max-width: 240px; }
-.camera-acoes .btn-primario { background: #fff; color: #111; border-color: #fff; }
-.camera-acoes .btn-secundario { background: transparent; color: #fff; border-color: #fff; }
-.camera-disparo {
-  width: 78px; height: 78px; border-radius: 50%; background: #fff; border: 4px solid #000;
-  box-shadow: 0 0 0 4px #fff; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-}
-.camera-disparo:active { transform: scale(0.94); }
-.camera-disparo:disabled { opacity: 0.4; }
-
 /* ---------- Diálogos ---------- */
 dialog {
   border: 0; padding: 0; border-radius: var(--raio); max-width: min(520px, calc(100vw - 32px));
