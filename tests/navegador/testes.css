@@ -1,0 +1,4 @@
+body { font-family: system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+#resultados li[data-ok="true"] { color: #1B7F3B; }
+#resultados li[data-ok="false"] { color: #B3261E; font-weight: 600; white-space: pre-wrap; }
+#palco { max-width: 430px; border: 1px dashed #aaa; margin-top: 16px; }
