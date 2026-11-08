@@ -83,8 +83,8 @@ teste("pdf: sem avarias, número provisório e rodapé", async () => {
   const { v, obter } = await cenario({ semAvarias: true });
   const r = await gerarPdf(v, obter, { depurar: true });
   ok(r.paginas >= 1);
-  for (const t of ["Laudo de Vistoria Veicular", "Veículo sem avarias registradas", "Provisório 8F3A — aguardando sincronização",
-    `Vistoria nº Provisório 8F3A — página ${r.paginas} de ${r.paginas}`]) {
+  for (const t of ["Vistoria de veículo para expedição do CD", "Veículo sem avarias registradas",
+    "CD Vistoria | Provisório 8F3A (aguardando sincronização) | Chassi AB123C", `Página ${r.paginas} de ${r.paginas}`]) {
     ok(r.textos.some((x) => x.includes(t)), `faltou o texto: ${t}`);
   }
 });
@@ -92,7 +92,8 @@ teste("pdf: sem avarias, número provisório e rodapé", async () => {
 teste("pdf: número oficial no rodapé", async () => {
   const { v, obter } = await cenario({ avarias: 1, fotosPorAvaria: 1, numero: "VIS-000123" });
   const r = await gerarPdf(v, obter, { depurar: true });
-  ok(r.textos.includes(`Vistoria nº VIS-000123 — página 1 de ${r.paginas}`), "rodapé com número oficial ausente");
+  ok(r.textos.includes("CD Vistoria | VIS-000123 | Chassi AB123C"), "rodapé com número oficial ausente");
+  ok(r.textos.includes(`Página 1 de ${r.paginas}`), "numeração de página ausente");
 });
 
 teste("pdf: imagem que não está no aparelho", async () => {
@@ -107,6 +108,40 @@ teste("pdf: o título da seção Avarias fica na mesma página da primeira avari
   v.checklistObs = "Estepe sem calota; tapete traseiro rasgado.";
   const r = await gerarPdf(v, obter, { depurar: true });
   const pagina = (texto) => r.posicoes.find((p) => p.texto.startsWith(texto))?.pagina;
-  ok(pagina("Avarias ("), "título de avarias ausente");
-  igual(pagina("Avarias ("), pagina("Avaria 1"));
+  ok(pagina("Registro de avarias"), "título de avarias ausente");
+  igual(pagina("Registro de avarias"), pagina("Avaria 1"));
+});
+
+teste("pdf: visual do modelo — cabeçalho, dados na ordem pedida, checklist e seções", async () => {
+  const { v, obter } = await cenario({ avarias: 1, fotosPorAvaria: 2, numero: "VIS-000007" });
+  const r = await gerarPdf(v, obter, { depurar: true });
+  const t = r.textos;
+  for (const x of ["Vistoria de veículo para expedição do CD", "PG Prime", "Data/hora", "07/11/2026 15:30",
+    "Dados do veículo", "Checklist de equipamentos", "Registro fotográfico", "Registro de avarias", "1 registrada", "Assinaturas"]) {
+    ok(t.some((y) => y.includes(x)), `faltou: ${x}`);
+  }
+  // Grade: Chassi, Marca, Modelo / Cor, Quilometragem (km), Combustível
+  const ordem = ["Chassi", "Marca", "Modelo", "Cor", "Quilometragem (km)", "Combustível"].map((x) => t.indexOf(x));
+  ok(ordem.every((i) => i >= 0), `rótulos ausentes: ${ordem}`);
+  igual([...ordem].sort((a, b) => a - b), ordem, "rótulos fora da ordem pedida");
+  igual(t[ordem[4] + 1], "123.456", "km logo depois do rótulo, sem repetir 'km'");
+  const presentes = CHECKLIST_ITENS.filter((_, i) => i % 4).length;
+  ok(t.includes(`${presentes} de ${CHECKLIST_ITENS.length} presentes`), "contador do checklist ausente");
+  ok(t.filter((x) => x === "OK").length === presentes && t.filter((x) => x === "Ausente").length === CHECKLIST_ITENS.length - presentes,
+    "OK/Ausente não batem com o checklist");
+  ok(!t.some((x) => x.includes("Laudo de Vistoria Veicular")), "título antigo ainda aparece");
+});
+
+teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorida e rodapé CD Vistoria", async () => {
+  const { v, obter } = await cenario({ avarias: 3, fotosPorAvaria: 1, numero: "VIS-000009" });
+  const r = await gerarPdf(v, obter, { depurar: true });
+  ok(r.familias.includes("Barlow") && r.familias.includes("BarlowSC"), `fontes registradas: ${r.familias}`);
+  igual(r.fonteTitulo, "BarlowSC");
+  ok(r.textos.includes("CD Vistoria | VIS-000009 | Chassi AB123C"), "rodapé deveria dizer CD Vistoria");
+  ok(!r.textos.some((t) => t.includes("PG Prime Vistoria")), "ainda aparece PG Prime Vistoria");
+  const cor = (nome) => r.selos.find((s) => s.texto === nome)?.fundo.join();
+  igual(cor("Leve"), "245,196,0");
+  igual(cor("Moderada"), "242,140,40");
+  igual(cor("Grave"), "198,40,40");
+  igual(cor("Ausente"), "17,17,17", "Ausente continua preto");
 });
