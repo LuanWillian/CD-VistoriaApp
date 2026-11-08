@@ -54,9 +54,14 @@ vistoria-veicular/
 ├── validacao.js            # regras puras do formulário
 ├── formatos.js             # funções puras: datas, km, provisório, nomes de arquivo e caminhos
 ├── ui.js                   # ícones, diálogos, avisos (toast), helpers de DOM
+├── rascunho.js             # editor do rascunho: salvamento automático (400 ms) e arquivos
 ├── views/
 │   ├── login.js
-│   ├── nova.js             # formulário em 4 etapas + editor de avaria
+│   ├── nova.js             # indicador de etapas, Voltar/Avançar, Finalizar
+│   ├── etapa-veiculo.js    # etapa 1
+│   ├── etapa-checklist.js  # etapa 2
+│   ├── etapa-avarias.js    # etapa 3 + editor de avaria
+│   ├── etapa-assinaturas.js # etapa 4
 │   ├── vistorias.js        # lista, busca, filtro, rascunhos
 │   └── detalhe.js          # leitura, PDF, compartilhar, excluir
 ├── vendor/                 # bibliotecas (D3)
