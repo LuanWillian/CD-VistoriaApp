@@ -212,3 +212,20 @@ test("contar pendentes e erros do usuário", async () => {
   );
   assert.deepEqual(await criar(st, remotoFalso()).contar(), { pendentes: 2, erros: 1 });
 });
+
+test("pedido feito durante uma rodada gera outra rodada no fim", async () => {
+  const st = storageFalso(vistoria("v1", "u1"));
+  let s;
+  let pediu = false;
+  const rm = remotoFalso({
+    durante: async () => {
+      if (pediu) return;
+      pediu = true;
+      st.adicionar(vistoria("v2", "u1", { realizadaEm: "2026-11-07T14:00:00.000Z" }));
+      s.sincronizar();
+    },
+  });
+  s = criar(st, rm);
+  await s.sincronizar();
+  assert.equal(st.vistorias.get("v2").status, "sincronizada");
+});

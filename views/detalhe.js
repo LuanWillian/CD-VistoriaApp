@@ -18,6 +18,34 @@ export const seloStatus = (status) => {
   return `<span class="selo ${classe}">${icone(ic)} ${texto}</span>`;
 };
 
+// Mantém o PDF pronto para a vistoria atual. Se o número oficial chegar durante
+// a geração, gera de novo: o laudo nunca fica com o número provisório.
+export function criarPdfPronto({ gerar, atual }) {
+  let pdf = null;
+  let numeroDoPdf;
+  let erro = null;
+  async function preparar() {
+    do {
+      const alvo = atual();
+      try {
+        pdf = await gerar(alvo);
+        numeroDoPdf = alvo.numero;
+        erro = null;
+      } catch (e) {
+        pdf = null;
+        erro = e;
+        return;
+      }
+    } while (atual().numero !== numeroDoPdf);
+  }
+  return {
+    preparar,
+    obter: () => pdf,
+    erro: () => erro,
+    desatualizado: () => Boolean(pdf) && atual().numero !== numeroDoPdf,
+  };
+}
+
 function telaSimples(el, titulo, texto) {
   el.innerHTML = `
     <div class="vazio">
@@ -213,23 +241,14 @@ export async function montar(el, ctx, params) {
   }
 
   // ---------- PDF pronto antes do toque (exigência do compartilhamento no iPhone) ----------
-  let pdf = null;
-  let pdfNumero;
-  let erroPdf = null;
   const btnBaixar = () => $("#btn-baixar", el);
   const btnCompartilhar = () => $("#btn-compartilhar", el);
+  const pdfPronto = criarPdfPronto({ gerar: (alvo) => gerarPdf(alvo, obterImagem), atual: () => v });
   async function prepararPdf() {
     btnBaixar().disabled = true;
     btnCompartilhar().disabled = true;
     btnBaixar().innerHTML = `${icone("carregando", "ic gira")} Preparando PDF…`;
-    try {
-      pdf = await gerarPdf(v, obterImagem);
-      pdfNumero = v.numero;
-      erroPdf = null;
-    } catch (e) {
-      pdf = null;
-      erroPdf = e;
-    }
+    await pdfPronto.preparar();
     if (!ativo) return;
     btnBaixar().disabled = false;
     btnCompartilhar().disabled = false;
@@ -237,9 +256,10 @@ export async function montar(el, ctx, params) {
   }
 
   async function garantirPdf() {
-    if (!pdf) await prepararPdf();
+    if (!pdfPronto.obter()) await prepararPdf();
+    const pdf = pdfPronto.obter();
     if (!pdf) {
-      ctx.avisar(erroPdf?.message || "Não foi possível gerar o PDF.", "erro");
+      ctx.avisar(pdfPronto.erro()?.message || "Não foi possível gerar o PDF.", "erro");
       return null;
     }
     return pdf;
@@ -309,7 +329,7 @@ export async function montar(el, ctx, params) {
     if (!ativo || !nova2 || nova2.status === "excluindo") return;
     v = { ...v, ...nova2 };
     atualizarStatus();
-    if (v.numero !== pdfNumero && !btnBaixar().disabled) prepararPdf();
+    if (pdfPronto.desatualizado() && !btnBaixar().disabled) prepararPdf();
   };
   ctx.sync.eventos.addEventListener("mudou", aoMudar);
 

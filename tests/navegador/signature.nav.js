@@ -1,4 +1,4 @@
-import { teste, igual, ok, esperar } from "./runner.js";
+import { teste, igual, ok, esperarAte } from "./runner.js";
 import { montarAssinatura } from "../../signature.js";
 
 function quadro() {
@@ -36,7 +36,7 @@ teste("assinatura: densidade de pixels, traço vira PNG, limpar e carregar", asy
     igual(canvas.height, 300);
     ok(a.vazio(), "começa vazia");
     riscar(canvas);
-    await esperar(300);
+    await esperarAte(() => recebidos.at(-1) instanceof Blob);
     ok(recebidos.at(-1) instanceof Blob, "aoMudar não recebeu Blob");
     igual(recebidos.at(-1).type, "image/png");
     ok(!a.vazio(), "deveria ter traço");

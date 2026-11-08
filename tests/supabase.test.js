@@ -110,3 +110,22 @@ test("excluirVistoriaRemota sem arquivos não chama remove", async () => {
   await remoto.excluirVistoriaRemota("u1", "v1");
   assert.deepEqual(chamadas, ["delete inspections id=v1", "list vistorias u1/v1"]);
 });
+
+test("sair offline (signOut com erro) apaga a sessão salva e para a renovação", async () => {
+  const guardado = new Map([["sb-127-auth-token", "x"], ["sb-127-auth-token-code-verifier", "y"], ["outra-chave", "z"]]);
+  const anterior = globalThis.localStorage;
+  globalThis.localStorage = {
+    get length() { return guardado.size; },
+    key: (i) => [...guardado.keys()][i] ?? null,
+    removeItem: (k) => guardado.delete(k),
+  };
+  let parou = false;
+  const cliente = { auth: { signOut: async () => ({ error: { name: "AuthRetryableFetchError", status: 0 } }), stopAutoRefresh: () => { parou = true; } } };
+  try {
+    await criarRemoto({ url: "u", chave: "k", criarCliente: () => cliente }).sair();
+    assert.deepEqual([...guardado.keys()], ["outra-chave"]);
+    assert.equal(parou, true);
+  } finally {
+    globalThis.localStorage = anterior;
+  }
+});

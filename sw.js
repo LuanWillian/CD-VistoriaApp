@@ -3,6 +3,7 @@
 // sozinho quando usado como comando de build no Netlify).
 const CACHE_VERSION = "v1";
 const CACHE = `vistoria-${CACHE_VERSION}`;
+const LIMITE_ENV_MS = 3000;
 
 const ARQUIVOS = [
   "index.html",
@@ -79,13 +80,18 @@ self.addEventListener("fetch", (e) => {
   }
   if (url.pathname.endsWith("/env.js")) {
     // rede primeiro: trocar as chaves do Supabase não depende de nova versão do cache
-    e.respondWith(fetch(req).then((r) => {
+    // (com limite: sinal fraco que não cai não pode travar a abertura do app)
+    const daRede = fetch(req).then((r) => {
       if (r.ok) {
         const copia = r.clone();
         caches.open(CACHE).then((c) => c.put(req, copia));
       }
       return r;
-    }).catch(() => caches.match(req)));
+    });
+    const limite = new Promise((resolver) => setTimeout(() => resolver(null), LIMITE_ENV_MS));
+    e.respondWith(Promise.race([daRede.catch(() => null), limite])
+      .then((r) => r || caches.match(req))
+      .then((r) => r || daRede));
     return;
   }
   e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req)));

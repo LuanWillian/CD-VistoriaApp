@@ -129,8 +129,22 @@ export function criarSincronizador({
     }
   }
 
+  // Uma rodada por vez; um pedido feito durante a rodada (ex.: vistoria recém-
+  // finalizada ou excluída) gera mais uma rodada logo em seguida.
+  let pedidoDeNovo = false;
   function sincronizar() {
-    if (!emAndamento) emAndamento = executar().finally(() => { emAndamento = null; });
+    if (emAndamento) {
+      pedidoDeNovo = true;
+      return emAndamento;
+    }
+    emAndamento = (async () => {
+      let resultado;
+      do {
+        pedidoDeNovo = false;
+        resultado = await executar();
+      } while (pedidoDeNovo && !resultado.interrompido);
+      return resultado;
+    })().finally(() => { emAndamento = null; });
     return emAndamento;
   }
 

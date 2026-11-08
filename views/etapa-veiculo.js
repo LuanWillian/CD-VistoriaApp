@@ -101,6 +101,17 @@ export function montar(el, editor, ctx) {
     aplicarChassi();
   });
   chassi.addEventListener("compositionend", aplicarChassi);
+  // Colagem: o maxlength="6" cortaria " ab-12 3cd" antes de normalizar; aqui o texto
+  // colado é limpo primeiro e só então limitado a 6 caracteres.
+  chassi.addEventListener("paste", (e) => {
+    const colado = e.clipboardData?.getData("text");
+    if (colado == null) return;
+    e.preventDefault();
+    const inicio = chassi.selectionStart ?? chassi.value.length;
+    const fim = chassi.selectionEnd ?? chassi.value.length;
+    chassi.value = normalizarChassi(chassi.value.slice(0, inicio) + colado + chassi.value.slice(fim));
+    aplicarChassi();
+  });
   chassi.addEventListener("blur", () => {
     tocados.add("chassi");
     mostrarErro("chassi");

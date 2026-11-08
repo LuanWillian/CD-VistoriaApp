@@ -111,6 +111,21 @@ export function escaparBusca(termo) {
   return String(termo ?? "").replace(/[,()%*\\"]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Remove do localStorage as chaves de sessão do supabase-js (sb-<ref>-auth-token…).
+function apagarSessaoSalva() {
+  try {
+    const armazenamento = globalThis.localStorage;
+    const chaves = [];
+    for (let i = 0; i < armazenamento.length; i++) {
+      const k = armazenamento.key(i);
+      if (k?.startsWith("sb-") && k.includes("-auth-token")) chaves.push(k);
+    }
+    chaves.forEach((k) => armazenamento.removeItem(k));
+  } catch {
+    // sem localStorage: não há sessão salva
+  }
+}
+
 // ---------- Cliente ----------
 export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis.supabase.createClient(u, k, o) }) {
   const sb = criarCliente(url, chave, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
@@ -136,7 +151,12 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
     },
     async sair() {
       const { error } = await sb.auth.signOut({ scope: "local" });
-      if (error) throw error;
+      // Offline com token vencido, o supabase-js devolve erro sem apagar a sessão.
+      // Apagar à mão impede que o próximo usuário do aparelho entre como este.
+      if (error) {
+        sb.auth.stopAutoRefresh?.();
+        apagarSessaoSalva();
+      }
     },
     aoMudarSessao(cb) {
       const { data } = sb.auth.onAuthStateChange((evento, s) => cb(evento, usuario(s?.user)));

@@ -70,3 +70,19 @@ teste("etapa 1: três slots de foto rotulados", async () => {
     await t.fim();
   }
 });
+
+teste("etapa 1: colar ' ab-12 3cd' no chassi vira AB123C (maxlength 6 não corta antes)", async () => {
+  const t = await montarEtapa(etapa);
+  try {
+    const chassi = t.el.querySelector("#chassi");
+    igual(chassi.getAttribute("maxlength"), "6");
+    chassi.focus();
+    const dt = new DataTransfer();
+    dt.setData("text/plain", " ab-12 3cd");
+    chassi.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+    igual(chassi.value, "AB123C");
+    igual(t.editor.rascunho.dados.chassi, "AB123C");
+  } finally {
+    await t.fim();
+  }
+});
