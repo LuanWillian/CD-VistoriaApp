@@ -30,7 +30,7 @@ export function montar(el, editor, ctx) {
         </div>
         <input class="entrada entrada-chassi" id="chassi" type="text" maxlength="6" autocapitalize="characters"
           autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next" aria-describedby="chassi-ajuda chassi-erro">
-        <p class="ajuda" id="chassi-ajuda">6 caracteres: letras e números.</p>
+        <p class="ajuda" id="chassi-ajuda">6 últimos caracteres do chassi.</p>
         <p class="erro-campo" id="chassi-erro" aria-live="polite"></p>
       </div>
 
@@ -97,7 +97,10 @@ export function montar(el, editor, ctx) {
   chassi.value = d.chassi;
   contador.textContent = `${d.chassi.length}/6`;
   chassi.addEventListener("input", (e) => {
-    if (e.isComposing) return; // teclado ainda compondo (Android): normaliza no compositionend
+    // Teclado ainda compondo (Android): o navegador ignora o maxlength nessa fase.
+    // Até 6 caracteres não mexe no texto (para não atrapalhar o teclado) e
+    // normaliza no compositionend; passou de 6, corta na hora.
+    if (e.isComposing && chassi.value.length <= 6) return;
     aplicarChassi();
   });
   chassi.addEventListener("compositionend", aplicarChassi);

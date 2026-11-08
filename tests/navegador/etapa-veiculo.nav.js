@@ -104,3 +104,19 @@ teste("etapa 1: marca, modelo e cor capitalizados ao digitar; GWM em maiúsculas
     await t.fim();
   }
 });
+
+teste("etapa 1: teclado do Android compondo não deixa o chassi passar de 6", async () => {
+  const t = await montarEtapa(etapa);
+  try {
+    const chassi = t.el.querySelector("#chassi");
+    // Enquanto o teclado compõe, o maxlength não é respeitado pelo navegador.
+    digitar(chassi, "abc12", { isComposing: true });
+    igual(chassi.value, "abc12", "até 6, não mexe no texto durante a composição");
+    digitar(chassi, "abc1234", { isComposing: true });
+    igual(chassi.value, "ABC123", "passou de 6: corta na hora");
+    igual(t.el.querySelector("#chassi-contador").textContent, "6/6");
+    igual(t.editor.rascunho.dados.chassi, "ABC123");
+  } finally {
+    await t.fim();
+  }
+});
