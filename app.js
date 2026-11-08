@@ -7,12 +7,14 @@ import { criarAuth } from "./auth.js";
 import { criarSincronizador } from "./sync.js";
 import { DIAS_CACHE_FOTOS } from "./config.js";
 import { $, $$, esc, icone, avisar, confirmar } from "./ui.js";
+import { aoMudarDispositivo, ehComputadorNoNavegador, marcarDocumento } from "./dispositivo.js";
 import * as viewLogin from "./views/login.js";
 import * as viewNova from "./views/nova.js";
 import * as viewVistorias from "./views/vistorias.js";
 import * as viewDetalhe from "./views/detalhe.js";
 
 const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe };
+let dispositivo = marcarDocumento(); // { tipo, instalado, ios } + atributos no <html>
 const main = $("#main");
 const online = () => navigator.onLine;
 
@@ -38,8 +40,11 @@ const envConfigurado = () =>
   Boolean(SUPABASE_URL && SUPABASE_ANON_KEY) && !SUPABASE_URL.includes("SEU-PROJETO") && !SUPABASE_ANON_KEY.includes("SUA-ANON-KEY");
 
 // ---------- Rotas ----------
+// No computador (pelo navegador) não há aba "Nova vistoria": começa na lista.
+const rotaInicial = () => (ehComputadorNoNavegador(dispositivo) ? "/vistorias" : "/nova");
+
 function lerRota() {
-  const [caminho, qs] = (location.hash.slice(1) || "/nova").split("?");
+  const [caminho, qs] = (location.hash.slice(1) || rotaInicial()).split("?");
   const busca = new URLSearchParams(qs || "");
   const m = caminho.match(/^\/vistoria\/([\w-]+)$/);
   if (m) return { nome: "detalhe", params: { id: m[1], busca } };
@@ -155,7 +160,7 @@ function entrarNoApp() {
   document.body.classList.remove("sem-abas");
   $("#btn-menu").hidden = false;
   $("#status-rede").hidden = false;
-  if (!location.hash || location.hash === "#") location.replace("#/nova");
+  if (!location.hash || location.hash === "#") location.replace(`#${rotaInicial()}`);
   renderizar();
   storage.limparFotosAntigas(DIAS_CACHE_FOTOS).catch(console.error);
   ctx.sync.contar().then((c) => atualizarIndicadores(c)).catch(() => {});
@@ -283,19 +288,22 @@ async function registrarServiceWorker() {
 
 // ---------- Instalar app ----------
 let eventoInstalar = null;
-const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-const instalado = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const faixaInstalarFechada = () => {
   try { return localStorage.getItem("faixaInstalarFechada") === "1"; } catch { return false; }
 };
 
+// A faixa só aparece em celular/tablet ainda não instalado (nunca no computador).
 function mostrarFaixaInstalar() {
-  if (!noApp || instalado() || faixaInstalarFechada()) return;
+  if (ehComputadorNoNavegador(dispositivo)) {
+    $("#faixa-instalar").hidden = true;
+    return;
+  }
+  if (!noApp || dispositivo.instalado || faixaInstalarFechada()) return;
   if (eventoInstalar) {
     $("#faixa-instalar-texto").textContent = "Instale o app para usar sem internet e abrir direto da tela inicial.";
     $("#btn-instalar-faixa").hidden = false;
     $("#faixa-instalar").hidden = false;
-  } else if (ehIOS) {
+  } else if (dispositivo.ios) {
     $("#faixa-instalar-texto").textContent = "Para instalar: toque em Compartilhar e depois em Adicionar à Tela de Início.";
     $("#btn-instalar-faixa").hidden = true;
     $("#faixa-instalar").hidden = false;
@@ -323,6 +331,11 @@ $("#btn-instalar-faixa").addEventListener("click", instalarApp);
 $("#btn-fechar-instalar").addEventListener("click", () => {
   $("#faixa-instalar").hidden = true;
   try { localStorage.setItem("faixaInstalarFechada", "1"); } catch { /* sem armazenamento: só esconde */ }
+});
+
+aoMudarDispositivo((d) => {
+  dispositivo = d;
+  mostrarFaixaInstalar();
 });
 
 registrarServiceWorker();

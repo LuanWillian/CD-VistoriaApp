@@ -111,6 +111,11 @@ body.sem-abas .conteudo { padding-bottom: 32px; }
   background: var(--papel); border-top: 1px solid var(--linha);
 }
 body.sem-abas .abas { display: none; }
+/* Computador usando pelo navegador (atributos vindos de dispositivo.js): só a
+   aba "Vistorias", centralizada. Celular, tablet e app instalado não mudam. */
+html[data-dispositivo="computador"][data-instalado="nao"] .aba[data-aba="nova"] { display: none; }
+html[data-dispositivo="computador"][data-instalado="nao"] .abas { justify-content: center; }
+html[data-dispositivo="computador"][data-instalado="nao"] .aba { flex: 0 1 240px; }
 .aba {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   min-height: var(--alvo); text-decoration: none; color: var(--texto-2); font-size: 13px; font-weight: 600;
