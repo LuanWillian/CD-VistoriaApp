@@ -1,4 +1,4 @@
-import { teste, igual, ok, esperar } from "./runner.js";
+import { teste, igual, ok, esperar, esperarAte } from "./runner.js";
 import { montarEtapa } from "./apoio.js";
 import * as storage from "../../storage.js";
 import { novoRascunho, arquivosDaVistoria } from "../../formatos.js";
@@ -88,7 +88,7 @@ teste("finalizar: lista o que falta e leva até o campo", async () => {
 teste("etapa 4: nome sugerido, assinatura gravada e limpa", async () => {
   const t = await montarEtapa(etapaAssinaturas, { antes: (st) => st.salvarMeta("ultimoVistoriador:u-teste", "Ana Lima") });
   try {
-    await esperar(100);
+    await esperarAte(() => t.el.querySelector("#vistoriador-nome").value);
     igual(t.el.querySelector("#vistoriador-nome").value, "Ana Lima");
     igual(t.editor.rascunho.dados.vistoriadorNome, "Ana Lima");
     const canvas = t.el.querySelector("#vistoriador-assinatura canvas");
@@ -97,12 +97,10 @@ teste("etapa 4: nome sugerido, assinatura gravada e limpa", async () => {
     ev("pointerdown", 20, 40);
     for (let i = 1; i < 8; i++) ev("pointermove", 20 + i * 25, 40 + (i % 2) * 30);
     ev("pointerup", 200, 60);
-    await esperar(400);
-    ok(t.editor.rascunho.dados.assinaturas.vistoriador, "assinatura não marcada");
+    ok(await esperarAte(() => t.editor.rascunho.dados.assinaturas.vistoriador), "assinatura não marcada");
     ok(await t.editor.lerArquivo("assinatura_vistoriador.png"), "PNG da assinatura não gravado");
     [...t.el.querySelectorAll("[data-limpar]")].find((b) => b.dataset.limpar === "vistoriador").click();
-    await esperar(200);
-    igual(t.editor.rascunho.dados.assinaturas.vistoriador, false);
+    ok(await esperarAte(() => t.editor.rascunho.dados.assinaturas.vistoriador === false), "assinatura não foi limpa");
     igual(await t.editor.lerArquivo("assinatura_vistoriador.png"), undefined);
     ok(t.el.querySelector("#motorista-nome") && t.el.querySelector("#motorista-assinatura"), "bloco do motorista ausente");
   } finally {

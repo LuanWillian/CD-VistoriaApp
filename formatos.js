@@ -113,7 +113,7 @@ const desenhavel = (ch) => {
 export function textoPdf(s) {
   return String(s ?? "")
     .split(/\r?\n/)
-    .map((linha) => [...linha].filter(desenhavel).join("").replace(/ {2,}/g, " ").trim())
+    .map((linha) => [...linha].filter(desenhavel).join("").replace(/ {2,}/g, " ").replace(/ +([,.;:!?])/g, "$1").trim())
     .join("\n");
 }
 

@@ -6,5 +6,6 @@ import "./etapa-veiculo.nav.js";
 import "./etapa-checklist.nav.js";
 import "./etapa-avarias.nav.js";
 import "./finalizar.nav.js";
+import "./pdf.nav.js";
 
 rodar();

@@ -59,3 +59,13 @@ export async function rodar() {
   }
   document.getElementById("resumo").textContent = `${testes.length - falhas} ok, ${falhas} falhas`;
 }
+
+// Espera até a condição ser verdadeira (ou o tempo acabar): evita esperas fixas frágeis.
+export async function esperarAte(condicao, limiteMs = 5000) {
+  const inicio = Date.now();
+  while (Date.now() - inicio < limiteMs) {
+    if (await condicao()) return true;
+    await esperar(50);
+  }
+  return false;
+}

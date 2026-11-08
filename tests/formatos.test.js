@@ -52,6 +52,7 @@ test("texto para o PDF remove o que a Helvetica não desenha", () => {
   assert.equal(textoPdf("Risco 👍 na porta"), "Risco na porta");
   assert.equal(textoPdf("Ação “ok” — fim…\nlinha 2"), "Ação “ok” — fim…\nlinha 2");
   assert.equal(textoPdf("线"), "");
+  assert.equal(textoPdf("maçaneta 👍, com pintura 👍."), "maçaneta, com pintura.");
 });
 
 test("períodos começam à meia-noite local", () => {
