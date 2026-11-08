@@ -23,6 +23,24 @@ if (appInstalado) {
   const tipoNavegacao = performance.getEntriesByType?.("navigation")?.[0]?.type ?? "navigate";
   if (viewInicio.deveAbrirNoMenu(location.hash, tipoNavegacao)) history.replaceState(history.state, "", "#/inicio");
 }
+
+// Histórico do app: o menu fica sempre por baixo de tudo (nível 0). Se o app
+// abrir direto numa tela (ex.: recarregado sem histórico salvo), o menu é
+// colocado antes dela, para o "voltar" do Android levar até ele.
+let nivelAtual = 0;
+const comNivel = (nivel) => ({ ...(history.state || {}), nivel });
+if (appInstalado) {
+  if (/^#\/inicio(\?|$)/.test(location.hash)) {
+    history.replaceState(comNivel(0), "");
+  } else if (Number.isInteger(history.state?.nivel)) {
+    nivelAtual = history.state.nivel;
+  } else {
+    const destino = location.hash;
+    history.replaceState(comNivel(0), "", "#/inicio");
+    history.pushState({ nivel: 1 }, "", destino);
+    nivelAtual = 1;
+  }
+}
 let dispositivo = marcarDocumento(); // { tipo, instalado, ios } + atributos no <html>
 const main = $("#main");
 const online = () => navigator.onLine;
@@ -82,9 +100,10 @@ async function renderizar() {
   if (!appInstalado && /^#\/inicio(\?|$)/.test(location.hash)) history.replaceState(history.state, "", `#${rotaInicial()}`);
   const { nome, params } = lerRota();
   if (appInstalado) {
-    // No menu não há barra inferior nem botão de voltar ao menu.
-    document.body.classList.toggle("sem-abas", nome === "inicio");
+    // No menu não aparece a seta de voltar ao menu (a barra inferior some no app via CSS).
     document.body.classList.toggle("na-inicio", nome === "inicio");
+    nivelAtual = viewInicio.nivelDaTela(history.state, nome, nivelAtual);
+    if (history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
   }
   hashAtual = location.hash;
   marcarAba(nome);
@@ -94,6 +113,8 @@ async function renderizar() {
   window.scrollTo(0, 0);
   try {
     const v = (await VIEWS[nome].montar(raiz, ctx, params)) || {};
+    // Uma tela pode trocar o endereço ao montar (ex.: #/nova?rascunho=…): o nível fica.
+    if (appInstalado && token === tokenRender && history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
     if (token !== tokenRender) {
       v.desmontar?.();
       return;
@@ -183,6 +204,20 @@ function tituloComoLinkDoMenu(ligar) {
   titulo.innerHTML = ligar
     ? `<a class="topo-link" href="#/inicio" aria-label="CD Vistoria — voltar ao menu">${icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`
     : "CD Vistoria";
+}
+
+// Voltar ao menu pelo título: volta no próprio histórico até o menu (nível 0),
+// sem empilhar entradas; assim, no menu, o "voltar" do Android sai do app.
+function irParaMenu() {
+  if (nivelAtual > 0 && history.state?.nivel === nivelAtual) history.go(-nivelAtual);
+  else location.replace("#/inicio");
+}
+if (appInstalado) {
+  $(".topo-titulo").addEventListener("click", (e) => {
+    if (!e.target.closest(".topo-link")) return;
+    e.preventDefault();
+    if (noApp) irParaMenu();
+  });
 }
 
 function entrarNoApp() {

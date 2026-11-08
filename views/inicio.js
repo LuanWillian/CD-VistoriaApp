@@ -13,6 +13,15 @@ export function deveAbrirNoMenu(hash, tipoNavegacao) {
   return h === "#/nova" && tipoNavegacao === "navigate";
 }
 
+// Histórico do app instalado: o menu é sempre o nível 0 (primeira entrada),
+// e cada tela aberta a partir dele fica um nível acima. Assim o "voltar" do
+// Android chega ao menu e, do menu, sai do app. Entradas que já têm nível
+// (voltar, avançar, recarregar) mantêm o seu.
+export function nivelDaTela(estado, nome, nivelAnterior) {
+  if (Number.isInteger(estado?.nivel)) return estado.nivel;
+  return nome === "inicio" ? 0 : nivelAnterior + 1;
+}
+
 const ICONE_INICIAR = `
     <div class="card-icon icon-black" aria-hidden="true">
       <svg viewBox="0 0 64 64">

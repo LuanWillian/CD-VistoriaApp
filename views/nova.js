@@ -102,7 +102,7 @@ export async function montar(el, ctx, params) {
   const usuario = ctx.auth.usuarioAtual();
   el.innerHTML = carregandoHtml();
   const { rascunho, novo } = await carregarRascunho(ctx, usuario, params.busca);
-  history.replaceState(null, "", `#/nova?rascunho=${rascunho.id}`);
+  history.replaceState(history.state, "", `#/nova?rascunho=${rascunho.id}`);
 
   const editor = criarEditor({ storage: ctx.storage, rascunho, novo, aoErro: (e) => ctx.avisar(e.message, "erro") });
   aplicarNomeDaConta(editor, ctx);
