@@ -1,5 +1,5 @@
 -- =====================================================================
--- Vistoria Veicular — estrutura inicial do banco
+-- CD Vistoria — estrutura inicial do banco
 -- Como usar: cole este arquivo inteiro no SQL Editor do Supabase e clique
 -- em "Run", ou rode `npx supabase db push` com o projeto vinculado.
 -- =====================================================================

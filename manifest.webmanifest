@@ -1,6 +1,6 @@
 {
-  "name": "Vistoria Veicular",
-  "short_name": "Vistoria",
+  "name": "CD Vistoria",
+  "short_name": "CD Vistoria",
   "description": "Vistoria veicular em campo, com laudo em PDF e funcionamento offline.",
   "lang": "pt-BR",
   "start_url": "./#/nova",

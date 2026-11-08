@@ -1,4 +1,4 @@
-# Vistoria Veicular — publicação no Netlify (site estático).
+# CD Vistoria — publicação no Netlify (site estático).
 #
 # Caminho PADRÃO: sem build. Preencha o env.js à mão (veja o README) e publique.
 # Caminho OPCIONAL: cadastre SUPABASE_URL e SUPABASE_ANON_KEY em

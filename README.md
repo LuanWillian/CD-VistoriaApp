@@ -1,4 +1,4 @@
-# Vistoria Veicular
+# CD Vistoria
 
 App instalável (PWA) para vistoriadores em campo registrarem o estado de um veículo pelo celular e gerarem o laudo em PDF no próprio aparelho. Funciona offline; os dados sobem para o Supabase quando a conexão volta. O front-end é estático e fica hospedado no Netlify.
 
