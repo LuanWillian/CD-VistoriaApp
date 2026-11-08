@@ -1,6 +1,8 @@
 // Login, sessão e saída. A sessão continua valendo offline: guardamos id e
 // e-mail do usuário no banco local, e o token é renovado quando a internet volta
 // (o supabase-js não apaga a sessão salva quando a renovação falha por rede).
+// O nome do vistoriador vem do perfil da conta (tabela perfis, cadastrada pelo
+// administrador) e fica no mesmo cache, para a etapa de assinaturas offline.
 
 const SEM_INTERNET = "Sem internet: o primeiro acesso precisa de conexão.";
 
@@ -16,10 +18,23 @@ export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine
     }
   });
 
+  // Junta ao usuário o nome do perfil. Sem conexão, usa o nome já guardado
+  // deste mesmo usuário; nunca o de outra conta.
+  async function comNome(u) {
+    let nome;
+    try {
+      nome = (await remoto.obterPerfil(u.id)) ?? null;
+    } catch {
+      const emCache = await storage.obterMeta("usuario");
+      nome = emCache?.id === u.id ? (emCache.nome ?? null) : null;
+    }
+    return { ...u, nome };
+  }
+
   async function iniciar() {
     const { sessao, erro } = await remoto.obterSessao().catch((e) => ({ sessao: null, erro: e }));
     if (sessao) {
-      usuario = sessao.usuario;
+      usuario = await comNome(sessao.usuario);
       await storage.salvarMeta("usuario", usuario);
       return usuario;
     }
@@ -46,10 +61,10 @@ export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine
       if (remoto.classificarErro(e, estaOnline()).tipo === "rede") throw new Error(SEM_INTERNET);
       throw new Error("Não foi possível entrar. Tente novamente em instantes.");
     }
-    usuario = u;
-    await storage.salvarMeta("usuario", u);
-    notificar(u);
-    return u;
+    usuario = await comNome(u);
+    await storage.salvarMeta("usuario", usuario);
+    notificar(usuario);
+    return usuario;
   }
 
   // Rascunhos, pendentes e exclusões ficam guardados até o usuário entrar de novo.

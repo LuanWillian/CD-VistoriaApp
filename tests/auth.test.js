@@ -17,7 +17,7 @@ function storageFalso(meta = {}) {
   };
 }
 
-function remotoFalso({ sessao = null, erro = null, entrar, sair } = {}) {
+function remotoFalso({ sessao = null, erro = null, entrar, sair, obterPerfil } = {}) {
   const chamadas = [];
   return {
     chamadas,
@@ -26,15 +26,44 @@ function remotoFalso({ sessao = null, erro = null, entrar, sair } = {}) {
     entrar: entrar || (async () => U),
     sair: sair || (async () => { chamadas.push("sair"); }),
     aoMudarSessao: () => () => {},
+    obterPerfil: obterPerfil || (async () => "Ana Lima"),
   };
 }
+
+const UN = { ...U, nome: "Ana Lima" };
 
 test("com sessão: devolve o usuário e guarda em cache", async () => {
   const st = storageFalso();
   const a = criarAuth({ remoto: remotoFalso({ sessao: { usuario: U } }), storage: st, estaOnline: () => true });
-  assert.deepEqual(await a.iniciar(), U);
-  assert.deepEqual(st.m.get("usuario"), U);
-  assert.deepEqual(a.usuarioAtual(), U);
+  assert.deepEqual(await a.iniciar(), UN);
+  assert.deepEqual(st.m.get("usuario"), UN);
+  assert.deepEqual(a.usuarioAtual(), UN);
+});
+
+test("nome do vistoriador vem do perfil da conta", async () => {
+  const pedidos = [];
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async (id) => { pedidos.push(id); return "Carlos Souza"; } });
+  const a = criarAuth({ remoto, storage: storageFalso(), estaOnline: () => true });
+  assert.equal((await a.iniciar()).nome, "Carlos Souza");
+  assert.deepEqual(pedidos, ["u1"]);
+});
+
+test("sem perfil cadastrado: nome fica null", async () => {
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => null });
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: UN }), estaOnline: () => true });
+  assert.equal((await a.iniciar()).nome, null);
+});
+
+test("perfil inacessível (rede): mantém o nome guardado do mesmo usuário", async () => {
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => { throw new TypeError("Failed to fetch"); } });
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: UN }), estaOnline: () => true });
+  assert.equal((await a.iniciar()).nome, "Ana Lima");
+});
+
+test("perfil inacessível: não usa o nome guardado de outro usuário", async () => {
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => { throw new TypeError("Failed to fetch"); } });
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: { id: "outro", email: "b@teste", nome: "Bia" } }), estaOnline: () => true });
+  assert.equal((await a.iniciar()).nome, null);
 });
 
 test("offline com token vencido usa o usuário em cache", async () => {
@@ -86,9 +115,9 @@ test("entrar com sucesso guarda o usuário e avisa os ouvintes", async () => {
   const a = criarAuth({ remoto: remotoFalso(), storage: st, estaOnline: () => true });
   const vistos = [];
   a.aoMudar((u) => vistos.push(u));
-  assert.deepEqual(await a.entrar("a@teste", "x"), U);
-  assert.deepEqual(st.m.get("usuario"), U);
-  assert.deepEqual(vistos, [U]);
+  assert.deepEqual(await a.entrar("a@teste", "x"), UN);
+  assert.deepEqual(st.m.get("usuario"), UN);
+  assert.deepEqual(vistos, [UN]);
 });
 
 test("sair limpa só o cache sincronizado, mesmo se o servidor falhar", async () => {

@@ -1,4 +1,6 @@
 // Etapa 4 — Responsáveis e assinaturas (vistoriador e motorista do reboque).
+// O nome do vistoriador vem da conta (perfil cadastrado pelo administrador) e
+// não pode ser editado; o do motorista do reboque é digitado.
 import { ARQUIVO } from "../formatos.js";
 import { $, $$, icone } from "../ui.js";
 import { abrirTelaAssinatura } from "../assinatura-tela.js";
@@ -23,8 +25,12 @@ export function montar(el, editor, ctx) {
         <div class="secao pilha" data-bloco="${b.chave}">
           <h3 class="subtitulo">${b.titulo}</h3>
           <div class="campo">
+            ${b.chave === "vistoriador" ? `
+            <p class="rotulo" id="vistoriador-nome-rotulo">${b.rotuloNome}</p>
+            <p class="nome-da-conta" id="vistoriador-nome" tabindex="-1" aria-labelledby="vistoriador-nome-rotulo" aria-describedby="vistoriador-nome-dica vistoriador-nome-erro"></p>
+            <p class="texto-2 dica" id="vistoriador-nome-dica">Vem da sua conta. Para corrigir, fale com o administrador.</p>` : `
             <label class="rotulo" for="${b.chave}-nome">${b.rotuloNome}</label>
-            <input class="entrada" id="${b.chave}-nome" type="text" autocomplete="off" autocapitalize="words" aria-describedby="${b.chave}-nome-erro">
+            <input class="entrada" id="${b.chave}-nome" type="text" autocomplete="off" autocapitalize="words" aria-describedby="${b.chave}-nome-erro">`}
             <p class="erro-campo" id="${b.chave}-nome-erro" aria-live="polite"></p>
           </div>
           <div class="campo">
@@ -46,7 +52,22 @@ export function montar(el, editor, ctx) {
     if (p) p.textContent = tocados.has(campo) ? erroDoCampo(editor.rascunho, campo) : "";
   };
 
+  // Nome do vistoriador: sempre o da conta. Sem nome cadastrado, o aviso aparece já.
+  const nomeDaConta = ctx.auth.usuarioAtual()?.nome ?? "";
+  if (editor.rascunho.dados.vistoriadorNome !== nomeDaConta) {
+    editor.alterar((d) => { d.vistoriadorNome = nomeDaConta; }, { sugestao: true });
+  }
+  $("#vistoriador-nome", el).textContent = nomeDaConta || "—";
+  if (!nomeDaConta) {
+    tocados.add("vistoriador-nome");
+    mostrarErro("vistoriador-nome");
+  }
+
   for (const b of BLOCOS) {
+    if (editor.rascunho.dados.assinaturas[b.chave]) {
+      editor.lerArquivo(b.arquivo).then((blob) => blob && mostrar(b.chave, blob)).catch(() => {});
+    }
+    if (b.chave === "vistoriador") continue;
     const nome = $(`#${b.chave}-nome`, el);
     nome.value = editor.rascunho.dados[b.campo];
     nome.addEventListener("input", () => {
@@ -57,20 +78,6 @@ export function montar(el, editor, ctx) {
       tocados.add(`${b.chave}-nome`);
       mostrarErro(`${b.chave}-nome`);
     });
-
-    if (editor.rascunho.dados.assinaturas[b.chave]) {
-      editor.lerArquivo(b.arquivo).then((blob) => blob && mostrar(b.chave, blob)).catch(() => {});
-    }
-  }
-
-  // Nome do vistoriador sugerido com o último usado neste aparelho.
-  if (!editor.rascunho.dados.vistoriadorNome) {
-    ctx.storage.obterMeta(`ultimoVistoriador:${editor.rascunho.userId}`).then((ultimo) => {
-      const input = $("#vistoriador-nome", el);
-      if (!ultimo || !input || input.value) return;
-      input.value = ultimo;
-      editor.alterar((d) => { d.vistoriadorNome = ultimo; }, { sugestao: true });
-    }).catch(() => {});
   }
 
   // Prévia da assinatura gravada (ou volta ao botão "Assinar" quando blob é null).

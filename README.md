@@ -11,9 +11,11 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 
 1. Crie um projeto em [supabase.com](https://supabase.com) (região mais próxima, por exemplo São Paulo).
 2. Rode a migration:
-   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run.
+   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql`.
    - **Pela CLI:** `npx --yes supabase@2.122.0 link --project-ref <ref-do-projeto>` e depois `npx supabase@2.122.0 db push`.
 3. Crie o primeiro usuário: Authentication → Users → Add user → Create new user. Informe e-mail e senha e marque **Auto Confirm User**. Não há cadastro público: todo vistoriador é criado aqui.
+   - **Cadastre o nome do vistoriador** (obrigatório): copie o **UID** do usuário em Authentication → Users. Em Table Editor → `perfis` → Insert row, cole o UID em `id` e escreva o nome completo em `nome`. Esse é o nome que aparece na etapa de assinaturas e no laudo; o vistoriador não consegue mudá-lo. Sem esse cadastro, o app avisa "Seu nome de vistoriador não está cadastrado" e não deixa finalizar. Se o nome for cadastrado ou corrigido depois, ele vale a partir da próxima vez que o vistoriador abrir o app com internet.
+   - Pelo SQL Editor também funciona: `insert into public.perfis (id, nome) values ('<UID>', 'Nome Completo');`
 4. Copie Project Settings → API → **Project URL** e a **anon key** (nos projetos novos, a **Publishable key** `sb_publishable_…` também funciona) para o `env.js`:
    ```js
    export const SUPABASE_URL = "https://xxxxxxxx.supabase.co";
@@ -46,7 +48,7 @@ npx --yes supabase@2.122.0 start
 bash supabase/criar-usuarios-teste.sh
 ```
 
-Isso cria `vistoriador.a@teste.local` e `vistoriador.b@teste.local`, com a senha de teste definida no script. Use no `env.js` o `API_URL` e a `ANON_KEY` mostrados por `npx supabase@2.122.0 status`.
+Isso cria `vistoriador.a@teste.local` e `vistoriador.b@teste.local`, com a senha de teste definida no script, e os perfis "Vistoriador A Teste" e "Vistoriador B Teste". Use no `env.js` o `API_URL` e a `ANON_KEY` mostrados por `npx supabase@2.122.0 status`.
 
 ## 3. Publicar no Netlify
 
@@ -122,6 +124,7 @@ Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check`
 | PDF A4 com cabeçalho, dados, fotos, checklist, avarias, assinaturas e rodapé "Vistoria nº X — página N de M"; `Vistoria_<chassi>_<aaaa-mm-dd>.pdf`; menos de 10 MB | `pdf.js` |
 | Login por e-mail e senha, sessão persistente e válida offline, Sair, sem cadastro público | `auth.js`, `views/login.js`, `supabase/config.toml` |
 | RLS nas 3 tabelas e no Storage; comentário de administrador | `supabase/migrations/0001_init.sql`, `supabase/tests/rls.sql` |
+| Nome do vistoriador vem da conta (tabela `perfis`, só leitura para o vistoriador); o banco grava o nome do perfil e recusa vistoria de conta sem perfil | `supabase/migrations/0002_perfis.sql`, `auth.js`, `views/etapa-assinaturas.js` |
 | Bucket privado `vistorias`, caminhos `<user_id>/<inspection_id>/<arquivo>`, URLs assinadas | migration, `supabase.js` |
 | Sincronização idempotente; Sincronizada/Pendente/Erro; "Tentar novamente"; número provisório → oficial | `sync.js`, `views/detalhe.js`, `views/vistorias.js` |
 | App inteiro abre e finaliza vistorias em modo avião | `sw.js` |

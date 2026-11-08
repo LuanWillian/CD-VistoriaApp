@@ -48,7 +48,7 @@ function etapaAvarias(d) {
 function etapaAssinaturas(d) {
   const f = [];
   const add = (campo, mensagem) => f.push({ etapa: 4, campo, mensagem });
-  if (vazio(d.vistoriadorNome)) add("vistoriador-nome", "Informe o nome do vistoriador");
+  if (vazio(d.vistoriadorNome)) add("vistoriador-nome", "Seu nome de vistoriador não está cadastrado. Peça ao administrador.");
   if (!d.assinaturas?.vistoriador) add("vistoriador-assinatura", "Falta a assinatura do vistoriador");
   if (vazio(d.motoristaNome)) add("motorista-nome", "Informe o nome do motorista do reboque");
   if (!d.assinaturas?.motorista) add("motorista-assinatura", "Falta a assinatura do motorista do reboque");

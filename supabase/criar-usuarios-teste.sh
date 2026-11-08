@@ -15,3 +15,11 @@ for email in "${USUARIOS[@]}"; do
     -d "{\"email\":\"$email\",\"password\":\"$SENHA_TESTE\",\"email_confirm\":true}")
   echo "$email → HTTP $resposta (200 = criado, 422 = já existia)"
 done
+
+# Nome de vistoriador de cada usuário de teste (tabela perfis; sem isso o envio é recusado).
+docker exec -i supabase_db_vistoria-veicular psql -U postgres -v ON_ERROR_STOP=1 -tA -c "
+  insert into public.perfis (id, nome)
+  select id, case email when 'vistoriador.a@teste.local' then 'Vistoriador A Teste' else 'Vistoriador B Teste' end
+    from auth.users where email in ('vistoriador.a@teste.local', 'vistoriador.b@teste.local')
+  on conflict (id) do nothing;" >/dev/null
+echo "perfis de teste prontos (Vistoriador A Teste / Vistoriador B Teste)"

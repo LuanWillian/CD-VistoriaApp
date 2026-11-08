@@ -158,6 +158,10 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
         apagarSessaoSalva();
       }
     },
+    async obterPerfil(userId) {
+      const linha = checar(await sb.from("perfis").select("nome").eq("id", userId).maybeSingle());
+      return linha?.nome ?? null;
+    },
     aoMudarSessao(cb) {
       const { data } = sb.auth.onAuthStateChange((evento, s) => cb(evento, usuario(s?.user)));
       return () => data.subscription.unsubscribe();

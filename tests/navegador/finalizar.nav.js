@@ -7,7 +7,7 @@ import { criarEditor } from "../../rascunho.js";
 import * as nova from "../../views/nova.js";
 import * as etapaAssinaturas from "../../views/etapa-assinaturas.js";
 
-const U = { id: "u-teste", email: "teste@local" };
+const U = { id: "u-teste", email: "teste@local", nome: "Ana Lima" };
 
 function rascunhoCompleto() {
   const r = novoRascunho(U.id, crypto.randomUUID(), new Date().toISOString());
@@ -15,7 +15,7 @@ function rascunhoCompleto() {
     chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000, combustivel: "Flex",
     fotos: { frente: true, traseira: true, chassi: true },
     checklist: Object.fromEntries(CHECKLIST_ITENS.map((i) => [i, "presente"])),
-    semAvarias: true, vistoriadorNome: "Ana Lima", motoristaNome: "Beto Souza",
+    semAvarias: true, vistoriadorNome: "Nome Digitado", motoristaNome: "Beto Souza",
     assinaturas: { vistoriador: true, motorista: true },
   });
   return r;
@@ -47,7 +47,7 @@ teste("finalizar: rascunho completo vira vistoria pendente", async () => {
   igual(v.status, "pendente");
   ok(Date.now() - new Date(v.realizadaEm).getTime() < 5000, "realizadaEm fora da janela");
   igual(await storage.obterRascunho(r.id), undefined);
-  igual(await storage.obterMeta(`ultimoVistoriador:${U.id}`), "Ana Lima");
+  igual(v.vistoriadorNome, "Ana Lima", "o nome do vistoriador deve vir da conta");
   igual(ctx.navegacoes, [`#/vistoria/${id}?nova=1`]);
   editor.alterar((d) => { d.cor = "Azul"; }, { imediato: true });
   await editor.descarregar();
@@ -85,12 +85,31 @@ teste("finalizar: lista o que falta e leva até o campo", async () => {
   }
 });
 
-teste("etapa 4: nome sugerido, assinatura gravada e limpa", async () => {
-  const t = await montarEtapa(etapaAssinaturas, { antes: (st) => st.salvarMeta("ultimoVistoriador:u-teste", "Ana Lima") });
+teste("etapa 4: nome do vistoriador vem da conta e não é editável", async () => {
+  const t = await montarEtapa(etapaAssinaturas, { usuario: { id: "u-teste", nome: "Ana Lima" }, preparar: (r) => { r.dados.vistoriadorNome = "Outro"; } });
   try {
-    await esperarAte(() => t.el.querySelector("#vistoriador-nome").value);
-    igual(t.el.querySelector("#vistoriador-nome").value, "Ana Lima");
+    ok(!t.el.querySelector("input#vistoriador-nome"), "o nome do vistoriador não pode ser um campo editável");
+    igual(t.el.querySelector("#vistoriador-nome").textContent.trim(), "Ana Lima");
     igual(t.editor.rascunho.dados.vistoriadorNome, "Ana Lima");
+    igual(t.el.querySelector("#vistoriador-nome-erro").textContent, "");
+  } finally {
+    await t.fim();
+  }
+});
+
+teste("etapa 4: conta sem nome cadastrado mostra o aviso", async () => {
+  const t = await montarEtapa(etapaAssinaturas, { usuario: { id: "u-teste", nome: null } });
+  try {
+    igual(t.editor.rascunho.dados.vistoriadorNome, "");
+    ok(/não está cadastrado/.test(t.el.querySelector("#vistoriador-nome-erro").textContent), "falta o aviso de nome não cadastrado");
+  } finally {
+    await t.fim();
+  }
+});
+
+teste("etapa 4: assinatura gravada e limpa", async () => {
+  const t = await montarEtapa(etapaAssinaturas);
+  try {
     ok(!t.el.querySelector("canvas"), "a etapa não deve ter quadro de assinatura embutido");
     const assinar = t.el.querySelector('[data-assinar="vistoriador"]');
     ok(assinar && /Assinar/.test(assinar.textContent), "falta o botão Assinar");

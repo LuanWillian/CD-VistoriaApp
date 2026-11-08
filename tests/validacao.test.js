@@ -64,6 +64,7 @@ test("nomes e assinaturas da etapa 4", () => {
   z.dados.vistoriadorNome = "";
   z.dados.assinaturas.motorista = false;
   assert.deepEqual(faltandoParaFinalizar(z).map((f) => f.campo), ["vistoriador-nome", "motorista-assinatura"]);
+  assert.match(faltandoParaFinalizar(z)[0].mensagem, /nome de vistoriador não está cadastrado/);
   assert.equal(situacaoEtapa(z, 4), "pendente");
 });
 

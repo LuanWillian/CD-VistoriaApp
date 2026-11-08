@@ -91,7 +91,6 @@ export async function preencherEFinalizar({ chassi, marca, modelo, cor = "Prata"
   }
   document.getElementById("btn-avancar").click();
   await esperar(600);
-  if (!document.getElementById("vistoriador-nome").value) definir("vistoriador-nome", "Ana Lima");
   definir("motorista-nome", "Paulo Reis");
   await assinar("vistoriador");
   await assinar("motorista");

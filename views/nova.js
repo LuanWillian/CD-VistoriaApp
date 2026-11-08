@@ -67,7 +67,16 @@ function mostrarFaltas(faltas, { irPara, etapa } = {}) {
 }
 
 // Valida, grava a vistoria como pendente e leva ao detalhe; o envio começa na hora.
+// O nome do vistoriador é sempre o da conta (perfil), nunca o digitado.
+export function aplicarNomeDaConta(editor, ctx) {
+  const nome = ctx.auth.usuarioAtual()?.nome ?? "";
+  if (editor.rascunho.dados.vistoriadorNome !== nome) {
+    editor.alterar((d) => { d.vistoriadorNome = nome; }, { sugestao: true });
+  }
+}
+
 export async function finalizar(editor, ctx, navegacao = {}) {
+  aplicarNomeDaConta(editor, ctx);
   await editor.descarregar();
   const faltas = faltandoParaFinalizar(editor.rascunho);
   if (faltas.length) {
@@ -77,7 +86,6 @@ export async function finalizar(editor, ctx, navegacao = {}) {
   try {
     editor.encerrar();
     const v = await ctx.storage.finalizarRascunho(editor.rascunho, new Date().toISOString());
-    await ctx.storage.salvarMeta(`ultimoVistoriador:${v.userId}`, v.vistoriadorNome);
     ctx.storage.pedirPersistencia();
     ctx.navegar(`#/vistoria/${v.id}?nova=1`);
     ctx.sync.sincronizar();
@@ -97,6 +105,7 @@ export async function montar(el, ctx, params) {
   history.replaceState(null, "", `#/nova?rascunho=${rascunho.id}`);
 
   const editor = criarEditor({ storage: ctx.storage, rascunho, novo, aoErro: (e) => ctx.avisar(e.message, "erro") });
+  aplicarNomeDaConta(editor, ctx);
   document.body.classList.add("com-acoes");
   el.innerHTML = `
     <h1 class="sr-only">Nova vistoria</h1>

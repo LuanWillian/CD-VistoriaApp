@@ -297,6 +297,11 @@ legend { padding: 0; }
 
 /* ---------- Assinatura ---------- */
 .toque-livre { touch-action: none; }
+.nome-da-conta {
+  font-size: 17px; font-weight: 700; padding: 10px 12px; border: 2px solid var(--linha);
+  border-radius: var(--raio-sm); background: var(--fundo); overflow-wrap: anywhere;
+}
+.campo .dica { font-size: 14px; margin-top: 4px; }
 .assinatura-previa {
   height: 120px; border: 2px solid var(--linha-forte); border-radius: var(--raio-sm); background: #fff;
   padding: 8px; overflow: hidden;

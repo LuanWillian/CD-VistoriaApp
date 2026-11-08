@@ -3,14 +3,14 @@ import * as storage from "../../storage.js";
 import { novoRascunho } from "../../formatos.js";
 import { criarEditor } from "../../rascunho.js";
 
-export async function montarEtapa(modulo, { confirmar = async () => true, preparar, antes } = {}) {
+export async function montarEtapa(modulo, { confirmar = async () => true, preparar, antes, usuario = { id: "u-teste", nome: "Ana Lima" } } = {}) {
   await storage.apagarBanco();
   await antes?.(storage);
   const rascunho = novoRascunho("u-teste", crypto.randomUUID(), new Date().toISOString());
   preparar?.(rascunho);
   const editor = criarEditor({ storage, rascunho });
   const avisos = [];
-  const ctx = { storage, confirmar, avisar: (t, tipo) => avisos.push({ t, tipo }) };
+  const ctx = { storage, confirmar, avisar: (t, tipo) => avisos.push({ t, tipo }), auth: { usuarioAtual: () => usuario } };
   const el = document.createElement("div");
   document.getElementById("palco").append(el);
   const etapa = modulo.montar(el, editor, ctx);
