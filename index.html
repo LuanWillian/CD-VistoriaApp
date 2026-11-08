@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B4F6C">
+  <meta name="description" content="Vistoria veicular em campo, com laudo em PDF e funcionamento offline.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Vistoria">
+  <title>Vistoria Veicular</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/supabase-2.118.0.umd.js" defer></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body class="sem-abas">
+  <header class="topo">
+    <p class="topo-titulo">Vistoria Veicular</p>
+    <p class="status-rede" id="status-rede" data-estado="online" role="status" hidden>Online</p>
+    <button type="button" class="btn-topo" id="btn-menu" aria-label="Menu" aria-haspopup="dialog" hidden>
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+  </header>
+
+  <div class="faixa" id="faixa-versao" hidden>
+    <p>Nova versão disponível.</p>
+    <button type="button" class="btn btn-primario" id="btn-atualizar-versao">Atualizar</button>
+  </div>
+  <div class="faixa faixa-alerta" id="faixa-sessao" hidden>
+    <p>Sua sessão expirou. Entre novamente para enviar as vistorias pendentes.</p>
+    <button type="button" class="btn btn-primario" id="btn-entrar-sessao">Entrar</button>
+  </div>
+  <div class="faixa" id="faixa-instalar" hidden>
+    <p id="faixa-instalar-texto">Instale o app para usar sem internet e abrir direto da tela inicial.</p>
+    <button type="button" class="btn btn-primario" id="btn-instalar-faixa">Instalar app</button>
+    <button type="button" class="btn btn-texto" id="btn-fechar-instalar">Agora não</button>
+  </div>
+
+  <main id="main" class="conteudo" tabindex="-1"></main>
+
+  <nav class="abas" aria-label="Navegação principal">
+    <a class="aba" href="#/nova" data-aba="nova">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M12 12v6M9 15h6"/></svg>
+      Nova vistoria
+    </a>
+    <a class="aba" href="#/vistorias" data-aba="vistorias">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Vistorias
+      <span class="selo-aba" id="selo-pendentes" hidden></span>
+    </a>
+  </nav>
+
+  <div id="avisos" class="avisos" aria-live="polite"></div>
+</body>
+</html>
