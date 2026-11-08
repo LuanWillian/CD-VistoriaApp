@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  formatarDataHora, formatarData, dataArquivo, formatarKm, lerKm, normalizarChassi, idProvisorio, nomeVistoria,
+  capitalizar, formatarMarca, formatarDataHora, formatarData, dataArquivo, formatarKm, lerKm, normalizarChassi, idProvisorio, nomeVistoria,
   nomeArquivoPdf, chaveLocal, caminhoRemoto, ARQUIVO, arquivoAvaria, rotuloArquivo, arquivosDaVistoria, textoPdf,
   periodo, periodoPersonalizado, novoRascunho, vistoriaDoRascunho,
 } from "../formatos.js";
@@ -85,4 +85,23 @@ test("rascunho novo e conversão em vistoria pendente", () => {
   assert.equal("assinaturas" in vi, false);
   r.dados.avarias[0].area = "Teto";
   assert.equal(vi.avarias[0].area, "Capô");
+});
+
+test("capitalizar: primeira letra de cada palavra em maiúscula, resto como digitado", () => {
+  assert.equal(capitalizar("compass longitude"), "Compass Longitude");
+  assert.equal(capitalizar("prata metálico"), "Prata Metálico");
+  assert.equal(capitalizar("ébano"), "Ébano");
+  assert.equal(capitalizar("HB20"), "HB20");
+  assert.equal(capitalizar("hb20 sense"), "Hb20 Sense");
+  assert.equal(capitalizar("t-cross "), "T-cross ", "mantém o espaço enquanto a pessoa digita");
+  assert.equal(capitalizar(""), "");
+});
+
+test("formatarMarca: capitaliza e deixa GWM em maiúsculas", () => {
+  assert.equal(formatarMarca("jeep"), "Jeep");
+  assert.equal(formatarMarca("gwm"), "GWM");
+  assert.equal(formatarMarca("Gwm"), "GWM");
+  assert.equal(formatarMarca("GWM"), "GWM");
+  assert.equal(formatarMarca("gwm haval"), "GWM Haval");
+  assert.equal(formatarMarca("gw"), "Gw", "só vira GWM com a palavra completa");
 });

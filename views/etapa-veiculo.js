@@ -1,14 +1,14 @@
 // Etapa 1 — Dados do veículo e as 3 fotos fixas (Frente, Traseira, Chassi).
 import { COMBUSTIVEIS, FOTOS_VEICULO } from "../config.js";
-import { ARQUIVO, formatarKm, lerKm, normalizarChassi } from "../formatos.js";
+import { ARQUIVO, capitalizar, formatarKm, formatarMarca, lerKm, normalizarChassi } from "../formatos.js";
 import { faltandoParaFinalizar } from "../validacao.js";
 import { $, $$, esc, icone } from "../ui.js";
 import { comprimir, escolherFoto, gerarMiniatura, verificarCamera, abrirVisualizador, MENSAGEM_CAMERA_NEGADA } from "../photos.js";
 
 const CAMPOS_TEXTO = [
-  { id: "marca", rotulo: "Marca", exemplo: "Ex.: Jeep" },
-  { id: "modelo", rotulo: "Modelo", exemplo: "Ex.: Compass" },
-  { id: "cor", rotulo: "Cor", exemplo: "Ex.: Prata" },
+  { id: "marca", rotulo: "Marca", exemplo: "Ex.: Jeep", formatar: formatarMarca },
+  { id: "modelo", rotulo: "Modelo", exemplo: "Ex.: Compass", formatar: capitalizar },
+  { id: "cor", rotulo: "Cor", exemplo: "Ex.: Prata", formatar: capitalizar },
 ];
 
 export const erroDoCampo = (rascunho, campo) =>
@@ -118,10 +118,17 @@ export function montar(el, editor, ctx) {
   });
 
   // ---------- Marca, modelo, cor ----------
-  for (const { id } of CAMPOS_TEXTO) {
+  for (const { id, formatar } of CAMPOS_TEXTO) {
     const input = $(`#${id}`, el);
     input.value = d[id];
     input.addEventListener("input", () => {
+      // Formata enquanto digita; o tamanho não muda, então o cursor fica no lugar.
+      const formatado = formatar(input.value);
+      if (formatado !== input.value) {
+        const { selectionStart: ini, selectionEnd: fim } = input;
+        input.value = formatado;
+        try { input.setSelectionRange(ini, fim); } catch { /* campo sem foco */ }
+      }
       editor.alterar((dd) => { dd[id] = input.value; });
       if (tocados.has(id)) mostrarErro(id);
     });

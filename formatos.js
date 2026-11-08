@@ -48,6 +48,20 @@ export function lerKm(texto) {
   return digitos ? Number(digitos) : null;
 }
 
+// Primeira letra de cada palavra em maiúscula; o resto fica como foi digitado
+// (para não estragar siglas como "HB20"). Mantém os espaços.
+export function capitalizar(texto) {
+  return String(texto ?? "").replace(/(^|\s)(\p{Ll})/gu, (_, espaco, letra) => espaco + letra.toLocaleUpperCase("pt-BR"));
+}
+
+// Marcas que se escrevem em siglas, sempre em maiúsculas.
+const MARCAS_SIGLA = ["GWM"];
+
+export function formatarMarca(texto) {
+  return capitalizar(texto).replace(/\p{L}+/gu, (palavra) =>
+    (MARCAS_SIGLA.includes(palavra.toLocaleUpperCase("pt-BR")) ? palavra.toLocaleUpperCase("pt-BR") : palavra));
+}
+
 export function normalizarChassi(texto) {
   return String(texto ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 }

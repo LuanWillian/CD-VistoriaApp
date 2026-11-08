@@ -86,3 +86,21 @@ teste("etapa 1: colar ' ab-12 3cd' no chassi vira AB123C (maxlength 6 não corta
     await t.fim();
   }
 });
+
+teste("etapa 1: marca, modelo e cor capitalizados ao digitar; GWM em maiúsculas", async () => {
+  const t = await montarEtapa(etapa);
+  try {
+    const campo = (id) => t.el.querySelector(`#${id}`);
+    digitar(campo("marca"), "gwm");
+    igual(campo("marca").value, "GWM");
+    digitar(campo("modelo"), "haval h6");
+    igual(campo("modelo").value, "Haval H6");
+    digitar(campo("cor"), "prata");
+    igual(campo("cor").value, "Prata");
+    igual(t.editor.rascunho.dados.marca, "GWM");
+    igual(t.editor.rascunho.dados.modelo, "Haval H6");
+    igual(t.editor.rascunho.dados.cor, "Prata");
+  } finally {
+    await t.fim();
+  }
+});
