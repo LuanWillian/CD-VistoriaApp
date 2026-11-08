@@ -89,7 +89,7 @@ button:disabled { cursor: default; opacity: 0.55; }
 }
 .btn-topo:active { background: rgba(255, 255, 255, 0.16); }
 
-/* Só no app instalado (html.app-mode): título vira link de volta ao menu #/inicio. */
+/* Só no modo app (html.app-mode): título vira link de volta ao menu #/inicio. */
 html.app-mode .topo-link {
   display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: var(--alvo);
   padding: 0 8px 0 0; border-radius: var(--raio-sm);
@@ -477,7 +477,7 @@ dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px;
 .cartao-info .entre { flex-wrap: wrap; gap: 4px 8px; justify-content: flex-start; }
 .cartao-info .entre .chassi { white-space: nowrap; margin-right: auto; }
 
-/* ---------- Menu inicial #/inicio (só no app instalado; views/inicio.js) ----------
+/* ---------- Menu inicial #/inicio (só no modo app; views/inicio.js) ----------
    Tudo dentro de .home-app. Cartão = componente .cartao do app; textos,
    cores e toque seguem o app. Os ícones seguem a referência (bloco abaixo). */
 html.app-mode .home-app {
@@ -508,11 +508,12 @@ html.app-mode .home-app .card-icon svg { width: 64px; height: 64px; }
 html.app-mode .home-app .icon-black { background: #111; }
 html.app-mode .home-app .icon-gray  { background: #555; }
 
-/* ---------- Só no app instalado (classe app-mode vem de modo-app.js) ----------
-   Sem barra inferior em nenhuma tela (o menu #/inicio é o ponto central) e sem
-   faixa de instalação. O espaço que a barra ocupava volta para o conteúdo. */
-html.app-mode .abas,
-html.app-mode #faixa-instalar { display: none !important; }
+/* ---------- Só no modo app (html.app-mode, marcado por modo-app.js) ----------
+   App instalado ou navegador de celular/tablet: sem barra inferior em nenhuma
+   tela (o menu #/inicio é o ponto central). O espaço que a barra ocupava volta
+   para o conteúdo. A faixa de instalação segue a regra de app.js (aparece no
+   celular sem o app instalado; some no app instalado e no computador). */
+html.app-mode .abas { display: none !important; }
 html.app-mode .conteudo,
 html.app-mode body.sem-abas .conteudo { padding-bottom: calc(var(--seguro-baixo) + 24px); }
 html.app-mode body.com-acoes .conteudo { padding-bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 24px); }

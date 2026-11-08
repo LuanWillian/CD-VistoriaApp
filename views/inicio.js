@@ -1,19 +1,21 @@
-// Tela "Menu" (#/inicio): página principal SOMENTE no app instalado (PWA).
-// No navegador esta rota não existe (app.js redireciona para a tela inicial).
+// Tela "Menu" (#/inicio): página principal SOMENTE no modo app — app instalado
+// (PWA) ou navegador de celular/tablet (isAppMode() em modo-app.js). No navegador
+// do computador esta rota não existe (app.js redireciona para a tela inicial).
 // Os dois ícones (SVG + quadrado preto/cinza de 120 px) vêm da tela de
 // referência em ../vistoria/index.html e NÃO devem ser alterados.
 
-// Decide, ao abrir o app instalado, se ele começa no menu.
-// O manifest abre em "#/nova" (start_url), então "#/nova" sem parâmetros numa
-// abertura nova ("navigate") conta como "abrir o app". Recarregar ("reload") ou
-// voltar ("back_forward") mantém a tela; hash vazio ou "#/" sempre vai ao menu.
+// Decide, ao abrir no modo app, se começa no menu. Abrir pelo link ou pelo
+// ícone (abertura nova, "navigate") sem hash, com "#/" ou com "#/nova" sem
+// parâmetros sempre vai ao menu — "#/nova" é o start_url do manifest e o
+// endereço que ficava no link. Recarregar ("reload") ou voltar ("back_forward")
+// mantém a tela; "#/nova?rascunho=…", "#/vistorias" e afins são respeitados.
 export function deveAbrirNoMenu(hash, tipoNavegacao) {
   const h = hash || "";
   if (h === "" || h === "#" || h === "#/") return true;
   return h === "#/nova" && tipoNavegacao === "navigate";
 }
 
-// Histórico do app instalado: o menu é sempre o nível 0 (primeira entrada),
+// Histórico no modo app: o menu é sempre o nível 0 (primeira entrada),
 // e cada tela aberta a partir dele fica um nível acima. Assim o "voltar" do
 // Android chega ao menu e, do menu, sai do app. Entradas que já têm nível
 // (voltar, avançar, recarregar) mantêm o seu.

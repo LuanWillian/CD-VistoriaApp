@@ -43,25 +43,64 @@ export function imagemFinal(canvas, { deitada }) {
   return saida;
 }
 
-// Tenta tela cheia + trava na horizontal (só em telas de toque). Devolve uma
-// função que desfaz o que foi feito.
-async function tentarTravarHorizontal() {
-  if (!matchMedia("(pointer: coarse)").matches || !screen.orientation?.lock) return () => {};
-  let entrouTelaCheia = false;
+// Ao terminar a assinatura, deixa a tela em pé de novo, mesmo que o celular
+// ainda esteja deitado. A trava de orientação só dura enquanto a página está em
+// tela cheia: sair dela devolve o controle ao sensor (e a tela deitava de novo).
+// Por isso, se travar em pé der certo, a página CONTINUA em tela cheia — vale
+// igual para a assinatura do vistoriador e a do motorista do reboque.
+// Se o aparelho não aceitar a trava (ex.: iPhone), destrava e sai da tela cheia
+// que o próprio app abriu, como antes.
+export async function voltarParaVertical({
+  entrouTelaCheia = false, orientacao = globalThis.screen?.orientation, doc = globalThis.document,
+} = {}) {
   try {
-    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-      await document.documentElement.requestFullscreen();
-      entrouTelaCheia = true;
-    }
-    await screen.orientation.lock("landscape");
-    return () => {
-      try { screen.orientation.unlock(); } catch { /* sem suporte */ }
-      if (entrouTelaCheia && document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    };
+    await orientacao.lock("portrait-primary");
+    return;
   } catch {
-    if (entrouTelaCheia && document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    return () => {};
+    try { orientacao?.unlock(); } catch { /* sem suporte */ }
   }
+  if (entrouTelaCheia && doc?.fullscreenElement) await doc.exitFullscreen().catch(() => {});
+}
+
+// Tela cheia + trava na horizontal enquanto a pessoa assina (só em telas de
+// toque). terminar() sempre deixa a tela em pé de novo, mesmo que o navegador
+// ainda não tenha respondido ao pedido de trava horizontal — no 1º uso do
+// Android essa resposta pode demorar ou nunca chegar, e antes disso a tela do
+// vistoriador ficava deitada ao confirmar.
+export function criarTravaHorizontal({
+  orientacao = globalThis.screen?.orientation,
+  doc = globalThis.document,
+  telaDeToque = Boolean(globalThis.matchMedia?.("(pointer: coarse)").matches),
+} = {}) {
+  let ativa = false;
+  let aberta = false;
+  let entrouTelaCheia = false;
+  return {
+    // Chame dentro do toque que abriu a tela (tela cheia exige gesto).
+    async iniciar() {
+      if (!telaDeToque || !orientacao?.lock) return;
+      ativa = true;
+      aberta = true;
+      try {
+        if (!doc.fullscreenElement && doc.documentElement?.requestFullscreen) {
+          const pedido = doc.documentElement.requestFullscreen();
+          entrouTelaCheia = true;
+          await pedido;
+        }
+        await orientacao.lock("landscape");
+      } catch {
+        // Recusada com a tela ainda aberta: desfaz a tela cheia que abriu.
+        // Se a tela já fechou, a "falha" é só a trava em pé substituindo esta.
+        if (!aberta) return;
+        ativa = false;
+        if (entrouTelaCheia && doc.fullscreenElement) await doc.exitFullscreen().catch(() => {});
+      }
+    },
+    async terminar() {
+      aberta = false;
+      if (ativa) await voltarParaVertical({ entrouTelaCheia, orientacao, doc });
+    },
+  };
 }
 
 // Abre a tela; resolve com o PNG (Blob) ao confirmar, ou null ao cancelar.
@@ -84,7 +123,7 @@ export function abrirTelaAssinatura({ titulo }) {
     const canvas = d.querySelector("canvas");
     const confirmar = d.querySelector('[data-acao="confirmar"]');
     let resultado = null;
-    let destravar = () => {};
+    const trava = criarTravaHorizontal();
 
     const atualizarPosicao = () => {
       const deitada = innerHeight > innerWidth;
@@ -110,7 +149,7 @@ export function abrirTelaAssinatura({ titulo }) {
     d.addEventListener("close", () => {
       removeEventListener("resize", atualizarPosicao);
       pad.destruir();
-      destravar();
+      trava.terminar();
       d.remove();
       resolver(resultado);
     });
@@ -120,11 +159,6 @@ export function abrirTelaAssinatura({ titulo }) {
     d.showModal();
     const pad = montarAssinatura(canvas, { aoMudar: (blob) => { confirmar.disabled = !blob; } });
     addEventListener("resize", atualizarPosicao);
-    tentarTravarHorizontal().then((f) => {
-      if (d.isConnected) {
-        destravar = f;
-        atualizarPosicao();
-      } else f();
-    });
+    trava.iniciar().then(() => { if (d.isConnected) atualizarPosicao(); });
   });
 }

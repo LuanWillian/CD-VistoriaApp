@@ -9,51 +9,17 @@
 // A mesma informação vai para o <html> como data-dispositivo="movel|computador"
 // e data-instalado="sim|nao", para o CSS poder usar junto das media queries.
 
-const MODOS_INSTALADO = ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"];
+// A lógica fica em modo-app.js (script do <head>, roda antes da primeira
+// pintura). Este módulo só reexporta, para o resto do app importar daqui.
+import "./modo-app.js";
 
-// Lê o que o navegador oferece; separado para os testes passarem um ambiente falso.
-export function ambienteDoNavegador() {
-  const nav = globalThis.navigator ?? {};
-  const mm = (q) => {
-    try { return globalThis.matchMedia?.(q).matches ?? false; } catch { return false; }
-  };
-  return {
-    userAgent: nav.userAgent ?? "",
-    platform: nav.platform ?? "",
-    maxTouchPoints: nav.maxTouchPoints ?? 0,
-    uaData: nav.userAgentData ?? null, // Client Hints: só Chromium (Chrome, Edge, Android)
-    standaloneIOS: nav.standalone === true, // Safari no iPhone/iPad
-    mm,
-  };
-}
-
-export function detectarDispositivo(amb = ambienteDoNavegador()) {
-  const ua = amb.userAgent;
-  // iPadOS 13+ diz que é Mac; a diferença é ter tela de toque.
-  const ipadComoMac = /Macintosh/i.test(ua) && amb.maxTouchPoints > 1;
-  const ios = /iPhone|iPad|iPod/i.test(ua) || ipadComoMac;
-
-  let movel;
-  const plataformaCH = amb.uaData?.platform ?? "";
-  if (amb.uaData?.mobile === true || /^(Android|iOS)$/i.test(plataformaCH)) {
-    movel = true; // Client Hints: o jeito mais confiável onde existe
-  } else if (ios || /Android|Mobi|Tablet|Silk|Kindle|PlayBook|BlackBerry|Opera Mini|IEMobile/i.test(ua)) {
-    movel = true; // Safari, Firefox e afins: pelo userAgent
-  } else if (plataformaCH) {
-    movel = false; // Client Hints dizem Windows/macOS/Linux/ChromeOS
-  } else {
-    // Último recurso: só toque, sem mouse ou trackpad em lugar nenhum.
-    movel = amb.mm("(pointer: coarse)") && !amb.mm("(any-pointer: fine)");
-  }
-
-  const instalado = amb.standaloneIOS || MODOS_INSTALADO.some((m) => amb.mm(`(display-mode: ${m})`));
-  return { tipo: movel ? "movel" : "computador", instalado, ios };
-}
-
-// App instalado (PWA aberto pela tela inicial/janela própria). Controla tudo
-// o que existe só no app, como o menu inicial (#/inicio).
-export const isInstalledApp = (amb = ambienteDoNavegador()) =>
-  amb.mm("(display-mode: standalone)") || amb.standaloneIOS;
+const M = globalThis.CDModo;
+const MODOS_INSTALADO = M.MODOS_INSTALADO;
+export const ambienteDoNavegador = M.ambienteDoNavegador;
+export const detectarDispositivo = (amb) => M.detectarDispositivo(amb);
+export const isInstalledApp = (amb) => M.isInstalledApp(amb);
+export const isMobileDevice = (amb) => M.isMobileDevice(amb);
+export const isAppMode = (amb) => M.isAppMode(amb);
 
 // Computador usando pelo navegador (não instalado): é aí que o app esconde a
 // faixa de instalação e a aba "Nova vistoria".

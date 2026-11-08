@@ -83,3 +83,33 @@ test("isInstalledApp: standalone ou navigator.standalone (iOS); nada mais", asyn
   assert.equal(isInstalledApp(amb({ standaloneIOS: true })), true);
   assert.equal(isInstalledApp(amb({ consultas: ["(display-mode: browser)"] })), false);
 });
+
+test("isMobileDevice: celular/tablet (inclui iPad como Mac); computador não", async () => {
+  const { isMobileDevice } = await import("../dispositivo.js");
+  assert.equal(isMobileDevice(amb({ userAgent: UA.iphone, maxTouchPoints: 5 })), true);
+  assert.equal(isMobileDevice(amb({ userAgent: UA.ipadComoMac, maxTouchPoints: 5 })), true);
+  assert.equal(isMobileDevice(amb({ userAgent: UA.androidTablet, uaData: { mobile: false, platform: "Android" } })), true);
+  assert.equal(isMobileDevice(amb({ userAgent: UA.androidCelular, uaData: { mobile: true, platform: "Android" } })), true);
+  assert.equal(isMobileDevice(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" }, consultas: MOUSE })), false);
+  assert.equal(isMobileDevice(amb({ userAgent: UA.safariMac, consultas: MOUSE })), false);
+});
+
+test("isAppMode: app instalado OU celular/tablet; computador no navegador não", async () => {
+  const { isAppMode } = await import("../dispositivo.js");
+  assert.equal(isAppMode(amb({ userAgent: UA.iphone, maxTouchPoints: 5 })), true, "navegador do celular");
+  assert.equal(isAppMode(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" },
+    consultas: ["(display-mode: standalone)"] })), true, "app instalado no computador");
+  assert.equal(isAppMode(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" }, consultas: MOUSE })), false);
+});
+
+test("modo-app.js marca <html class=\"app-mode\"> só no modo app", async () => {
+  await import("../modo-app.js");
+  const { marcarModoApp } = globalThis.CDModo;
+  const raiz = () => { const c = new Set(); return { classList: { add: (x) => c.add(x), contains: (x) => c.has(x) } }; };
+  const celular = raiz();
+  marcarModoApp(amb({ userAgent: UA.iphone, maxTouchPoints: 5 }), celular);
+  assert.equal(celular.classList.contains("app-mode"), true);
+  const pc = raiz();
+  marcarModoApp(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" }, consultas: MOUSE }), pc);
+  assert.equal(pc.classList.contains("app-mode"), false);
+});

@@ -2,8 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { deveAbrirNoMenu, nivelDaTela } from "../views/inicio.js";
 
-test("abrir o app (sem hash, #/ ou o start_url #/nova) vai para o menu", () => {
+test("abrir pelo link ou pelo ícone (sem hash, #/ ou #/nova) vai para o menu", () => {
   for (const hash of ["", "#", "#/", "#/nova"]) assert.equal(deveAbrirNoMenu(hash, "navigate"), true, hash);
+  assert.equal(deveAbrirNoMenu("#/nova", "reload"), false, "recarregar em #/nova mantém");
 });
 
 test("recarregar ou voltar mantém a tela atual", () => {
