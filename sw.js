@@ -1,7 +1,7 @@
 // Service Worker do CD Vistoria: guarda o app inteiro para abrir sem
 // internet. Troque CACHE_VERSION a cada deploy (o scripts/gerar-env.js faz isso
 // sozinho quando usado como comando de build no Netlify).
-const CACHE_VERSION = "v21";
+const CACHE_VERSION = "v22";
 const CACHE = `vistoria-${CACHE_VERSION}`;
 const LIMITE_ENV_MS = 3000;
 
@@ -49,8 +49,13 @@ const ARQUIVOS = [
 ];
 
 self.addEventListener("install", (e) => {
-  // cache: "reload" ignora o cache HTTP do navegador e garante os arquivos desta versão
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARQUIVOS.map((u) => new Request(u, { cache: "reload" })))));
+  // cache: "reload" ignora o cache HTTP do navegador e garante os arquivos desta versão.
+  // Depois de guardar tudo, assume na hora (sem esperar fechar todas as abas: no
+  // Chrome do Android isso quase nunca acontece e a versão nova ficava presa).
+  // O app.js recarrega a página ou mostra "Atualizar" quando a troca acontece.
+  e.waitUntil(caches.open(CACHE)
+    .then((c) => c.addAll(ARQUIVOS.map((u) => new Request(u, { cache: "reload" }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {

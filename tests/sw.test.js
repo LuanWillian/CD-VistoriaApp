@@ -23,3 +23,18 @@ test("env.js com rede travada cai para a cópia em cache", async () => {
   const limite = new Promise((_, rej) => setTimeout(() => rej(new Error("env.js travou esperando a rede")), 1000).unref());
   assert.equal(await Promise.race([resposta, limite]), "env-em-cache");
 });
+
+test("versão nova assume sozinha ao instalar (Chrome não fica preso na antiga)", async () => {
+  const tratadores = {};
+  let pulouEspera = false;
+  const contexto = {
+    self: { addEventListener: (t, fn) => { tratadores[t] = fn; }, location: { origin: "http://app" }, skipWaiting: () => { pulouEspera = true; } },
+    caches: { open: async () => ({ addAll: async () => {} }) },
+    fetch: async () => ({}), URL, Request: class { constructor(u) { this.url = u; } }, Promise, console, setTimeout,
+  };
+  vm.runInNewContext(fs.readFileSync(new URL("../sw.js", import.meta.url), "utf8"), contexto);
+  let espera;
+  tratadores.install({ waitUntil: (p) => { espera = p; } });
+  await espera;
+  assert.equal(pulouEspera, true, "install deveria chamar self.skipWaiting() depois de guardar os arquivos");
+});

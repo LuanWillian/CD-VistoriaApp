@@ -327,23 +327,29 @@ async function iniciar() {
 async function registrarServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   try {
+    // Havia uma versão rodando? (no primeiro acesso não há o que atualizar)
+    const tinhaVersao = Boolean(navigator.serviceWorker.controller);
     const reg = await navigator.serviceWorker.register("sw.js");
-    let pediuAtualizacao = false;
+    let recarregando = false;
     const avisar = () => { $("#faixa-versao").hidden = false; };
-    if (reg.waiting && navigator.serviceWorker.controller) avisar();
-    reg.addEventListener("updatefound", () => {
-      const novo = reg.installing;
-      novo?.addEventListener("statechange", () => {
-        if (novo.state === "installed" && navigator.serviceWorker.controller) avisar();
-      });
-    });
-    $("#btn-atualizar-versao").addEventListener("click", async () => {
-      pediuAtualizacao = true;
+    const recarregar = async () => {
+      if (recarregando) return;
+      recarregando = true;
       if (viewAtual?.podeSair) await viewAtual.podeSair(); // grava o rascunho antes de recarregar
-      reg.waiting?.postMessage({ tipo: "SKIP_WAITING" });
+      location.reload();
+    };
+    // Versão antiga que ainda espera (sw.js de antes desta mudança): oferece atualizar.
+    if (reg.waiting && tinhaVersao) avisar();
+    $("#btn-atualizar-versao").addEventListener("click", () => {
+      if (reg.waiting) reg.waiting.postMessage({ tipo: "SKIP_WAITING" });
+      else recarregar();
     });
+    // A versão nova assumiu (o sw.js novo faz isso sozinho ao instalar): recarrega
+    // na hora, a não ser no meio de uma vistoria — aí mostra "Atualizar".
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (pediuAtualizacao) location.reload();
+      if (!tinhaVersao) return;
+      if (location.hash.startsWith("#/nova")) avisar();
+      else recarregar();
     });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") reg.update().catch(() => {});
