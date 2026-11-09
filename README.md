@@ -98,7 +98,7 @@ Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check`
 - **Navegador:** com o servidor local rodando, abra `http://localhost:3000/tests/navegador/index.html`; o resultado esperado é `N ok, 0 falhas`. A página usa um banco local separado (`vistoria-veicular-testes`) e não toca nos dados do app.
 - **Banco:** `supabase/tests/rls.sql` (passo 1.6). Com o Supabase local:
   ```bash
-  docker exec -i supabase_db_vistoria-veicular psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
+  docker exec -i supabase_db_cd-vistoriaapp psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
   ```
 
 ## 8. Limites conhecidos

@@ -2,7 +2,7 @@
 
 - **Data:** 07/11/2026
 - **Status:** aguardando revisão
-- **Pasta do projeto:** `AppsClaude/vistoria-veicular` (projeto novo; o app "PG Prime Vistoria" em `AppsClaude/pgprimevistoria` continua intocado e não há migração de dados dele)
+- **Pasta do projeto:** `AppsClaude/CD-VistoriaApp` (projeto novo; o app "PG Prime Vistoria" em `AppsClaude/pgprimevistoria` continua intocado e não há migração de dados dele)
 
 ## 1. Objetivo
 
@@ -33,7 +33,7 @@ PWA instalável, em português do Brasil, para vistoriadores em campo (pátio, g
 ## 3. Estrutura de arquivos
 
 ```
-vistoria-veicular/
+CD-VistoriaApp/
 ├── index.html              # shell: topo, <main>, barra de abas, região aria-live, aviso de versão/instalação
 ├── styles.css
 ├── manifest.webmanifest
@@ -236,7 +236,7 @@ Pronto para colar no SQL Editor ou para `supabase db push`. Conteúdo:
    - Comentário com exemplo de leitura total para administrador: policy `select` adicional com `(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'` nas três tabelas e no Storage, mais o comando para marcar um usuário como admin (`update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"admin"}' where email = '...'`).
 8. **Storage:** `insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('vistorias', 'vistorias', false, 5242880, array['image/jpeg','image/png']) on conflict (id) do nothing;`. Policies em `storage.objects` (`select`, `insert`, `update`, `delete`, `to authenticated`) com `bucket_id = 'vistorias' and (storage.foldername(name))[1] = (select auth.uid())::text`. A migration não roda `alter table storage.objects enable row level security`: o RLS já vem ligado e o comando falharia por permissão.
 
-**`supabase/config.toml`:** `project_id = "vistoria-veicular"`, `[db] major_version = 17`, `[auth] site_url = "http://localhost:3000"`, `additional_redirect_urls = ["http://localhost:3000", "https://SEU-SITE.netlify.app"]`, `enable_signup = false` (bloqueia o cadastro público), `[auth.email] enable_signup = true` (com `false` o Supabase desliga o login por e-mail inteiro), `[storage] file_size_limit = "5MiB"`. As chaves são conferidas contra a documentação da Supabase CLI na implementação.
+**`supabase/config.toml`:** `project_id = "cd-vistoriaapp"`, `[db] major_version = 17`, `[auth] site_url = "http://localhost:3000"`, `additional_redirect_urls = ["http://localhost:3000", "https://SEU-SITE.netlify.app"]`, `enable_signup = false` (bloqueia o cadastro público), `[auth.email] enable_signup = true` (com `false` o Supabase desliga o login por e-mail inteiro), `[storage] file_size_limit = "5MiB"`. As chaves são conferidas contra a documentação da Supabase CLI na implementação.
 
 **`supabase/tests/rls.sql`:** roteiro que, num banco com a migration aplicada, simula dois usuários (`set local role authenticated` + `request.jwt.claims`), cria uma vistoria para cada um e confere que um não lê, não altera e não apaga a do outro, e que o `numero` não muda num `update`.
 

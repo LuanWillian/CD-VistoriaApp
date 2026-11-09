@@ -1,5 +1,5 @@
 -- Conferência de RLS (leitura e exclusão para todos os logados, criar/editar só do dono), numeração e checks. Rode num banco com as migrations aplicadas:
---   docker exec -i supabase_db_vistoria-veicular psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
+--   docker exec -i supabase_db_cd-vistoriaapp psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
 -- No projeto hospedado: cole no SQL Editor. Tudo roda dentro de uma transação
 -- desfeita no fim (rollback); só a sequence de números avança.
 -- Sucesso = mensagem "RLS OK". Qualquer falha interrompe com a explicação.

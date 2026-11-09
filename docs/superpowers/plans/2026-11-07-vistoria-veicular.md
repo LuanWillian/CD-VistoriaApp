@@ -22,7 +22,7 @@
 - Nomes de arquivo de mídia fixos (spec §4 `formatos.js`); caminho remoto `<userId>/<inspectionId>/<nome>`.
 - Testes Node: `npm test` (= `TZ=America/Sao_Paulo node --test "tests/*.test.js"`). Testes de navegador: arquivos `tests/navegador/*.nav.js`, abertos em `http://localhost:3000/tests/navegador/`; passam quando o texto da página mostra `0 falhas`.
 - Commits: um por tarefa (ou por passo de commit), mensagem `feat: …`/`test: …`/`docs: …`, terminando com a linha `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
-- Servidor local: `npx --yes serve@14.2.6 -l 3000 --no-clipboard vistoria-veicular` (configuração `vistoria` do `.claude/launch.json` em `AppsClaude/`). Para conferências no navegador, use `preview_start { name: "vistoria" }`.
+- Servidor local: `npx --yes serve@14.2.6 -l 3000 --no-clipboard CD-VistoriaApp` (configuração `vistoria` do `.claude/launch.json` em `AppsClaude/`). Para conferências no navegador, use `preview_start { name: "vistoria" }`.
 
 ## Review Focus
 
@@ -43,7 +43,7 @@
 **Interfaces:**
 - Produces: as constantes de `config.js` exatamente como na spec §4 (`CHECKLIST_ITENS`, `AREAS_AVARIA`, `TIPOS_AVARIA`, `GRAVIDADES`, `COMBUSTIVEIS`, `FOTOS_VEICULO`, `FOTO`, `PDF_FOTO`, `ITENS_POR_PAGINA`, `DIAS_CACHE_FOTOS`). `env.js` exporta `SUPABASE_URL` e `SUPABASE_ANON_KEY` (valores do modelo em `env.example.js`: `"https://SEU-PROJETO.supabase.co"` e `"SUA-ANON-KEY"`).
 
-- [ ] **Step 1: Criar `package.json`**: `{"name":"vistoria-veicular","private":true,"type":"module","scripts":{"test":"TZ=America/Sao_Paulo node --test \"tests/*.test.js\""}}`.
+- [ ] **Step 1: Criar `package.json`**: `{"name":"cd-vistoriaapp","private":true,"type":"module","scripts":{"test":"TZ=America/Sao_Paulo node --test \"tests/*.test.js\""}}`.
 
 - [ ] **Step 2: Escrever o teste que falha** em `tests/config.test.js`:
 
@@ -235,9 +235,9 @@ assert.deepEqual(validarAvaria({ area: "", tipo: "Risco", gravidade: null }), ["
 - [ ] **Step 5: Verificar no Postgres local.** Exige o Docker ligado (`open -a Docker` e aguardar `docker info` responder). Depois:
 
 ```bash
-cd vistoria-veicular && npx --yes supabase@2.122.0 start
+cd CD-VistoriaApp && npx --yes supabase@2.122.0 start
 npx supabase@2.122.0 db reset
-docker exec -i supabase_db_vistoria-veicular psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
+docker exec -i supabase_db_cd-vistoriaapp psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
 ```
 Esperado: `NOTICE:  RLS OK` e código de saída 0. Se o Docker não puder ser usado, registrar no relatório da tarefa "migration não executada localmente" e seguir (a conferência fica para o README, Task 20).
 
@@ -816,7 +816,7 @@ Teste `excluirVistoriaRemota apaga a linha e depois os arquivos`: usa um cliente
   2. Escrever um `env.js` temporário com o `API_URL` local e a anon key local (de `supabase status -o env`).
   3. No navegador (375 px): entrar com `vistoriador.a@teste.local`.
   4. Fazer uma vistoria com 1 avaria e 2 fotos. Finalizar: a faixa passa a "Vistoria enviada: VIS-000001" e o PDF é regenerado com esse número.
-  5. **Sem conexão com o servidor:** rodar `docker stop supabase_kong_vistoria-veicular`, que derruba só a porta de entrada do Supabase e mantém os dados. Fazer outra vistoria, que fica "Pendente". Rodar `docker start supabase_kong_vistoria-veicular` e tocar em "Atualizar" na aba Vistorias: o envio acontece e a vistoria vira `VIS-000002`.
+  5. **Sem conexão com o servidor:** rodar `docker stop supabase_kong_cd-vistoriaapp`, que derruba só a porta de entrada do Supabase e mantém os dados. Fazer outra vistoria, que fica "Pendente". Rodar `docker start supabase_kong_vistoria-veicular` e tocar em "Atualizar" na aba Vistorias: o envio acontece e a vistoria vira `VIS-000002`.
   6. Recarregar e finalizar de novo não cria duplicata: `select count(*) from inspections` = 2.
   7. Sair e entrar como `vistoriador.b@teste.local`: a lista mostra "Nenhuma vistoria ainda".
   8. Voltar como A e excluir `VIS-000001`: a linha some do banco e `storage.objects` não tem mais `<A>/<id>/`.
