@@ -27,18 +27,39 @@ teste("menu: app instalado e celular têm os dois cartões e Iniciar vistoria ab
   }
 });
 
-teste("menu: no computador só o cartão Vistorias, e Iniciar vistoria nem existe na página", async () => {
-  const t = await montarInicio(true);
+teste("painel (computador): tabela com as vistorias, linha e botão abrem os detalhes e não existe Iniciar vistoria", async () => {
+  await storage.apagarBanco();
+  const navegacoes = [];
+  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, "2026-11-08T10:00:00.000Z"), id, userId: EU.id, realizadaEm: "2026-11-08T10:00:00.000Z", status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "<i>Compass</i>", ...extra });
+  await storage.salvarVistoria(v("1"));
+  await storage.salvarVistoria(v("2", { status: "pendente", realizadaEm: "2026-11-09T10:00:00.000Z" }));
+  const ctx = {
+    desktop: true, storage, auth: { usuarioAtual: () => EU }, online: () => false, navegar: (h) => navegacoes.push(h),
+    sync: { eventos: new EventTarget(), sincronizar: async () => ({}) }, remoto: {},
+  };
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const tela = await inicio.montar(el, ctx);
+  await esperar(150);
   try {
-    igual(t.el.querySelector("#btn-iniciar"), null, "o botão não pode existir (nem escondido)");
-    igual([...t.el.querySelectorAll("button")].map((b) => b.id), ["btn-vistorias"]);
-    ok(!t.el.textContent.includes("Iniciar vistoria"), "o texto Iniciar vistoria não pode aparecer");
-    igual(t.el.querySelectorAll(".card-icon").length, 1);
-    ok(t.el.querySelector(".icon-gray"), "o ícone do cartão Vistorias (cinza) continua");
-    t.el.querySelector("#btn-vistorias").click();
-    igual(t.navegacoes, ["#/vistorias"]);
+    igual(el.querySelector("#btn-iniciar"), null, "o botão não pode existir");
+    igual(el.querySelector("#btn-vistorias"), null, "o cartão único some no computador");
+    ok(!el.textContent.includes("Iniciar vistoria") && !el.textContent.includes("Nova vistoria"));
+    igual(el.querySelectorAll('a[href^="#/nova"]').length, 0);
+    const linhas = [...el.querySelectorAll("#dash-corpo tr")];
+    igual(linhas.length, 2);
+    ok(linhas[0].textContent.includes("VIS-000002"), "a mais recente vem primeiro");
+    igual(el.querySelector("#dash-corpo i"), null, "texto digitado não vira HTML");
+    igual(el.querySelector('[data-metrica="total"]').textContent, "2");
+    igual(el.querySelector('[data-metrica="pendentes"]').textContent, "1");
+    igual(el.querySelector("#dash-contador").textContent, "Mostrando 1–2 de 2");
+    linhas[0].querySelector("td").click();
+    linhas[0].querySelector("a").click();
+    igual(navegacoes, ["#/vistoria/2"], "a linha navega; o botão é um link e não navega duas vezes");
   } finally {
-    t.fim();
+    history.replaceState(null, "", location.pathname);
+    tela?.desmontar?.();
+    el.remove();
   }
 });
 

@@ -1,12 +1,12 @@
 // Detalhe da vistoria (somente leitura): dados, fotos, checklist, avarias,
-// assinaturas e as ações Baixar PDF, Compartilhar e Excluir.
+// assinaturas e as ações Baixar PDF, Compartilhar (não existe no computador) e Excluir.
 import { CHECKLIST_ITENS, FOTOS_VEICULO } from "../config.js";
 import {
   ARQUIVO, arquivoAvaria, arquivosDaVistoria, caminhoRemoto, chaveLocal, formatarDataHora, formatarKm, nomeVistoria,
 } from "../formatos.js";
 import { $, esc, icone, carregandoHtml } from "../ui.js";
 import { gerarPdf } from "../pdf.js";
-import { ligarAmpliar, miniaturaHtml } from "../photos.js";
+import { emDesktop, ligarAmpliar, miniaturaHtml } from "../photos.js";
 
 const SELO = {
   sincronizada: ["selo-sincronizada", "check", "Sincronizada"],
@@ -46,12 +46,12 @@ export function criarPdfPronto({ gerar, atual }) {
   };
 }
 
-function telaSimples(el, titulo, texto) {
+function telaSimples(el, titulo, texto, desktop) {
   el.innerHTML = `
     <div class="vazio">
       <p class="titulo">${esc(titulo)}</p>
       <p>${esc(texto)}</p>
-      <a class="btn btn-secundario" href="#/vistorias">${icone("voltar")} Voltar para Vistorias</a>
+      <a class="btn btn-secundario" href="${desktop ? "#/inicio" : "#/vistorias"}">${icone("voltar")} Voltar para ${desktop ? "o início" : "Vistorias"}</a>
     </div>`;
 }
 
@@ -94,15 +94,15 @@ export async function montar(el, ctx, params) {
   }
   if (!ativo) return {};
   if (!v) {
-    telaSimples(el, "Vistoria não encontrada", ctx.online() ? "Ela pode ter sido excluída." : "Conecte-se à internet para ver esta vistoria.");
+    telaSimples(el, "Vistoria não encontrada", ctx.online() ? "Ela pode ter sido excluída." : "Conecte-se à internet para ver esta vistoria.", ctx.desktop);
     return {};
   }
   if (v.origem === "remota" && !v.completa) {
-    telaSimples(el, "Vistoria ainda não baixada", "Conecte-se à internet para ver esta vistoria.");
+    telaSimples(el, "Vistoria ainda não baixada", "Conecte-se à internet para ver esta vistoria.", ctx.desktop);
     return {};
   }
   if (v.status === "excluindo") {
-    telaSimples(el, "Vistoria excluída", "A exclusão será concluída no servidor quando houver internet.");
+    telaSimples(el, "Vistoria excluída", "A exclusão será concluída no servidor quando houver internet.", ctx.desktop);
     return {};
   }
 
@@ -172,9 +172,10 @@ export async function montar(el, ctx, params) {
 
   function desenhar() {
     el.innerHTML = `
-      <div class="pilha">
-        <a class="btn btn-texto" href="#/vistorias">${icone("voltar")} Vistorias</a>
+      <div class="pilha detalhe-pagina">
+        <a class="btn btn-texto" href="${ctx.desktop ? "#/inicio" : "#/vistorias"}">${icone("voltar")} ${ctx.desktop ? "Início" : "Vistorias"}</a>
         <div id="faixa-nova" role="status" aria-live="polite"></div>
+        <div class="pilha detalhe-cabeca">
         <header class="cartao detalhe-topo">
           <div class="entre">
             <h1 class="titulo" id="detalhe-numero">${esc(nomeVistoria(v))}</h1>
@@ -185,17 +186,20 @@ export async function montar(el, ctx, params) {
         </header>
         <div class="acoes-detalhe">
           <button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>
-          <button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>
+          ${ctx.desktop ? "" : `<button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>`}
           ${nova && !ctx.desktop ? `<a class="btn btn-secundario" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
           ${podeExcluir() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
         </div>
-        <section class="secao" aria-labelledby="h-dados">
+        </div>
+        <div class="detalhe-corpo">
+        <section class="secao det-dados" aria-labelledby="h-dados">
           <h2 id="h-dados">Dados do veículo</h2>
           <dl class="dados">
             ${[["Chassi", v.chassi], ["Marca", v.marca], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
               .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
           </dl>
         </section>
+        <div class="det-dir">
         <section class="secao" aria-labelledby="h-fotos">
           <h2 id="h-fotos">Fotos do veículo</h2>
           <div class="fotos-detalhe">
@@ -207,11 +211,12 @@ export async function montar(el, ctx, params) {
           <ul class="lista-checklist">${itens.map((i) => `<li><span>${esc(i)}</span>${situacao(i)}</li>`).join("")}</ul>
           ${v.checklistObs ? `<p class="pequeno"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}
         </section>
-        <section class="secao" aria-labelledby="h-avarias">
+        </div>
+        <section class="secao det-avarias" aria-labelledby="h-avarias">
           <h2 id="h-avarias">Avarias</h2>
           ${htmlAvarias()}
         </section>
-        <section class="secao" aria-labelledby="h-assinaturas">
+        <section class="secao det-assin" aria-labelledby="h-assinaturas">
           <h2 id="h-assinaturas">Assinaturas</h2>
           <div class="assinaturas">
             ${[[ARQUIVO.assVistoriador, v.vistoriadorNome, "Vistoriador"], [ARQUIVO.assMotorista, v.motoristaNome, "Motorista do reboque"]].map(([arq, nomePessoa, funcao]) => `
@@ -222,11 +227,13 @@ export async function montar(el, ctx, params) {
               </div>`).join("")}
           </div>
         </section>
+        </div>
       </div>`;
   }
 
   desenhar();
-  ligarAmpliar(el);
+  // No computador (tela larga com mouse) a foto abre no visualizador grande.
+  ligarAmpliar(el, { grande: () => ctx.desktop && emDesktop() });
 
   // ---------- Status e faixa de envio ----------
   let sincronizando = false;
@@ -252,12 +259,12 @@ export async function montar(el, ctx, params) {
   const pdfPronto = criarPdfPronto({ gerar: (alvo) => gerarPdf(alvo, obterImagem), atual: () => v });
   async function prepararPdf() {
     btnBaixar().disabled = true;
-    btnCompartilhar().disabled = true;
+    if (btnCompartilhar()) btnCompartilhar().disabled = true;
     btnBaixar().innerHTML = `${icone("carregando", "ic gira")} Preparando PDF…`;
     await pdfPronto.preparar();
     if (!ativo) return;
     btnBaixar().disabled = false;
-    btnCompartilhar().disabled = false;
+    if (btnCompartilhar()) btnCompartilhar().disabled = false;
     btnBaixar().innerHTML = `${icone("pdf")} Baixar PDF`;
   }
 
@@ -327,7 +334,7 @@ export async function montar(el, ctx, params) {
       (ctx.sincronizar || ctx.sync.sincronizar)();
     }
     ctx.avisar("Vistoria excluída.", "sucesso");
-    ctx.navegar("#/vistorias");
+    ctx.navegar(ctx.desktop ? "#/inicio" : "#/vistorias");
   }
 
   const aoMudar = async (e) => {

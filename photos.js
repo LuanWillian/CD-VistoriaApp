@@ -91,7 +91,13 @@ export async function verificarCamera() {
 }
 
 // ---------- Visualizador em tela cheia ----------
-export function abrirVisualizador(fotos, indice = 0) {
+// Tela larga com mouse: o visualizador vira um lightbox (fundo escuro, foto em até
+// 90% da tela, fecha clicando fora). O mesmo critério do CSS do detalhe.
+export const TELA_DE_COMPUTADOR = "(min-width: 1024px) and (pointer: fine)";
+export const emDesktop = () => Boolean(globalThis.matchMedia?.(TELA_DE_COMPUTADOR).matches);
+
+// opcoes.grande: modo lightbox; opcoes.origem: elemento que recebe o foco ao fechar.
+export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = null } = {}) {
   if (!fotos.length) return;
   let atual = Math.min(Math.max(indice, 0), fotos.length - 1);
   const d = document.createElement("dialog");
@@ -126,6 +132,7 @@ export function abrirVisualizador(fotos, indice = 0) {
     const acao = e.target.closest("[data-acao]")?.dataset.acao;
     if (acao === "fechar") d.close();
     else if (acao) ir(Number(acao));
+    else if (grande && (e.target === d || e.target.matches(".visualizador-palco, .cheio-topo"))) d.close(); // clicou fora da foto
   });
   d.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft") ir(-1);
@@ -137,10 +144,24 @@ export function abrirVisualizador(fotos, indice = 0) {
     if (x0 !== null && Math.abs(e.clientX - x0) > 50) ir(e.clientX < x0 ? 1 : -1);
     x0 = null;
   });
-  d.addEventListener("close", () => d.remove());
+  const rolagemAntes = document.documentElement.style.overflow;
+  d.addEventListener("close", () => {
+    d.remove();
+    if (grande) {
+      document.documentElement.style.overflow = rolagemAntes;
+      origem?.focus?.();
+    }
+  });
+  if (grande) {
+    d.classList.add("visualizador-grande");
+    d.setAttribute("role", "dialog");
+    d.setAttribute("aria-modal", "true");
+    document.documentElement.style.overflow = "hidden"; // o fundo não rola
+  }
   document.body.append(d);
   mostrar();
   d.showModal();
+  if (grande) d.querySelector('[data-acao="fechar"]').focus();
 }
 
 // HTML de uma miniatura que abre o visualizador (as telas ligam o clique).
@@ -152,11 +173,13 @@ export const miniaturaHtml = (src, legenda, extra = "") => `
   </div>`;
 
 // Liga, dentro de `raiz`, o toque nas miniaturas [data-ampliar] ao visualizador.
-export function ligarAmpliar(raiz) {
+// opcoes.grande: função chamada no momento do clique; se der true, abre o lightbox.
+export function ligarAmpliar(raiz, { grande } = {}) {
   raiz.addEventListener("click", (e) => {
     const b = e.target.closest("[data-ampliar]");
     if (!b) return;
     const todos = [...raiz.querySelectorAll("[data-ampliar]")];
-    abrirVisualizador(todos.map((x) => ({ src: x.dataset.ampliar, legenda: x.dataset.legenda })), todos.indexOf(b));
+    abrirVisualizador(todos.map((x) => ({ src: x.dataset.ampliar, legenda: x.dataset.legenda })), todos.indexOf(b),
+      { grande: Boolean(grande?.()), origem: b });
   });
 }

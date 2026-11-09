@@ -411,6 +411,9 @@ body.com-acoes .avisos { bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 12p
 @media (min-width: 560px) { .dados { grid-template-columns: repeat(3, 1fr); } }
 .dados dt { font-size: 13px; color: var(--texto-2); }
 .dados dd { font-weight: 650; word-break: break-word; }
+/* Mobile/tablet: os invólucros do detalhe não existem visualmente (mesma ordem e espaços de antes). */
+.detalhe-corpo, .det-dir { display: contents; }
+.detalhe-corpo .secao { margin-top: 16px; }
 .fotos-detalhe { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .fotos-detalhe figcaption { font-size: 13px; text-align: center; color: var(--texto-2); margin-top: 4px; }
 .fotos-detalhe .miniatura { aspect-ratio: 4 / 3; }
@@ -485,3 +488,101 @@ dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px;
 /* ---------- Só no app e no celular (html.app-mode, marcado por modo-app.js) ----------
    Sem zoom por pinça nem duplo toque (junto do viewport e dos gestos em modo-app.js). */
 html.app-mode { touch-action: pan-x pan-y; }
+
+/* ---------- Detalhe da vistoria no computador (tela larga + mouse) ----------
+   Duas colunas independentes, cabeçalho com ações, checklist compacto,
+   assinaturas baixas e lightbox. Abaixo disso nada muda. */
+@media (min-width: 1024px) and (pointer: fine) {
+  .conteudo:has(.detalhe-pagina) { max-width: 1200px; padding-inline: 24px; }
+
+  .detalhe-pagina .detalhe-cabeca {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px;
+    background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px 20px; box-shadow: var(--sombra);
+  }
+  .detalhe-pagina .detalhe-cabeca > * + * { margin-top: 0; }
+  .detalhe-cabeca .detalhe-topo { flex: 1 1 320px; min-width: 0; padding: 0; border: 0; box-shadow: none; background: none; }
+  .detalhe-cabeca .detalhe-topo .entre { justify-content: flex-start; flex-wrap: wrap; }
+  .detalhe-cabeca .acoes-detalhe { display: flex; flex: none; align-items: center; gap: 10px; }
+  .detalhe-cabeca .acoes-detalhe .btn-perigo {
+    position: relative; margin-left: 32px; min-height: 36px; padding: 6px 12px; font-size: 14px; background: transparent;
+  }
+  .detalhe-cabeca .acoes-detalhe .btn-perigo::before {
+    content: ""; position: absolute; left: -17px; top: 50%; height: 28px; border-left: 1px solid var(--linha-forte); transform: translateY(-50%);
+  }
+
+  /* Coluna esquerda: dados, avarias, assinaturas. Coluna direita: fotos e checklist.
+     A linha 3 (1fr) absorve a altura extra da coluna da direita: sem buracos à esquerda. */
+  .detalhe-corpo {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto 1fr;
+    gap: 16px; align-items: start;
+  }
+  .detalhe-corpo .secao { margin-top: 0; padding: 16px; min-width: 0; }
+  .det-dados { grid-column: 1; grid-row: 1; }
+  .det-avarias { grid-column: 1; grid-row: 2; }
+  .det-assin { grid-column: 1; grid-row: 3; }
+  .det-dir { display: grid; gap: 16px; grid-column: 2; grid-row: 1 / span 3; align-content: start; min-width: 0; }
+
+  .fotos-detalhe { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .lista-checklist { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); column-gap: 20px; font-size: 14.5px; line-height: 1.3; }
+  .lista-checklist li { padding: 5px 0; }
+
+  .assinaturas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .det-assin .assinatura-ver { height: 90px; }
+  .det-assin .assinatura-ver img { max-width: 100%; max-height: 80px; object-fit: contain; }
+  .det-assin p { margin-top: 2px; }
+
+  /* Lightbox */
+  dialog.visualizador-grande {
+    width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; border-radius: 0;
+    background: rgba(0, 0, 0, 0.88);
+  }
+  .visualizador-grande::backdrop { background: rgba(0, 0, 0, 0.88); }
+  .visualizador-grande .cheio-topo { border: 0; background: none; }
+  .visualizador-grande .visualizador-palco img { max-width: 90vw; max-height: 90vh; width: auto; height: auto; }
+}
+
+/* ---------- Painel do computador (#/inicio no navegador do computador; views/painel.js) ----------
+   Tudo dentro de .dashboard-desktop. Mesma largura e margens da tela de detalhes. */
+.conteudo:has(.dashboard-desktop) { max-width: 1200px; padding-inline: 24px; }
+.dashboard-desktop .dash-metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.dashboard-desktop > * + * { margin-top: 20px; }
+.dashboard-desktop .dash-metrica { display: grid; gap: 2px; padding: 16px 20px; }
+.dashboard-desktop .dash-numero { font-size: 36px; line-height: 1.1; font-weight: 750; font-variant-numeric: tabular-nums; }
+.dashboard-desktop .dash-rotulo { font-size: 14px; color: var(--texto-2); }
+
+.dashboard-desktop .dash-ferramentas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; margin-bottom: 8px; }
+.dashboard-desktop .dash-ferramentas .busca-campo { flex: 1 1 320px; max-width: 460px; }
+.dashboard-desktop .dash-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.dashboard-desktop .dash-tabela-bloco { padding: 16px 16px 12px; }
+.dashboard-desktop .dash-status:empty, .dashboard-desktop #dash-status:empty { display: none; }
+
+/* A tabela cabe na janela (colunas fixas com reticências); a rolagem lateral só entra em janelas estreitas. */
+.dashboard-desktop .dash-rolagem { overflow-x: auto; }
+@media (min-width: 1024px) { .dashboard-desktop .dash-rolagem { overflow-x: clip; } }
+.dashboard-desktop .dash-tabela { width: 100%; min-width: 760px; table-layout: fixed; border-collapse: collapse; }
+.dashboard-desktop .dash-tabela th {
+  position: sticky; top: calc(var(--topo-h) + env(safe-area-inset-top, 0px)); z-index: 2;
+  background: var(--papel); text-align: left; font-size: 13px; font-weight: 700; color: var(--texto-2);
+  padding: 10px 12px; border-bottom: 2px solid var(--linha);
+}
+.dashboard-desktop .dash-tabela td {
+  padding: 8px 12px; border-bottom: 1px solid var(--linha); vertical-align: middle;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dashboard-desktop .dash-tabela th:nth-child(1) { width: 15%; }
+.dashboard-desktop .dash-tabela th:nth-child(2) { width: 17%; }
+.dashboard-desktop .dash-tabela th:nth-child(4) { width: 15%; }
+.dashboard-desktop .dash-tabela th:nth-child(5) { width: 17%; }
+.dashboard-desktop .dash-tabela th:nth-child(6) { width: 72px; }
+.dashboard-desktop .dash-id { font-weight: 700; }
+.dashboard-desktop .dash-num { font-variant-numeric: tabular-nums; }
+.dashboard-desktop .dash-chassi { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
+.dashboard-desktop .dash-acoes { text-align: right; overflow: visible; }
+.dashboard-desktop .dash-tabela tbody tr { cursor: pointer; transition: background-color 0.12s ease; }
+.dashboard-desktop .dash-tabela tbody tr:hover, .dashboard-desktop .dash-tabela tbody tr:focus-within { background: var(--fundo); }
+
+.dashboard-desktop .dash-vazio { text-align: center; padding: 40px 16px; color: var(--texto-2); }
+.dashboard-desktop .dash-vazio .btn { margin-top: 12px; }
+.dashboard-desktop .dash-paginacao { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-top: 12px; font-size: 14px; color: var(--texto-2); font-variant-numeric: tabular-nums; }
+.dashboard-desktop .dash-paginacao[hidden], .dashboard-desktop .dash-vazio[hidden] { display: none; }
+.dashboard-desktop .dash-paginacao .btn { min-height: 36px; padding: 6px 14px; }

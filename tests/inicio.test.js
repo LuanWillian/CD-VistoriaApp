@@ -35,18 +35,18 @@ test("entrada que já tem nível (voltar/avançar/recarregar) mantém o dela", (
   assert.equal(nivelDaTela({ nivel: 0 }, "inicio", 1), 0);
 });
 
-test("computador: #/nova e qualquer subrota dela vão para #/inicio", () => {
-  for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc", "#/nova/qualquer"]) {
+test("computador: #/nova, #/vistorias e subrotas vão para #/inicio", () => {
+  for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc", "#/nova/qualquer", "#/vistorias", "#/vistorias?x=1"]) {
     assert.equal(redirecionamento(hash, true), "#/inicio", hash);
   }
 });
 
 test("computador: as outras rotas ficam como estão", () => {
-  for (const hash of ["", "#/", "#/inicio", "#/vistorias", "#/vistoria/123", "#/vistoria/123?nova=1", "#/novidades"]) {
+  for (const hash of ["", "#/", "#/inicio", "#/vistoria/123", "#/vistoria/123?nova=1", "#/novidades"]) {
     assert.equal(redirecionamento(hash, true), null, hash);
   }
 });
 
-test("celular e app instalado: #/nova nunca é redirecionado", () => {
-  for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc"]) assert.equal(redirecionamento(hash, false), null, hash);
+test("celular e app instalado: #/nova e #/vistorias nunca são redirecionados", () => {
+  for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc", "#/vistorias"]) assert.equal(redirecionamento(hash, false), null, hash);
 });

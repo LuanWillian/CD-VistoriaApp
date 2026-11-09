@@ -40,3 +40,7 @@ export const PDF_FOTO = { maxLado: 1000, maxLadoMuitas: 800, limiteMuitas: 20, q
 export const ITENS_POR_PAGINA = 20;
 // Fotos de vistorias já sincronizadas saem do aparelho depois deste número de dias
 export const DIAS_CACHE_FOTOS = 30;
+// Painel do navegador do computador (#/inicio): nome da saudação quando a conta
+// não tem nome no perfil, e linhas por página da tabela.
+export const NOME_PADRAO_PAINEL = "Luan";
+export const ITENS_POR_PAGINA_PAINEL = 25;

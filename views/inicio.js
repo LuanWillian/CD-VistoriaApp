@@ -1,24 +1,26 @@
 // Tela "Menu" (#/inicio): página principal em todos os ambientes. No app instalado
 // e no navegador de celular/tablet tem os dois cartões; no navegador do computador
-// (ctx.desktop) só o cartão "Vistorias": o "Iniciar vistoria" nem é desenhado.
+// (ctx.desktop) é o painel de consulta (views/painel.js), sem "Iniciar vistoria".
 // Os dois ícones (SVG + quadrado preto/cinza de 120 px) vêm da tela de
 // referência em ../vistoria/index.html e NÃO devem ser alterados.
+import { montar as montarPainel } from "./painel.js";
 
 // Decide, ao abrir o site, se começa no menu. Abrir pelo link ou pelo
 // ícone (abertura nova, "navigate") sem hash, com "#/" ou com "#/nova" sem
 // parâmetros sempre vai ao menu — "#/nova" é o start_url do manifest e o
 // endereço que ficava no link. Recarregar ("reload") ou voltar ("back_forward")
-// mantém a tela; "#/nova?rascunho=…", "#/vistorias" e afins são respeitados.
+// mantém a tela; "#/nova?rascunho=…", "#/vistorias" (fora do computador) e afins são respeitados.
 export function deveAbrirNoMenu(hash, tipoNavegacao) {
   const h = hash || "";
   if (h === "" || h === "#" || h === "#/") return true;
   return h === "#/nova" && tipoNavegacao === "navigate";
 }
 
-// Computador: não existe iniciar vistoria, então #/nova (e qualquer subrota) vai
-// para o menu. Devolve o hash de destino, ou null se a rota pode ficar como está.
+// Computador: não existe iniciar vistoria nem a lista separada (o painel do menu já
+// lista as vistorias), então #/nova e #/vistorias (e subrotas) vão para o menu.
+// Devolve o hash de destino, ou null se a rota pode ficar como está.
 export function redirecionamento(hash, desktop) {
-  return desktop && /^#\/nova([/?]|$)/.test(hash || "") ? "#/inicio" : null;
+  return desktop && /^#\/(nova|vistorias)([/?]|$)/.test(hash || "") ? "#/inicio" : null;
 }
 
 // Histórico no app e no celular: o menu é sempre o nível 0 (primeira entrada),
@@ -63,6 +65,8 @@ const ICONE_VISTORIAS = `
     </div>`;
 
 export function montar(el, ctx) {
+  // Navegador do computador: a página principal é o painel de consulta.
+  if (ctx.desktop) return montarPainel(el, ctx);
   el.innerHTML = `
     <section class="home-app" aria-labelledby="home-titulo">
       <h1 class="sr-only" id="home-titulo">Menu</h1>${ctx.desktop ? "" : `

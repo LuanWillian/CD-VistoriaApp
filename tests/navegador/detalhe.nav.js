@@ -3,6 +3,7 @@ import * as storage from "../../storage.js";
 import { novoRascunho, vistoriaDoRascunho } from "../../formatos.js";
 import { CHECKLIST_ITENS } from "../../config.js";
 import * as detalhe from "../../views/detalhe.js";
+import { abrirVisualizador } from "../../photos.js";
 
 const EU = { id: "u-eu", email: "eu@teste" };
 
@@ -90,5 +91,53 @@ teste("detalhe: 'Nova vistoria' (depois de finalizar) só existe fora do computa
       tela?.desmontar?.();
       el.remove();
     }
+  }
+});
+
+teste("detalhe: a ordem dos blocos no HTML (celular) continua dados, fotos, checklist, avarias, assinaturas", async () => {
+  const t = await abrir(vistoria("ordem", EU.id));
+  try {
+    const ids = [...t.el.querySelectorAll("section.secao")].map((s) => s.getAttribute("aria-labelledby"));
+    igual(ids, ["h-dados", "h-fotos", "h-checklist", "h-avarias", "h-assinaturas"]);
+    igual(t.el.querySelectorAll('a[href^="#/nova"]').length, 0, "o computador não tem link para nova vistoria");
+    igual(t.el.querySelector("#btn-compartilhar"), null, "o computador não tem Compartilhar");
+  } finally {
+    t.fim();
+  }
+});
+
+teste("visualizador: no modo grande é um diálogo modal que fecha clicando fora, não na foto, e devolve o foco e a rolagem", async () => {
+  const origem = document.createElement("button");
+  document.body.append(origem);
+  origem.focus();
+  abrirVisualizador([{ src: "data:image/gif;base64,R0lGODlhAQABAAAAACw=", legenda: "Frente" }], 0, { grande: true, origem });
+  const d = document.querySelector("dialog.visualizador-grande");
+  try {
+    ok(d?.open, "o lightbox deveria abrir");
+    igual(d.getAttribute("role"), "dialog");
+    igual(d.getAttribute("aria-modal"), "true");
+    igual(document.activeElement.getAttribute("aria-label"), "Fechar");
+    igual(document.documentElement.style.overflow, "hidden");
+    d.querySelector("img").click();
+    ok(d.open, "clicar na foto não fecha");
+    d.querySelector(".visualizador-palco").click();
+    await esperar(30);
+    ok(!d.isConnected, "clicar fora deveria fechar");
+    igual(document.documentElement.style.overflow, "");
+    igual(document.activeElement, origem);
+  } finally {
+    d?.close();
+    origem.remove();
+  }
+});
+
+teste("visualizador: fora do modo grande (celular) não vira lightbox", async () => {
+  abrirVisualizador([{ src: "data:image/gif;base64,R0lGODlhAQABAAAAACw=", legenda: "Frente" }], 0);
+  const d = document.querySelector("dialog.visualizador");
+  try {
+    ok(!d.classList.contains("visualizador-grande"));
+    igual(d.getAttribute("aria-modal"), null);
+  } finally {
+    d.close();
   }
 });
