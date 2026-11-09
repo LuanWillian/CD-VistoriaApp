@@ -1,4 +1,4 @@
--- Conferência de RLS (leitura para todos os logados, escrita só do dono), numeração e checks. Rode num banco com a migration aplicada:
+-- Conferência de RLS (leitura e exclusão para todos os logados, criar/editar só do dono), numeração e checks. Rode num banco com as migrations aplicadas:
 --   docker exec -i supabase_db_vistoria-veicular psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
 -- No projeto hospedado: cole no SQL Editor. Tudo roda dentro de uma transação
 -- desfeita no fim (rollback); só a sequence de números avança.
@@ -127,14 +127,10 @@ begin
     and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/frente.jpg';
   if c <> 1 then raise exception 'B não enxerga o arquivo de A no Storage'; end if;
 
-  -- ...mas só o dono altera, apaga ou cria.
+  -- ...mas só o dono altera ou cria (excluir é de todos: migration 0004, testada no fim).
   update public.inspections set marca = 'X' where id = '11111111-1111-4111-8111-111111111111';
   get diagnostics c = row_count;
   if c <> 0 then raise exception 'B alterou a vistoria de A'; end if;
-
-  delete from public.inspections where id = '11111111-1111-4111-8111-111111111111';
-  get diagnostics c = row_count;
-  if c <> 0 then raise exception 'B apagou a vistoria de A'; end if;
 
   begin
     insert into public.damages (id, inspection_id, area, tipo, gravidade)
@@ -146,9 +142,6 @@ begin
   update public.damages set descricao = 'x' where id = '44444444-4444-4444-8444-444444444444';
   get diagnostics c = row_count;
   if c <> 0 then raise exception 'B alterou a avaria de A'; end if;
-  delete from public.damage_photos where id = '55555555-5555-4555-8555-555555555555';
-  get diagnostics c = row_count;
-  if c <> 0 then raise exception 'B apagou a foto de avaria de A'; end if;
 
   begin
     insert into public.inspections (id, user_id, chassi, marca, modelo, cor, km, combustivel, checklist, vistoriador_nome,
@@ -207,6 +200,30 @@ begin
   if depois.updated_at < '2001-01-01' then raise exception 'updated_at não foi atualizado'; end if;
   if depois.vistoriador_nome <> 'Ana Perfil' then raise exception 'vistoriador_nome mudou no update'; end if;
   if depois.marca <> 'Fiat 2' then raise exception 'o update normal não foi aplicado'; end if;
+end $$;
+
+-- ---------- Excluir é de todos (migration 0004) ----------
+set local request.jwt.claims = '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}';
+
+do $$
+declare
+  c int;
+begin
+  delete from public.damage_photos where id = '55555555-5555-4555-8555-555555555555';
+  get diagnostics c = row_count;
+  if c <> 1 then raise exception 'B não conseguiu apagar a foto de avaria de A'; end if;
+
+  delete from storage.objects where bucket_id = 'vistorias'
+    and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/frente.jpg';
+  get diagnostics c = row_count;
+  if c <> 1 then raise exception 'B não conseguiu apagar o arquivo de A no Storage'; end if;
+
+  delete from public.inspections where id = '11111111-1111-4111-8111-111111111111';
+  get diagnostics c = row_count;
+  if c <> 1 then raise exception 'B não conseguiu apagar a vistoria de A'; end if;
+  select count(*) into c from public.damages where id = '44444444-4444-4444-8444-444444444444';
+  if c <> 0 then raise exception 'a avaria deveria sair junto com a vistoria'; end if;
+
   raise notice 'RLS OK';
 end $$;
 

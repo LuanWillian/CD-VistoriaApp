@@ -83,10 +83,9 @@ export async function montar(el, ctx, params) {
   // Todos veem as vistorias já enviadas; a que ainda está só neste aparelho
   // (pendente ou com erro) de outra pessoa continua privada.
   if (v && v.userId !== usuario.id && v.status !== "sincronizada") v = null;
-  const dono = () => v?.userId === usuario.id;
-  // Excluir só existe no navegador do computador, e só para o dono. No app
+  // Excluir só existe no navegador do computador (qualquer conta pode excluir). No app
   // instalado e no navegador de celular/tablet a opção não aparece.
-  const podeExcluir = () => dono() && ctx.desktop;
+  const podeExcluir = () => ctx.desktop;
   try {
     if ((!v || (v.origem === "remota" && !v.completa)) && ctx.online()) v = await baixarCompleta();
   } catch (e) {
@@ -316,7 +315,7 @@ export async function montar(el, ctx, params) {
   });
 
   async function excluir() {
-    if (!podeExcluir()) return; // só o dono, e só no computador (o servidor também recusa os outros)
+    if (!podeExcluir()) return; // só no computador
     const ok = await ctx.confirmar({
       titulo: `Excluir a vistoria ${nomeVistoria(v)}?`,
       texto: "Isso apaga também as fotos e assinaturas no servidor e não pode ser desfeito.",
@@ -330,7 +329,8 @@ export async function montar(el, ctx, params) {
       await ctx.storage.excluirVistoriaLocal(id);
     } else {
       await ctx.storage.salvarVistoria({ ...atual, status: "excluindo" });
-      await ctx.storage.enfileirarExclusao({ id, userId: atual.userId, criadoEm: new Date().toISOString() });
+      // userId: quem exclui (a fila é por conta); donoId: de quem é a pasta de arquivos no servidor.
+      await ctx.storage.enfileirarExclusao({ id, userId: usuario.id, donoId: atual.userId, criadoEm: new Date().toISOString() });
       (ctx.sincronizar || ctx.sync.sincronizar)();
     }
     ctx.avisar("Vistoria excluída.", "sucesso");

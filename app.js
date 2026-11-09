@@ -242,7 +242,8 @@ function abrirMenu() {
     document.body.append(menu);
   }
   $("#menu-email", menu).textContent = ctx.auth.usuarioAtual()?.email || "";
-  $('[data-acao="instalar"]', menu).hidden = !window.__podeInstalar;
+  // Navegador do computador: sem opção de instalar o app.
+  $('[data-acao="instalar"]', menu).hidden = desktop || !window.__podeInstalar;
   menu.showModal();
 }
 

@@ -32,13 +32,13 @@ async function abrir(v, { online = false, desktop = true } = {}) {
   return { el, fim: () => { tela?.desmontar?.(); el.remove(); } };
 }
 
-teste("detalhe: vistoria sincronizada de outra pessoa abre (guardada no aparelho) mas sem botão Excluir", async () => {
+teste("detalhe: vistoria sincronizada de outra pessoa abre (guardada no aparelho) e no computador pode ser excluída", async () => {
   const t = await abrir(vistoria("alheia", "u-outro"));
   try {
     ok(t.el.querySelector("#detalhe-numero"), `a tela deveria abrir; veio: ${t.el.textContent.slice(0, 80)}`);
     igual(t.el.querySelector("#detalhe-numero").textContent.trim(), "VIS-000010");
     ok(t.el.querySelector("#btn-baixar"), "falta o botão Baixar PDF");
-    igual(t.el.querySelector("#btn-excluir"), null, "só o dono pode excluir");
+    ok(t.el.querySelector("#btn-excluir"), "qualquer conta exclui no computador");
   } finally {
     t.fim();
   }
@@ -62,7 +62,7 @@ teste("detalhe: vistoria pendente de outra pessoa neste aparelho continua escond
   }
 });
 
-teste("detalhe: no app instalado e no celular nem o dono vê o botão Excluir", async () => {
+teste("detalhe: no app instalado e no celular ninguém vê o botão Excluir", async () => {
   const t = await abrir(vistoria("minha-app", EU.id), { desktop: false });
   try {
     ok(t.el.querySelector("#detalhe-numero"), "a tela deveria abrir");

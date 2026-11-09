@@ -71,7 +71,7 @@ export function criarSincronizador({
 
     for (const item of await storage.listarExclusoes(u.id)) {
       try {
-        await remoto.excluirVistoriaRemota(u.id, item.id);
+        await remoto.excluirVistoriaRemota(item.donoId || u.id, item.id);
         await storage.removerExclusao(item.id);
         await storage.excluirVistoriaLocal(item.id);
       } catch (e) {
