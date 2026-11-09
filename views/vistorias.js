@@ -123,8 +123,9 @@ export async function montar(el, ctx) {
   };
 
   async function desenharRascunhos() {
-    const rascunhos = await ctx.storage.listarRascunhos(usuario.id);
     const sec = $("#rascunhos", el);
+    // Computador não inicia nem continua vistoria: sem rascunhos na lista.
+    const rascunhos = ctx.desktop ? [] : await ctx.storage.listarRascunhos(usuario.id);
     sec.hidden = !rascunhos.length;
     if (!rascunhos.length) {
       sec.innerHTML = "";
@@ -179,7 +180,7 @@ export async function montar(el, ctx) {
           <div class="vazio">
             <p class="titulo">Nenhuma vistoria ainda</p>
             <p>As vistorias finalizadas aparecem aqui.</p>
-            <a class="btn btn-primario" href="#/nova?novo=1">${icone("mais")} Fazer a primeira vistoria</a>
+            ${ctx.desktop ? "" : `<a class="btn btn-primario" href="#/nova?novo=1">${icone("mais")} Fazer a primeira vistoria</a>`}
           </div>`;
       }
     } else {

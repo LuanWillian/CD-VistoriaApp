@@ -8,6 +8,7 @@ import "./etapa-checklist.nav.js";
 import "./etapa-avarias.nav.js";
 import "./finalizar.nav.js";
 import "./detalhe.nav.js";
+import "./inicio.nav.js";
 import "./pdf.nav.js";
 
 rodar();

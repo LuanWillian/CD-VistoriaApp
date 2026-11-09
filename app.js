@@ -1,4 +1,4 @@
-// Inicialização do app: configuração, login, rotas por hash, barra de abas,
+// Inicialização do app: configuração, login, rotas por hash, menu inicial,
 // indicador de conexão e gatilhos da sincronização.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./env.js";
 import * as storage from "./storage.js";
@@ -6,8 +6,8 @@ import { criarRemoto } from "./supabase.js";
 import { criarAuth } from "./auth.js";
 import { criarSincronizador } from "./sync.js";
 import { DIAS_CACHE_FOTOS } from "./config.js";
-import { $, $$, esc, icone, avisar, confirmar } from "./ui.js";
-import { aoMudarDispositivo, ehComputadorNoNavegador, isAppMode, marcarDocumento } from "./dispositivo.js";
+import { $, esc, icone, avisar, confirmar } from "./ui.js";
+import { aoMudarDispositivo, detectarDispositivo, isDesktopBrowser } from "./dispositivo.js";
 import * as viewLogin from "./views/login.js";
 import * as viewNova from "./views/nova.js";
 import * as viewVistorias from "./views/vistorias.js";
@@ -16,21 +16,24 @@ import * as viewInicio from "./views/inicio.js";
 
 const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio };
 
-// Só no modo app (app instalado OU navegador de celular/tablet) existe o menu
-// #/inicio, que vira a página principal. A escolha acontece aqui, antes de
-// qualquer tela ser desenhada (sem piscar). No computador nada disso roda.
-const modoApp = isAppMode();
-if (modoApp) {
+// O menu #/inicio é a página principal em todos os ambientes. A escolha acontece
+// aqui, antes de qualquer tela ser desenhada (sem piscar).
+// Navegador do computador: não existe iniciar vistoria, então #/nova não existe.
+const desktop = isDesktopBrowser();
+{
   const tipoNavegacao = performance.getEntriesByType?.("navigation")?.[0]?.type ?? "navigate";
   if (viewInicio.deveAbrirNoMenu(location.hash, tipoNavegacao)) history.replaceState(history.state, "", "#/inicio");
+  const bloqueada = viewInicio.redirecionamento(location.hash, desktop);
+  if (bloqueada) history.replaceState(history.state, "", bloqueada);
 }
 
-// Histórico no modo app: o menu fica sempre por baixo de tudo (nível 0). Se o app
-// abrir direto numa tela (ex.: recarregado sem histórico salvo), o menu é
-// colocado antes dela, para o "voltar" do Android levar até ele.
+// Histórico no app e no celular: o menu fica sempre por baixo de tudo (nível 0). Se
+// o app abrir direto numa tela (ex.: recarregado sem histórico salvo), o menu é
+// colocado antes dela, para o "voltar" do Android levar até ele. No computador o
+// histórico é o normal do navegador.
 let nivelAtual = 0;
 const comNivel = (nivel) => ({ ...(history.state || {}), nivel });
-if (modoApp) {
+if (!desktop) {
   if (/^#\/inicio(\?|$)/.test(location.hash)) {
     history.replaceState(comNivel(0), "");
   } else if (Number.isInteger(history.state?.nivel)) {
@@ -42,7 +45,7 @@ if (modoApp) {
     nivelAtual = 1;
   }
 }
-let dispositivo = marcarDocumento(); // { tipo, instalado, ios } + atributos no <html>
+let dispositivo = detectarDispositivo(); // { tipo, instalado, ios }
 const main = $("#main");
 const online = () => navigator.onLine;
 
@@ -55,7 +58,6 @@ let noApp = false;
 
 // ---------- Telas especiais ----------
 function telaMensagem(titulo, texto) {
-  document.body.classList.add("sem-abas");
   main.innerHTML = `
     <div class="tela-centro"><div class="pilha">
       ${icone("alerta", "ic ic-lg")}
@@ -68,28 +70,14 @@ const envConfigurado = () =>
   Boolean(SUPABASE_URL && SUPABASE_ANON_KEY) && !SUPABASE_URL.includes("SEU-PROJETO") && !SUPABASE_ANON_KEY.includes("SUA-ANON-KEY");
 
 // ---------- Rotas ----------
-// No computador (pelo navegador) não há aba "Nova vistoria": começa na lista.
-const rotaInicial = () => {
-  if (modoApp) return "/inicio";
-  return ehComputadorNoNavegador(dispositivo) ? "/vistorias" : "/nova";
-};
-
 function lerRota() {
-  const [caminho, qs] = (location.hash.slice(1) || rotaInicial()).split("?");
+  const [caminho, qs] = (location.hash.slice(1) || "/inicio").split("?");
   const busca = new URLSearchParams(qs || "");
   const m = caminho.match(/^\/vistoria\/([\w-]+)$/);
   if (m) return { nome: "detalhe", params: { id: m[1], busca } };
   if (caminho === "/vistorias") return { nome: "vistorias", params: { busca } };
-  if (caminho === "/inicio" && modoApp) return { nome: "inicio", params: { busca } };
-  return { nome: "nova", params: { busca } };
-}
-
-function marcarAba(nome) {
-  const aba = nome === "detalhe" ? "vistorias" : nome;
-  $$(".aba").forEach((a) => {
-    if (a.dataset.aba === aba) a.setAttribute("aria-current", "page");
-    else a.removeAttribute("aria-current");
-  });
+  if (!desktop && /^\/nova(\/|$)/.test(caminho)) return { nome: "nova", params: { busca } };
+  return { nome: "inicio", params: { busca } }; // #/inicio e qualquer rota desconhecida
 }
 
 async function renderizar() {
@@ -97,17 +85,18 @@ async function renderizar() {
   try { viewAtual?.desmontar?.(); } catch (e) { console.error(e); }
   viewAtual = null;
   document.body.classList.remove("com-acoes");
-  // Fora do modo app (computador), #/inicio não existe: vai para a tela inicial de sempre.
-  if (!modoApp && /^#\/inicio(\?|$)/.test(location.hash)) history.replaceState(history.state, "", `#${rotaInicial()}`);
+  // Computador: #/nova não existe (digitado, favorito ou voltar/avançar do histórico).
+  // replaceState, para a rota bloqueada não ficar no histórico.
+  const bloqueada = viewInicio.redirecionamento(location.hash, desktop);
+  if (bloqueada) history.replaceState(history.state, "", bloqueada);
   const { nome, params } = lerRota();
-  if (modoApp) {
-    // No menu não aparece a seta de voltar ao menu (a barra inferior some no app via CSS).
-    document.body.classList.toggle("na-inicio", nome === "inicio");
+  // No menu não aparece a seta de voltar ao menu.
+  document.body.classList.toggle("na-inicio", nome === "inicio");
+  if (!desktop) {
     nivelAtual = viewInicio.nivelDaTela(history.state, nome, nivelAtual);
     if (history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
   }
   hashAtual = location.hash;
-  marcarAba(nome);
   // Cada tela ganha um contêiner novo: os ouvintes dela somem junto com ela.
   const raiz = document.createElement("div");
   main.replaceChildren(raiz);
@@ -115,7 +104,7 @@ async function renderizar() {
   try {
     const v = (await VIEWS[nome].montar(raiz, ctx, params)) || {};
     // Uma tela pode trocar o endereço ao montar (ex.: #/nova?rascunho=…): o nível fica.
-    if (modoApp && token === tokenRender && history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
+    if (!desktop && token === tokenRender && history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
     if (token !== tokenRender) {
       v.desmontar?.();
       return;
@@ -156,10 +145,6 @@ function atualizarIndicadores({ pendentes = 0, erros = 0, sincronizando = false,
   else if (total) { estado = "pendente"; texto = total === 1 ? "1 pendente" : `${total} pendentes`; }
   status.dataset.estado = estado;
   status.textContent = texto;
-  const selo = $("#selo-pendentes");
-  selo.hidden = !total;
-  selo.textContent = String(total);
-  selo.setAttribute("aria-label", total === 1 ? "1 vistoria não enviada" : `${total} vistorias não enviadas`);
   $("#faixa-sessao").hidden = !sessaoExpirada;
 }
 
@@ -187,7 +172,6 @@ async function mostrarLogin() {
   noApp = false;
   try { viewAtual?.desmontar?.(); } catch { /* nada */ }
   viewAtual = null;
-  document.body.classList.add("sem-abas");
   document.body.classList.remove("com-acoes");
   tituloComoLinkDoMenu(false);
   $("#btn-menu").hidden = true;
@@ -198,22 +182,23 @@ async function mostrarLogin() {
   await viewLogin.montar(raiz, ctx, {});
 }
 
-// Só no modo app: o título "CD Vistoria" vira o caminho de volta ao menu.
+// O título "CD Vistoria" vira o caminho de volta ao menu (em todos os ambientes).
 function tituloComoLinkDoMenu(ligar) {
-  if (!modoApp) return;
   const titulo = $(".topo-titulo");
   titulo.innerHTML = ligar
     ? `<a class="topo-link" href="#/inicio" aria-label="CD Vistoria — voltar ao menu">${icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`
     : "CD Vistoria";
 }
 
-// Voltar ao menu pelo título: volta no próprio histórico até o menu (nível 0),
-// sem empilhar entradas; assim, no menu, o "voltar" do Android sai do app.
+// App e celular: voltar ao menu pelo título volta no próprio histórico até o menu
+// (nível 0), sem empilhar entradas; assim, no menu, o "voltar" do Android sai do
+// app. No computador o link funciona como um link comum (o voltar do navegador
+// segue normal).
 function irParaMenu() {
   if (nivelAtual > 0 && history.state?.nivel === nivelAtual) history.go(-nivelAtual);
   else location.replace("#/inicio");
 }
-if (modoApp) {
+if (!desktop) {
   $(".topo-titulo").addEventListener("click", (e) => {
     if (!e.target.closest(".topo-link")) return;
     e.preventDefault();
@@ -223,11 +208,10 @@ if (modoApp) {
 
 function entrarNoApp() {
   noApp = true;
-  document.body.classList.remove("sem-abas");
   tituloComoLinkDoMenu(true);
   $("#btn-menu").hidden = false;
   $("#status-rede").hidden = false;
-  if (!location.hash || location.hash === "#") location.replace(`#${rotaInicial()}`);
+  if (!location.hash || location.hash === "#") location.replace("#/inicio");
   renderizar();
   storage.limparFotosAntigas(DIAS_CACHE_FOTOS).catch(console.error);
   ctx.sync.contar().then((c) => atualizarIndicadores(c)).catch(() => {});
@@ -298,7 +282,7 @@ async function iniciar() {
   const remoto = criarRemoto({ url: SUPABASE_URL, chave: SUPABASE_ANON_KEY });
   const auth = criarAuth({ remoto, storage, estaOnline: online });
   const sync = criarSincronizador({ storage, remoto, usuarioAtual: auth.usuarioAtual, estaOnline: online });
-  ctx = { storage, remoto, auth, sync, navegar, online, confirmar, avisar, sincronizar };
+  ctx = { storage, remoto, auth, sync, navegar, online, confirmar, avisar, sincronizar, desktop };
 
   sync.eventos.addEventListener("mudou", (e) => atualizarIndicadores(e.detail));
   auth.aoMudar((u) => {
@@ -367,7 +351,7 @@ const faixaInstalarFechada = () => {
 
 // A faixa só aparece em celular/tablet ainda não instalado (nunca no computador).
 function mostrarFaixaInstalar() {
-  if (ehComputadorNoNavegador(dispositivo)) {
+  if (desktop) {
     $("#faixa-instalar").hidden = true;
     return;
   }

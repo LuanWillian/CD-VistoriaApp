@@ -16,7 +16,7 @@
   <script src="vendor/supabase-2.118.0.umd.js" defer></script>
   <script type="module" src="app.js"></script>
 </head>
-<body class="sem-abas">
+<body>
   <header class="topo">
     <p class="topo-titulo">CD Vistoria</p>
     <p class="status-rede" id="status-rede" data-estado="online" role="status" hidden>Online</p>
@@ -40,18 +40,6 @@
   </div>
 
   <main id="main" class="conteudo" tabindex="-1"></main>
-
-  <nav class="abas" aria-label="Navegação principal">
-    <a class="aba" href="#/nova" data-aba="nova">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M12 12v6M9 15h6"/></svg>
-      Nova vistoria
-    </a>
-    <a class="aba" href="#/vistorias" data-aba="vistorias">
-      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-      Vistorias
-      <span class="selo-aba" id="selo-pendentes" hidden></span>
-    </a>
-  </nav>
 
   <div id="avisos" class="avisos" aria-live="polite"></div>
 </body>

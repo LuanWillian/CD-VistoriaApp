@@ -1,16 +1,16 @@
 // Detecção ÚNICA do aparelho e do "modo app" do CD Vistoria.
 //
-// Roda como <script> comum no <head> (antes da primeira pintura) e marca
-// <html class="app-mode"> quando isAppMode() é verdadeiro. Todo CSS exclusivo
-// do modo app usa essa classe: o navegador do computador nunca é afetado e
-// nada "pisca". O dispositivo.js (módulo) reexporta estas mesmas funções;
-// não repita a lógica em outro lugar.
+// Roda como <script> comum no <head> (antes da primeira pintura). O dispositivo.js
+// (módulo) reexporta estas mesmas funções; não repita a lógica em outro lugar.
 //
-//   isInstalledApp(): PWA aberto como app (display-mode standalone ou, no iOS,
-//                     navigator.standalone).
-//   isMobileDevice(): celular ou tablet, pelo aparelho e não pela largura da
-//                     janela (desktop com janela estreita continua desktop).
-//   isAppMode():      isInstalledApp() || isMobileDevice().
+//   isInstalledApp():   PWA aberto como app (display-mode standalone ou, no iOS,
+//                       navigator.standalone).
+//   isMobileDevice():   celular ou tablet, pelo aparelho e não pela largura da
+//                       janela (desktop com janela estreita continua desktop).
+//   isDesktopBrowser(): navegador do computador = não é app instalado e não é
+//                       celular/tablet. Só ele não tem "Iniciar vistoria".
+//   isAppMode():        o contrário de isDesktopBrowser(). Marca <html class="app-mode">,
+//                       usada só para o que é de toque: sem zoom (touch-action).
 (function () {
   var MODOS_INSTALADO = ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"];
 
@@ -67,6 +67,10 @@
     amb = amb || ambienteDoNavegador();
     return isInstalledApp(amb) || isMobileDevice(amb);
   }
+  function isDesktopBrowser(amb) {
+    amb = amb || ambienteDoNavegador();
+    return !isInstalledApp(amb) && !isMobileDevice(amb);
+  }
 
   function marcarModoApp(amb, raiz) {
     raiz = raiz || (globalThis.document && globalThis.document.documentElement);
@@ -100,6 +104,7 @@
     isInstalledApp: isInstalledApp,
     isMobileDevice: isMobileDevice,
     isAppMode: isAppMode,
+    isDesktopBrowser: isDesktopBrowser,
     marcarModoApp: marcarModoApp,
     bloquearZoom: bloquearZoom,
   };

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detectarDispositivo, ehComputadorNoNavegador, marcarDocumento } from "../dispositivo.js";
+import { detectarDispositivo, isDesktopBrowser } from "../dispositivo.js";
 
 const UA = {
   chromeWindows: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
@@ -23,7 +23,6 @@ const TOQUE = ["(pointer: coarse)", "(display-mode: browser)"];
 test("Chrome no Windows (Client Hints) é computador no navegador", () => {
   const d = detectarDispositivo(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" }, consultas: MOUSE }));
   assert.deepEqual(d, { tipo: "computador", instalado: false, ios: false });
-  assert.equal(ehComputadorNoNavegador(d), true);
 });
 
 test("Safari no Mac e Firefox no Linux (sem Client Hints) são computador", () => {
@@ -67,14 +66,18 @@ test("app instalado: standalone no Chrome ou navigator.standalone no iPhone", ()
   const pc = detectarDispositivo(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" },
     consultas: ["(pointer: fine)", "(any-pointer: fine)", "(display-mode: standalone)"] }));
   assert.equal(pc.instalado, true);
-  assert.equal(ehComputadorNoNavegador(pc), false, "app instalado no computador não muda nada");
   assert.equal(detectarDispositivo(amb({ userAgent: UA.iphone, maxTouchPoints: 5, standaloneIOS: true })).instalado, true);
 });
 
-test("marcarDocumento escreve os atributos no <html>", () => {
-  const raiz = { dataset: {} };
-  marcarDocumento({ tipo: "computador", instalado: false, ios: false }, raiz);
-  assert.deepEqual(raiz.dataset, { dispositivo: "computador", instalado: "nao" });
+test("isDesktopBrowser: só o navegador do computador (não instalado e não celular/tablet)", () => {
+  const pc = { userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" } };
+  assert.equal(isDesktopBrowser(amb({ ...pc, consultas: MOUSE })), true, "Chrome no Windows");
+  assert.equal(isDesktopBrowser(amb({ userAgent: UA.safariMac, consultas: MOUSE })), true, "Safari no Mac");
+  assert.equal(isDesktopBrowser(amb({ ...pc, consultas: ["(display-mode: standalone)"] })), false, "app instalado no computador");
+  assert.equal(isDesktopBrowser(amb({ userAgent: UA.iphone, maxTouchPoints: 5 })), false, "navegador do iPhone");
+  assert.equal(isDesktopBrowser(amb({ userAgent: UA.ipadComoMac, maxTouchPoints: 5 })), false, "iPad que se diz Mac");
+  assert.equal(isDesktopBrowser(amb({ userAgent: UA.androidTablet, uaData: { mobile: false, platform: "Android" } })), false, "tablet Android");
+  assert.equal(isDesktopBrowser(amb({ userAgent: UA.iphone, maxTouchPoints: 5, standaloneIOS: true })), false, "iPhone instalado");
 });
 
 test("isInstalledApp: standalone ou navigator.standalone (iOS); nada mais", async () => {
@@ -95,7 +98,8 @@ test("isMobileDevice: celular/tablet (inclui iPad como Mac); computador não", a
 });
 
 test("isAppMode: app instalado OU celular/tablet; computador no navegador não", async () => {
-  const { isAppMode } = await import("../dispositivo.js");
+  await import("../modo-app.js");
+  const { isAppMode } = globalThis.CDModo;
   assert.equal(isAppMode(amb({ userAgent: UA.iphone, maxTouchPoints: 5 })), true, "navegador do celular");
   assert.equal(isAppMode(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" },
     consultas: ["(display-mode: standalone)"] })), true, "app instalado no computador");

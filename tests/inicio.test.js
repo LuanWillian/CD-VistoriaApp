@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deveAbrirNoMenu, nivelDaTela } from "../views/inicio.js";
+import { deveAbrirNoMenu, nivelDaTela, redirecionamento } from "../views/inicio.js";
 
 test("abrir pelo link ou pelo ícone (sem hash, #/ ou #/nova) vai para o menu", () => {
   for (const hash of ["", "#", "#/", "#/nova"]) assert.equal(deveAbrirNoMenu(hash, "navigate"), true, hash);
@@ -33,4 +33,20 @@ test("nível no histórico: menu é 0, cada tela aberta a partir dele soma 1", (
 test("entrada que já tem nível (voltar/avançar/recarregar) mantém o dela", () => {
   assert.equal(nivelDaTela({ nivel: 1 }, "vistorias", 2), 1);
   assert.equal(nivelDaTela({ nivel: 0 }, "inicio", 1), 0);
+});
+
+test("computador: #/nova e qualquer subrota dela vão para #/inicio", () => {
+  for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc", "#/nova/qualquer"]) {
+    assert.equal(redirecionamento(hash, true), "#/inicio", hash);
+  }
+});
+
+test("computador: as outras rotas ficam como estão", () => {
+  for (const hash of ["", "#/", "#/inicio", "#/vistorias", "#/vistoria/123", "#/vistoria/123?nova=1", "#/novidades"]) {
+    assert.equal(redirecionamento(hash, true), null, hash);
+  }
+});
+
+test("celular e app instalado: #/nova nunca é redirecionado", () => {
+  for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc"]) assert.equal(redirecionamento(hash, false), null, hash);
 });

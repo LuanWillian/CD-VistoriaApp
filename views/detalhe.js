@@ -84,9 +84,9 @@ export async function montar(el, ctx, params) {
   // (pendente ou com erro) de outra pessoa continua privada.
   if (v && v.userId !== usuario.id && v.status !== "sincronizada") v = null;
   const dono = () => v?.userId === usuario.id;
-  // Excluir só existe no navegador do computador, e só para o dono. No modo app
-  // (app instalado ou navegador de celular/tablet) a opção não aparece.
-  const podeExcluir = () => dono() && !document.documentElement.classList.contains("app-mode");
+  // Excluir só existe no navegador do computador, e só para o dono. No app
+  // instalado e no navegador de celular/tablet a opção não aparece.
+  const podeExcluir = () => dono() && ctx.desktop;
   try {
     if ((!v || (v.origem === "remota" && !v.completa)) && ctx.online()) v = await baixarCompleta();
   } catch (e) {
@@ -186,7 +186,7 @@ export async function montar(el, ctx, params) {
         <div class="acoes-detalhe">
           <button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>
           <button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>
-          ${nova ? `<a class="btn btn-secundario" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
+          ${nova && !ctx.desktop ? `<a class="btn btn-secundario" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
           ${podeExcluir() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
         </div>
         <section class="secao" aria-labelledby="h-dados">

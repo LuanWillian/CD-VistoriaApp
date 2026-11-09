@@ -25,7 +25,6 @@
   --raio-sm: 8px;
   --alvo: 48px;
   --topo-h: 56px;
-  --abas-h: 64px;
   --acoes-h: 72px;
   --seguro-baixo: env(safe-area-inset-bottom, 0px);
   --sombra: 0 1px 2px rgba(17, 17, 17, 0.08), 0 2px 8px rgba(17, 17, 17, 0.06);
@@ -89,23 +88,23 @@ button:disabled { cursor: default; opacity: 0.55; }
 }
 .btn-topo:active { background: rgba(255, 255, 255, 0.16); }
 
-/* Só no modo app (html.app-mode): título vira link de volta ao menu #/inicio. */
-html.app-mode .topo-link {
+/* Título "CD Vistoria" vira o link de volta ao menu #/inicio (em todos os ambientes). */
+.topo-link {
   display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: var(--alvo);
   padding: 0 8px 0 0; border-radius: var(--raio-sm);
   color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent;
 }
-html.app-mode .topo-link span { overflow: hidden; text-overflow: ellipsis; }
-html.app-mode .topo-link:active { background: rgba(255, 255, 255, 0.16); }
-html.app-mode body.na-inicio .topo-voltar { display: none; }
+.topo-link span { overflow: hidden; text-overflow: ellipsis; }
+.topo-link:active { background: rgba(255, 255, 255, 0.16); }
+@media (hover: hover) { .topo-link:hover { background: rgba(255, 255, 255, 0.12); } }
+body.na-inicio .topo-voltar { display: none; }
 
 /* ---------- Conteúdo ---------- */
 .conteudo {
-  padding: 16px 16px calc(var(--abas-h) + var(--seguro-baixo) + 24px);
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(var(--seguro-baixo) + 24px) max(16px, env(safe-area-inset-left, 0px));
   max-width: 720px; margin: 0 auto;
 }
-body.com-acoes .conteudo { padding-bottom: calc(var(--abas-h) + var(--acoes-h) + var(--seguro-baixo) + 24px); }
-body.sem-abas .conteudo { padding-bottom: 32px; }
+body.com-acoes .conteudo { padding-bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 24px); }
 .pilha > * + * { margin-top: 16px; }
 .titulo { font-size: 24px; line-height: 1.25; font-weight: 750; }
 .subtitulo { font-size: 18px; font-weight: 700; }
@@ -113,34 +112,6 @@ body.sem-abas .conteudo { padding-bottom: 32px; }
 .pequeno { font-size: 14px; }
 .linha-acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .entre { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-
-/* ---------- Abas ---------- */
-.abas {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: flex; height: calc(var(--abas-h) + var(--seguro-baixo)); padding-bottom: var(--seguro-baixo);
-  background: var(--papel); border-top: 1px solid var(--linha);
-}
-body.sem-abas .abas { display: none; }
-/* Computador usando pelo navegador (atributos vindos de dispositivo.js): só a
-   aba "Vistorias", centralizada. Celular, tablet e app instalado não mudam. */
-html[data-dispositivo="computador"][data-instalado="nao"] .aba[data-aba="nova"] { display: none; }
-html[data-dispositivo="computador"][data-instalado="nao"] .abas { justify-content: center; }
-html[data-dispositivo="computador"][data-instalado="nao"] .aba { flex: 0 1 240px; }
-.aba {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  min-height: var(--alvo); text-decoration: none; color: var(--texto-2); font-size: 13px; font-weight: 600;
-  position: relative;
-}
-.aba .ic { width: 24px; height: 24px; }
-.aba[aria-current="page"] { color: var(--principal); }
-.aba[aria-current="page"]::after {
-  content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--principal);
-}
-.selo-aba {
-  position: absolute; top: 6px; left: calc(50% + 6px);
-  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
-  background: var(--pendente); color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
-}
 
 /* ---------- Faixas (versão, instalar, sessão) ---------- */
 .faixa {
@@ -241,8 +212,8 @@ legend { padding: 0; }
 .etapa-btn[aria-current="step"] { color: var(--principal); }
 .etapa-btn[aria-current="step"] .etapa-num { border-color: var(--principal); box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.25); }
 .barra-acoes {
-  position: fixed; left: 0; right: 0; bottom: calc(var(--abas-h) + var(--seguro-baixo)); z-index: 25;
-  display: flex; gap: 12px; padding: 12px 16px; height: var(--acoes-h);
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  display: flex; gap: 12px; padding: 12px 16px calc(12px + var(--seguro-baixo)); height: calc(var(--acoes-h) + var(--seguro-baixo));
   background: rgba(244, 246, 247, 0.96); border-top: 1px solid var(--linha);
 }
 .barra-acoes .btn { flex: 1; }
@@ -394,10 +365,10 @@ dialog.visualizador { background: #000; color: #fff; }
 
 /* ---------- Avisos (toast) ---------- */
 .avisos {
-  position: fixed; left: 16px; right: 16px; bottom: calc(var(--abas-h) + var(--seguro-baixo) + 12px); z-index: 60;
+  position: fixed; left: 16px; right: 16px; bottom: calc(var(--seguro-baixo) + 12px); z-index: 60;
   display: grid; gap: 8px; pointer-events: none; max-width: 520px; margin: 0 auto;
 }
-body.com-acoes .avisos { bottom: calc(var(--abas-h) + var(--acoes-h) + var(--seguro-baixo) + 12px); }
+body.com-acoes .avisos { bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 12px); }
 .aviso {
   pointer-events: auto; padding: 12px 16px; border-radius: var(--raio-sm); background: #1E2A31; color: #fff;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); font-weight: 600;
@@ -477,54 +448,40 @@ dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px;
 .cartao-info .entre { flex-wrap: wrap; gap: 4px 8px; justify-content: flex-start; }
 .cartao-info .entre .chassi { white-space: nowrap; margin-right: auto; }
 
-/* ---------- Menu inicial #/inicio (só no modo app; views/inicio.js) ----------
+/* ---------- Menu inicial #/inicio (todos os ambientes; views/inicio.js) ----------
    Tudo dentro de .home-app. Cartão = componente .cartao do app; textos,
    cores e toque seguem o app. Os ícones seguem a referência (bloco abaixo). */
-html.app-mode .home-app {
+.home-app {
   display: flex; flex-direction: column; justify-content: center; gap: 16px;
   min-height: calc(100dvh - var(--topo-h) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 48px);
   /* 36vh a mais embaixo: os cartões ficam bem acima do meio da tela. */
   padding: 0 env(safe-area-inset-right, 0px) calc(36vh + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
 }
-html.app-mode .home-app .card {
+.home-app .card {
   display: flex; align-items: stretch; width: 100%; min-height: 96px; padding: 0; overflow: hidden;
   color: var(--texto); text-align: left; -webkit-tap-highlight-color: transparent;
 }
-html.app-mode .home-app .card:active { background: var(--fundo); }
-html.app-mode .home-app .card-text {
+.home-app .card:active { background: var(--fundo); }
+/* Com mouse: destaque ao passar o cursor (o toque no celular não muda). */
+@media (hover: hover) and (pointer: fine) { .home-app .card:hover { background: var(--fundo); } }
+.home-app .card-text {
   flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 16px;
 }
-html.app-mode .home-app .card-text h2 { font-size: 18px; font-weight: 700; color: var(--texto); }
-html.app-mode .home-app .sub-dark { font-size: 14px; color: var(--texto); }
-html.app-mode .home-app .sub-gray { font-size: 14px; color: var(--texto-2); }
-html.app-mode .home-app .card > .card-icon { flex-shrink: 0; } /* mantém os 120 px em telas estreitas */
+.home-app .card-text h2 { font-size: 18px; font-weight: 700; color: var(--texto); }
+.home-app .sub-dark { font-size: 14px; color: var(--texto); }
+.home-app .sub-gray { font-size: 14px; color: var(--texto-2); }
+.home-app .card > .card-icon { flex-shrink: 0; } /* mantém os 120 px em telas estreitas */
 /* Ícones — copiados da referência (vistoria/style.css) sem mudar valores. */
-html.app-mode .home-app .card-icon {
+.home-app .card-icon {
   width: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-html.app-mode .home-app .card-icon svg { width: 64px; height: 64px; }
-html.app-mode .home-app .icon-black { background: #111; }
-html.app-mode .home-app .icon-gray  { background: #555; }
+.home-app .card-icon svg { width: 64px; height: 64px; }
+.home-app .icon-black { background: #111; }
+.home-app .icon-gray  { background: #555; }
 
-/* ---------- Só no modo app (html.app-mode, marcado por modo-app.js) ----------
-   App instalado ou navegador de celular/tablet: sem barra inferior em nenhuma
-   tela (o menu #/inicio é o ponto central). O espaço que a barra ocupava volta
-   para o conteúdo. A faixa de instalação segue a regra de app.js (aparece no
-   celular sem o app instalado; some no app instalado e no computador). */
-html.app-mode .abas { display: none !important; }
-/* Sem zoom por pinça nem duplo toque no modo app (junto do viewport e dos gestos em modo-app.js). */
+/* ---------- Só no app e no celular (html.app-mode, marcado por modo-app.js) ----------
+   Sem zoom por pinça nem duplo toque (junto do viewport e dos gestos em modo-app.js). */
 html.app-mode { touch-action: pan-x pan-y; }
-html.app-mode .conteudo,
-html.app-mode body.sem-abas .conteudo { padding-bottom: calc(var(--seguro-baixo) + 24px); }
-html.app-mode body.com-acoes .conteudo { padding-bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 24px); }
-html.app-mode .barra-acoes {
-  bottom: 0;
-  height: calc(var(--acoes-h) + var(--seguro-baixo));
-  padding-bottom: calc(12px + var(--seguro-baixo));
-}
-html.app-mode .avisos { bottom: calc(var(--seguro-baixo) + 12px); }
-html.app-mode body.com-acoes .avisos { bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 12px); }
-html.app-mode .conteudo { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
