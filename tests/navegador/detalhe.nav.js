@@ -60,3 +60,16 @@ teste("detalhe: vistoria pendente de outra pessoa neste aparelho continua escond
     t.fim();
   }
 });
+
+teste("detalhe: no modo app (app instalado ou celular) nem o dono vê o botão Excluir", async () => {
+  document.documentElement.classList.add("app-mode");
+  const t = await abrir(vistoria("minha-app", EU.id));
+  try {
+    ok(t.el.querySelector("#detalhe-numero"), "a tela deveria abrir");
+    ok(t.el.querySelector("#btn-baixar"), "o resto das ações continua (Baixar PDF)");
+    igual(t.el.querySelector("#btn-excluir"), null, "no modo app não existe a opção de excluir");
+  } finally {
+    t.fim();
+    document.documentElement.classList.remove("app-mode");
+  }
+});
