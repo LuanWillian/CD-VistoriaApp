@@ -7,13 +7,20 @@ export const MENSAGEM_CAMERA_NEGADA = "A câmera está bloqueada para este app. 
 const ERRO_LEITURA = "Não foi possível ler esta foto. Tente tirar outra.";
 
 // Abre a câmera traseira (no desktop, o seletor de arquivos). Resolve null se cancelar.
+// IMPORTANTE (iPhone): chame esta função DIRETO no toque do usuário, sem nenhum
+// `await` antes. O Safari do iOS só abre a câmera se o input for acionado no mesmo
+// instante do toque; qualquer espera antes (ex.: consultar a permissão) faz ele
+// ignorar o clique sem avisar.
 export function escolherFoto({ camera = true } = {}) {
   return new Promise((resolver) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
     if (camera) input.setAttribute("capture", "environment");
-    input.hidden = true;
+    // Fora da tela, mas existente (sr-only): o Safari antigo ignora o clique em input com display:none.
+    input.className = "sr-only";
+    input.tabIndex = -1;
+    input.setAttribute("aria-hidden", "true");
     let feito = false;
     const fim = (arquivo) => {
       if (feito) return;

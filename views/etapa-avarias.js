@@ -168,8 +168,10 @@ export function montar(el, editor, ctx) {
     }
 
     async function adicionarFoto() {
-      if ((await verificarCamera()) === "negada") ctx.avisar(MENSAGEM_CAMERA_NEGADA, "erro");
-      const arquivo = await escolherFoto();
+      // 1º abre a câmera (iPhone exige que seja no mesmo toque); só depois, sem bloquear, avisa se estiver bloqueada.
+      const escolha = escolherFoto();
+      verificarCamera().then((estado) => { if (estado === "negada") ctx.avisar(MENSAGEM_CAMERA_NEGADA, "erro"); });
+      const arquivo = await escolha;
       if (!arquivo) return;
       try {
         const blob = await comprimir(arquivo);

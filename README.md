@@ -106,6 +106,11 @@ Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check`
 - **Envio com o app fechado.** O Background Sync só existe no Chrome do Android, e mesmo lá apenas acorda o app aberto. Com o app fechado, o envio acontece na próxima vez em que ele for aberto.
 - **Lacunas na numeração.** A numeração `VIS-000001` vem de uma sequence do Postgres e pode pular números raramente, quando uma gravação é recusada pelo servidor.
 - **Fotos antigas.** Fotos de vistorias já sincronizadas saem do aparelho depois de 30 dias (`DIAS_CACHE_FOTOS`) e são baixadas de novo quando a vistoria é aberta com internet. Vistorias pendentes nunca perdem as fotos.
+- **iPhone: versão mínima.** O app usa recursos que só existem no iOS 15.4 (março de 2022) ou mais novo (`<dialog>`, `structuredClone`, `crypto.randomUUID`). Em iPhone mais antigo, atualize o iOS.
+- **iPhone: câmera.** O Safari só abre a câmera se o seletor de foto for acionado no mesmo toque, sem nenhuma espera antes. Por isso `escolherFoto()` (em `photos.js`) é chamada primeiro, e a consulta de permissão da câmera vem depois, sem bloquear. Não coloque um `await` antes dela. Os testes `tests/navegador/iphone.nav.js` cobrem isso.
+- **iPhone: sem rotação automática.** O iPhone não deixa um site girar nem travar a tela. A tela de assinatura já abre "de lado" com o celular em pé; gire o aparelho para a esquerda para assinar.
+- **iPhone: cancelar a câmera.** O Safari não avisa quando a pessoa cancela a câmera; nada trava, é só tocar na foto de novo.
+- **iPhone: PDF no app instalado.** Baixar um PDF dentro do app instalado no iPhone pode abrir o arquivo sem botão de voltar (limite do iOS); use **Compartilhar** → Salvar em Arquivos.
 
 ## 9. Lista de verificação
 

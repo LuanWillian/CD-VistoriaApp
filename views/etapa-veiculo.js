@@ -193,8 +193,10 @@ export function montar(el, editor, ctx) {
 
   async function capturar(slot) {
     const { chave } = slot.dataset;
-    if ((await verificarCamera()) === "negada") ctx.avisar(MENSAGEM_CAMERA_NEGADA, "erro");
-    const arquivo = await escolherFoto();
+    // 1º abre a câmera (iPhone exige que seja no mesmo toque); só depois, sem bloquear, avisa se estiver bloqueada.
+    const escolha = escolherFoto();
+    verificarCamera().then((estado) => { if (estado === "negada") ctx.avisar(MENSAGEM_CAMERA_NEGADA, "erro"); });
+    const arquivo = await escolha;
     if (!arquivo) return;
     const alvo = $(".foto-alvo", slot);
     alvo.innerHTML = icone("carregando", "ic ic-lg gira");
