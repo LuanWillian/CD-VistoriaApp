@@ -113,3 +113,39 @@ test("modo-app.js marca <html class=\"app-mode\"> só no modo app", async () => 
   marcarModoApp(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" }, consultas: MOUSE }), pc);
   assert.equal(pc.classList.contains("app-mode"), false);
 });
+
+function docFalso() {
+  const meta = { content: "width=device-width, initial-scale=1, viewport-fit=cover", setAttribute(n, v) { if (n === "content") this.content = v; } };
+  const ouvintes = [];
+  return {
+    meta, ouvintes,
+    querySelector: (q) => (q === 'meta[name="viewport"]' ? meta : null),
+    addEventListener: (tipo, fn, op) => ouvintes.push({ tipo, fn, op }),
+  };
+}
+
+test("bloquear zoom: no celular/app trava o viewport e os gestos de pinça", async () => {
+  await import("../modo-app.js");
+  const d = docFalso();
+  const r = globalThis.CDModo.bloquearZoom(amb({ userAgent: UA.iphone, maxTouchPoints: 5 }), d);
+  assert.equal(r, true);
+  assert.match(d.meta.content, /maximum-scale=1/);
+  assert.match(d.meta.content, /user-scalable=no/);
+  assert.match(d.meta.content, /viewport-fit=cover/, "mantém o que já existia");
+  const tipos = d.ouvintes.map((o) => o.tipo);
+  for (const t of ["gesturestart", "gesturechange", "gestureend"]) assert.ok(tipos.includes(t), `faltou ouvir ${t}`);
+  let impediu = false;
+  d.ouvintes.find((o) => o.tipo === "gesturestart").fn({ preventDefault: () => { impediu = true; } });
+  assert.equal(impediu, true);
+  assert.equal(d.ouvintes.find((o) => o.tipo === "gesturestart").op.passive, false, "precisa ser não passivo para poder impedir");
+});
+
+test("bloquear zoom: no computador não mexe em nada", async () => {
+  await import("../modo-app.js");
+  const d = docFalso();
+  const antes = d.meta.content;
+  const r = globalThis.CDModo.bloquearZoom(amb({ userAgent: UA.chromeWindows, uaData: { mobile: false, platform: "Windows" }, consultas: MOUSE }), d);
+  assert.equal(r, false);
+  assert.equal(d.meta.content, antes);
+  assert.equal(d.ouvintes.length, 0);
+});

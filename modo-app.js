@@ -73,6 +73,26 @@
     if (raiz && isAppMode(amb)) raiz.classList.add("app-mode");
   }
 
+  // Sem zoom por pinça nem duplo toque no modo app (celular, tablet e app instalado).
+  // Camadas, porque cada navegador respeita uma: o viewport (Android/Chrome), os
+  // eventos de gesto (Safari do iPhone, que ignora user-scalable=no) e, no CSS,
+  // touch-action. No computador não faz nada.
+  function bloquearZoom(amb, doc) {
+    doc = doc || globalThis.document;
+    if (!doc || !isAppMode(amb)) return false;
+    var meta = doc.querySelector('meta[name="viewport"]');
+    if (meta) {
+      var partes = String(meta.content || "").split(",").map(function (p) { return p.trim(); })
+        .filter(function (p) { return p && !/^(maximum-scale|minimum-scale|user-scalable)\s*=/i.test(p); });
+      partes.push("maximum-scale=1", "user-scalable=no");
+      meta.setAttribute("content", partes.join(", "));
+    }
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function (tipo) {
+      doc.addEventListener(tipo, function (e) { e.preventDefault(); }, { passive: false });
+    });
+    return true;
+  }
+
   globalThis.CDModo = {
     MODOS_INSTALADO: MODOS_INSTALADO,
     ambienteDoNavegador: ambienteDoNavegador,
@@ -81,7 +101,9 @@
     isMobileDevice: isMobileDevice,
     isAppMode: isAppMode,
     marcarModoApp: marcarModoApp,
+    bloquearZoom: bloquearZoom,
   };
 
   try { marcarModoApp(); } catch (e) { /* sem DOM (testes) ou sem matchMedia: segue como navegador */ }
+  try { bloquearZoom(); } catch (e) { /* idem */ }
 })();

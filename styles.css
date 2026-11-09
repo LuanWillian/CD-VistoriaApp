@@ -515,6 +515,8 @@ html.app-mode .home-app .icon-gray  { background: #555; }
    para o conteúdo. A faixa de instalação segue a regra de app.js (aparece no
    celular sem o app instalado; some no app instalado e no computador). */
 html.app-mode .abas { display: none !important; }
+/* Sem zoom por pinça nem duplo toque no modo app (junto do viewport e dos gestos em modo-app.js). */
+html.app-mode { touch-action: pan-x pan-y; }
 html.app-mode .conteudo,
 html.app-mode body.sem-abas .conteudo { padding-bottom: calc(var(--seguro-baixo) + 24px); }
 html.app-mode body.com-acoes .conteudo { padding-bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 24px); }
