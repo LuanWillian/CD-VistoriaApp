@@ -161,7 +161,10 @@ export async function montar(el, ctx) {
       }
       itens = [...porId.values()].filter((v) => v.status !== "excluindo");
     } else {
-      itens = locais.filter(filtrarLocal);
+      // Sem conexão: as do aparelho + as já enviadas de outras pessoas que ficaram guardadas.
+      const doAparelho = new Map(locais.map((v) => [v.id, v]));
+      for (const v of await ctx.storage.listarSincronizadas()) if (!doAparelho.has(v.id)) doAparelho.set(v.id, v);
+      itens = [...doAparelho.values()].filter((v) => v.status !== "excluindo" && filtrarLocal(v));
     }
     itens.sort((a, b) => b.realizadaEm.localeCompare(a.realizadaEm));
     const fontes = await miniaturas(itens);

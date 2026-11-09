@@ -139,12 +139,17 @@ export const obterMeta = (chave) => tx(["meta"], "readonly", (s) => pedir(s("met
 export const salvarMeta = (chave, valor) => tx(["meta"], "readwrite", (s) => { s("meta").put(valor, chave); });
 export const removerMeta = (chave) => tx(["meta"], "readwrite", (s) => { s("meta").delete(chave); });
 
+// Vistorias já enviadas, de qualquer usuário: todos veem tudo, então as cópias
+// guardadas aqui (inclusive as de outras pessoas) servem para ver a lista offline.
+export const listarSincronizadas = async () =>
+  (await tx(["vistorias"], "readonly", (s) => pedir(s("vistorias").index("status").getAll("sincronizada")))).sort(porData("realizadaEm"));
+
 // ---------- Limpezas ----------
-// Ao sair: apaga do aparelho as vistorias já enviadas (o servidor tem a cópia).
-export const limparCacheSincronizado = (userId) => tx(["vistorias", "arquivos"], "readwrite", async (s) => {
-  const lista = await pedir(s("vistorias").index("userId").getAll(userId));
+// Ao sair: apaga do aparelho todas as vistorias já enviadas, de qualquer pessoa
+// (o servidor tem a cópia). Pendentes e com erro nunca são apagadas.
+export const limparCacheSincronizado = () => tx(["vistorias", "arquivos"], "readwrite", async (s) => {
+  const lista = await pedir(s("vistorias").index("status").getAll("sincronizada"));
   for (const v of lista) {
-    if (v.status !== "sincronizada") continue;
     s("vistorias").delete(v.id);
     s("arquivos").delete(faixaDoId(v.id));
   }

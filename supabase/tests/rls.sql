@@ -1,4 +1,4 @@
--- Conferência de RLS, numeração e checks. Rode num banco com a migration aplicada:
+-- Conferência de RLS (leitura para todos os logados, escrita só do dono), numeração e checks. Rode num banco com a migration aplicada:
 --   docker exec -i supabase_db_vistoria-veicular psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
 -- No projeto hospedado: cole no SQL Editor. Tudo roda dentro de uma transação
 -- desfeita no fim (rollback); só a sequence de números avança.
@@ -116,15 +116,18 @@ do $$
 declare
   c int;
 begin
-  select count(*) into c from public.inspections;
-  if c <> 0 then raise exception 'B enxerga % vistorias de A', c; end if;
-  select count(*) into c from public.damages;
-  if c <> 0 then raise exception 'B enxerga % avarias de A', c; end if;
-  select count(*) into c from public.damage_photos;
-  if c <> 0 then raise exception 'B enxerga % fotos de avaria de A', c; end if;
-  select count(*) into c from storage.objects where bucket_id = 'vistorias';
-  if c <> 0 then raise exception 'B enxerga % arquivos de A no Storage', c; end if;
+  -- Todo usuário logado LÊ tudo (migration 0003)...
+  select count(*) into c from public.inspections where id = '11111111-1111-4111-8111-111111111111';
+  if c <> 1 then raise exception 'B não enxerga a vistoria de A'; end if;
+  select count(*) into c from public.damages where id = '44444444-4444-4444-8444-444444444444';
+  if c <> 1 then raise exception 'B não enxerga a avaria de A'; end if;
+  select count(*) into c from public.damage_photos where id = '55555555-5555-4555-8555-555555555555';
+  if c <> 1 then raise exception 'B não enxerga a foto de avaria de A'; end if;
+  select count(*) into c from storage.objects where bucket_id = 'vistorias'
+    and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/frente.jpg';
+  if c <> 1 then raise exception 'B não enxerga o arquivo de A no Storage'; end if;
 
+  -- ...mas só o dono altera, apaga ou cria.
   update public.inspections set marca = 'X' where id = '11111111-1111-4111-8111-111111111111';
   get diagnostics c = row_count;
   if c <> 0 then raise exception 'B alterou a vistoria de A'; end if;
@@ -139,6 +142,13 @@ begin
     raise exception 'B inseriu avaria na vistoria de A';
   exception when insufficient_privilege then null;
   end;
+
+  update public.damages set descricao = 'x' where id = '44444444-4444-4444-8444-444444444444';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'B alterou a avaria de A'; end if;
+  delete from public.damage_photos where id = '55555555-5555-4555-8555-555555555555';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'B apagou a foto de avaria de A'; end if;
 
   begin
     insert into public.inspections (id, user_id, chassi, marca, modelo, cor, km, combustivel, checklist, vistoriador_nome,

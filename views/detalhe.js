@@ -80,7 +80,10 @@ export async function montar(el, ctx, params) {
   }
 
   let v = await ctx.storage.obterVistoria(id);
-  if (v && v.userId !== usuario.id) v = null;
+  // Todos veem as vistorias já enviadas; a que ainda está só neste aparelho
+  // (pendente ou com erro) de outra pessoa continua privada.
+  if (v && v.userId !== usuario.id && v.status !== "sincronizada") v = null;
+  const dono = () => v?.userId === usuario.id;
   try {
     if ((!v || (v.origem === "remota" && !v.completa)) && ctx.online()) v = await baixarCompleta();
   } catch (e) {
@@ -181,7 +184,7 @@ export async function montar(el, ctx, params) {
           <button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>
           <button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>
           ${nova ? `<a class="btn btn-secundario" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
-          <button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>
+          ${dono() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
         </div>
         <section class="secao" aria-labelledby="h-dados">
           <h2 id="h-dados">Dados do veículo</h2>
@@ -303,6 +306,7 @@ export async function montar(el, ctx, params) {
   });
 
   async function excluir() {
+    if (!dono()) return; // só o dono exclui (o servidor também recusa)
     const ok = await ctx.confirmar({
       titulo: `Excluir a vistoria ${nomeVistoria(v)}?`,
       texto: "Isso apaga também as fotos e assinaturas no servidor e não pode ser desfeito.",

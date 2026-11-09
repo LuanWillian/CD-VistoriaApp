@@ -71,7 +71,16 @@ teste("storage: sair limpa só as sincronizadas do usuário", async () => {
   ok(await st.obterVistoria("p1"), "pendente sumiu");
   ok(await st.obterArquivo("p1/frente.jpg"), "foto da pendente sumiu");
   ok(await st.obterVistoria("e1"), "erro sumiu");
-  ok(await st.obterVistoria("s2"), "a de outro usuário sumiu");
+  // Todos veem tudo: as cópias de outras pessoas também saem do aparelho (o servidor tem todas).
+  igual(await st.obterVistoria("s2"), undefined, "a sincronizada de outro usuário deveria sair também");
+});
+
+teste("storage: listarSincronizadas devolve as já enviadas, de qualquer usuário", async () => {
+  await st.apagarBanco();
+  await st.salvarVistoria(vistoria("a", "u1", { status: "sincronizada", realizadaEm: iso(dia) }));
+  await st.salvarVistoria(vistoria("b", "u2", { status: "sincronizada" }));
+  await st.salvarVistoria(vistoria("c", "u2", { status: "pendente" }));
+  igual((await st.listarSincronizadas()).map((v) => v.id), ["b", "a"]);
 });
 
 teste("storage: fotos antigas só de sincronizadas com mais de N dias", async () => {

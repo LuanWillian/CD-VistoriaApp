@@ -11,7 +11,7 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 
 1. Crie um projeto em [supabase.com](https://supabase.com) (região mais próxima, por exemplo São Paulo).
 2. Rode a migration:
-   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql`.
+   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, cada uma numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql` e `supabase/migrations/0003_leitura_para_todos.sql`.
    - **Pela CLI:** `npx --yes supabase@2.122.0 link --project-ref <ref-do-projeto>` e depois `npx supabase@2.122.0 db push`.
 3. Crie o primeiro usuário: Authentication → Users → Add user → Create new user. Informe e-mail e senha e marque **Auto Confirm User**. Não há cadastro público: todo vistoriador é criado aqui.
    - **Cadastre o nome do vistoriador** (obrigatório): copie o **UID** do usuário em Authentication → Users. Em Table Editor → `perfis` → Insert row, cole o UID em `id` e escreva o nome completo em `nome`. Esse é o nome que aparece na etapa de assinaturas e no laudo; o vistoriador não consegue mudá-lo. Sem esse cadastro, o app avisa "Seu nome de vistoriador não está cadastrado" e não deixa finalizar. Se o nome for cadastrado ou corrigido depois, ele vale a partir da próxima vez que o vistoriador abrir o app com internet.
@@ -25,7 +25,7 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 5. Em Authentication → URL Configuration, preencha **Site URL** com a URL do Netlify (ex.: `https://nome-do-site.netlify.app`). Em **Redirect URLs**, adicione essa URL e `http://localhost:3000`.
 6. (Opcional) Confira a segurança: cole `supabase/tests/rls.sql` no SQL Editor e rode. Ele simula dois usuários dentro de uma transação desfeita no fim; o esperado é a mensagem `RLS OK`.
 
-Para dar a um administrador a leitura de todas as vistorias, veja o comentário "administradores" no fim da migration.
+**Quem vê o quê:** todo usuário cadastrado (logado) **vê todas** as vistorias, avarias, fotos e assinaturas (migration `0003`). Só o **dono** cria, edita e exclui as suas; o botão Excluir só aparece nas próprias vistorias. Para voltar a "cada um vê só as suas", recrie as policies "dono lê" da `0001` no lugar das "todos leem" da `0003`.
 
 ## 2. Rodar localmente
 
@@ -123,7 +123,8 @@ Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check`
 | Detalhe: leitura completa, Baixar PDF, Compartilhar (Web Share API) e Excluir (também no servidor) | `views/detalhe.js` |
 | PDF A4 com cabeçalho, dados, fotos, checklist, avarias, assinaturas e rodapé "Vistoria nº X — página N de M"; `Vistoria_<chassi>_<aaaa-mm-dd>.pdf`; menos de 10 MB | `pdf.js` |
 | Login por e-mail e senha, sessão persistente e válida offline, Sair, sem cadastro público | `auth.js`, `views/login.js`, `supabase/config.toml` |
-| RLS nas 3 tabelas e no Storage; comentário de administrador | `supabase/migrations/0001_init.sql`, `supabase/tests/rls.sql` |
+| RLS nas 3 tabelas e no Storage: escrita só do dono | `supabase/migrations/0001_init.sql`, `supabase/tests/rls.sql` |
+| Leitura de todas as vistorias e arquivos para qualquer usuário logado (escrita continua só do dono) | `supabase/migrations/0003_leitura_para_todos.sql`, `views/detalhe.js`, `views/vistorias.js`, `storage.js` |
 | Nome do vistoriador vem da conta (tabela `perfis`, só leitura para o vistoriador); o banco grava o nome do perfil e recusa vistoria de conta sem perfil | `supabase/migrations/0002_perfis.sql`, `auth.js`, `views/etapa-assinaturas.js` |
 | Bucket privado `vistorias`, caminhos `<user_id>/<inspection_id>/<arquivo>`, URLs assinadas | migration, `supabase.js` |
 | Sincronização idempotente; Sincronizada/Pendente/Erro; "Tentar novamente"; número provisório → oficial | `sync.js`, `views/detalhe.js`, `views/vistorias.js` |
