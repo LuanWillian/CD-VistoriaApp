@@ -64,7 +64,7 @@ export async function montar(raiz, ctx) {
       </section>
     </div>`;
 
-  $("#dash-saudacao", raiz).textContent = `Olá, ${primeiroNome(usuario?.nome) || NOME_PADRAO_PAINEL}! Aqui está o resumo das vistorias.`;
+  $("#dash-saudacao", raiz).textContent = `Olá, ${primeiroNome(usuario?.nome) || NOME_PADRAO_PAINEL}! Aqui estão todas as vistorias registradas.`;
   const corpo = $("#dash-corpo", raiz);
 
   // ---------- Dados ----------
