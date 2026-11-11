@@ -19,8 +19,10 @@ export function deveAbrirNoMenu(hash, tipoNavegacao) {
 // Computador: não existe iniciar vistoria nem a lista separada (o painel do menu já
 // lista as vistorias), então #/nova e #/vistorias (e subrotas) vão para o menu.
 // Devolve o hash de destino, ou null se a rota pode ficar como está.
+// Fora do computador não existe o dashboard: #/dashboard também vai para o menu.
 export function redirecionamento(hash, desktop) {
-  return desktop && /^#\/(nova|vistorias)([/?]|$)/.test(hash || "") ? "#/inicio" : null;
+  if (desktop) return /^#\/(nova|vistorias)([/?]|$)/.test(hash || "") ? "#/inicio" : null;
+  return /^#\/dashboard([/?]|$)/.test(hash || "") ? "#/inicio" : null;
 }
 
 // Histórico no app e no celular: o menu é sempre o nível 0 (primeira entrada),

@@ -18,6 +18,22 @@ export const GRAVIDADES = [
   { valor: "Grave", cor: "#C62828", texto: "#FFFFFF" },
 ];
 
+// Lojas de destino (para onde o veículo vendido é enviado). Aparecem, nesta
+// ordem, na etapa "Dados do veículo" e nos filtros do dashboard.
+export const LOJAS = [
+  "PG Prime GWM Natal",
+  "PG Prime GWM João Pessoa",
+  "PG Prime GWM Mossoró",
+  "PG Prime Jeep Natal",
+  "PG Prime BMW Natal",
+  "PG Prime BMW João Pessoa",
+  "PG Prime Audi Natal",
+  "PG Prime Selection Natal",
+  "PG Prime Selection João Pessoa",
+  "PG Prime Volvo Natal",
+  "PG Prime Volvo João Pessoa",
+];
+
 export const COMBUSTIVEIS = ["Gasolina", "Flex", "Diesel", "Elétrico", "Híbrido"];
 
 export const FOTOS_VEICULO = [

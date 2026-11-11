@@ -49,10 +49,13 @@ async function assinar(quem) {
 }
 
 // Começa em #/nova?novo=1 e termina no detalhe; devolve o id da vistoria.
-export async function preencherEFinalizar({ chassi, marca, modelo, cor = "Prata", km = "45300", avaria = false }) {
+export async function preencherEFinalizar({ chassi, marca, modelo, cor = "Prata", km = "45300", avaria = false, loja = "PG Prime Jeep Natal" }) {
   simularCamera();
   location.hash = "#/nova?novo=1";
   await esperar(1200);
+  const selLoja = document.getElementById("loja");
+  selLoja.value = loja;
+  selLoja.dispatchEvent(new Event("change", { bubbles: true }));
   definir("chassi", chassi);
   definir("marca", marca);
   definir("modelo", modelo);

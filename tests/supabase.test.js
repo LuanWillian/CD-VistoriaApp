@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  linhaDaVistoria, linhasDasAvarias, linhasDasFotos, vistoriaDaLinha, classificarErro, escaparBusca, criarRemoto,
+  linhaDaVistoria, linhasDasAvarias, linhasDasFotos, vistoriaDaLinha, itemDoDashboard, classificarErro, escaparBusca, criarRemoto,
 } from "../supabase.js";
 
 const v = {
-  id: "v1", userId: "u1", chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000,
+  id: "v1", userId: "u1", loja: "PG Prime BMW Natal", chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000,
   combustivel: "Flex", checklist: { Antena: "presente" }, checklistObs: "", semAvarias: false,
   vistoriadorNome: "Ana", motoristaNome: "Beto", realizadaEm: "2026-11-07T13:00:00.000Z",
   avarias: [{ id: "d1", area: "Capô", tipo: "Risco", gravidade: "Leve", descricao: "x", fotos: ["f1"] }],
@@ -13,13 +13,31 @@ const v = {
 
 test("linha da vistoria em snake_case com caminhos no bucket e sem número", () => {
   assert.deepEqual(linhaDaVistoria(v), {
-    id: "v1", user_id: "u1", chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000,
+    id: "v1", user_id: "u1", loja: "PG Prime BMW Natal", chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000,
     combustivel: "Flex", checklist: { Antena: "presente" }, checklist_obs: "", sem_avarias: false,
     vistoriador_nome: "Ana", motorista_nome: "Beto", realizada_em: "2026-11-07T13:00:00.000Z",
     foto_frente: "u1/v1/frente.jpg", foto_traseira: "u1/v1/traseira.jpg", foto_chassi: "u1/v1/chassi.jpg",
     assinatura_vistoriador: "u1/v1/assinatura_vistoriador.png", assinatura_motorista: "u1/v1/assinatura_motorista.png",
   });
   assert.equal("numero" in linhaDaVistoria(v), false);
+  assert.equal(linhaDaVistoria({ ...v, loja: "" }).loja, null, "sem loja vai como null");
+});
+
+test("linha do dashboard: só os campos dos indicadores, com as avarias", () => {
+  const item = itemDoDashboard({
+    id: "v1", numero: "VIS-1", realizada_em: "2026-11-07T13:00:00+00:00", chassi: "AB123C", marca: "Jeep", modelo: "Compass",
+    loja: null, damages: [{ area: "Capô", tipo: "Risco", gravidade: "Leve" }],
+  });
+  assert.deepEqual(item, {
+    id: "v1", numero: "VIS-1", realizadaEm: "2026-11-07T13:00:00.000Z", chassi: "AB123C", marca: "Jeep", modelo: "Compass",
+    loja: "", avarias: [{ area: "Capô", tipo: "Risco", gravidade: "Leve" }],
+  });
+});
+
+test("loja vem do banco; vistoria antiga sem loja fica vazia", () => {
+  const base = { id: "v1", user_id: "u1", numero: "VIS-1", realizada_em: "2026-11-07T13:00:00Z", chassi: "AB123C", marca: "Fiat", modelo: "Uno" };
+  assert.equal(vistoriaDaLinha({ ...base, loja: "PG Prime Audi Natal" }).loja, "PG Prime Audi Natal");
+  assert.equal(vistoriaDaLinha({ ...base, loja: null }).loja, "");
 });
 
 test("linhas de avarias e de fotos de avaria", () => {

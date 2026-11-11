@@ -15,6 +15,7 @@ export function validarAvaria(avaria) {
 function etapaVeiculo(d) {
   const f = [];
   const add = (campo, mensagem) => f.push({ etapa: 1, campo, mensagem });
+  if (vazio(d.loja)) add("loja", "Escolha a loja de destino");
   const chassi = String(d.chassi ?? "").trim();
   if (!chassi) add("chassi", "Informe o chassi");
   else if (chassi.length < 6) add("chassi", `O chassi deve ter 6 caracteres (faltam ${6 - chassi.length})`);

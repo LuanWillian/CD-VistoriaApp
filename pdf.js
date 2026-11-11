@@ -241,15 +241,20 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
 
   // ---------- 2. Dados do veículo ----------
   // Ordem pedida: Chassi, Marca, Modelo / Cor, Quilometragem (km), Combustível.
-  secao("Dados do veículo", 32);
+  secao("Dados do veículo", v.loja ? 47 : 32);
   const dados = [
     ["Chassi", v.chassi, true], ["Marca", v.marca], ["Modelo", v.modelo],
     ["Cor", v.cor], ["Quilometragem (km)", formatarKm(v.km)], ["Combustível", v.combustivel],
   ];
+  // Loja de destino numa 3ª linha, na largura toda (nomes longos não cortam).
+  // Vistorias antigas não têm loja: a linha não aparece.
+  if (v.loja) dados.push(["Loja de destino", v.loja, false, true]);
+  const linhasDados = Math.ceil(dados.length / 3);
   const vao = 8;
   const colW = (LARG - 2 * vao) / 3;
-  dados.forEach(([rotulo, valor, destaque], i) => {
+  dados.forEach(([rotulo, valor, destaque, larga], i) => {
     const x = M + (i % 3) * (colW + vao);
+    const w = larga ? LARG : colW;
     const yy = y + Math.floor(i / 3) * 15;
     // Igual ao modelo: rótulo Barlow 8,5 cinza; valor Barlow SemiBold 11,5;
     // chassi em Barlow Semi Condensed 12; linha fina 9 mm abaixo.
@@ -257,10 +262,10 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     escrever(rotulo, x, yy);
     if (destaque) titulo(12, COR.texto);
     else fonte("bold", 11.5, COR.texto);
-    escrever(umaLinha(valor || "—", colW), x, yy + 6);
-    linha(x, yy + 9, x + colW, yy + 9, COR.linhaDados, 0.25);
+    escrever(umaLinha(valor || "—", w), x, yy + 6);
+    linha(x, yy + 9, x + w, yy + 9, COR.linhaDados, 0.25);
   });
-  y += 30;
+  y += 30 + (linhasDados - 2) * 15;
 
   // ---------- 3. Checklist de equipamentos ----------
   const itens = [...CHECKLIST_ITENS, ...Object.keys(v.checklist || {}).filter((i) => !CHECKLIST_ITENS.includes(i))];

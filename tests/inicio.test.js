@@ -49,4 +49,8 @@ test("computador: as outras rotas ficam como estão", () => {
 
 test("celular e app instalado: #/nova e #/vistorias nunca são redirecionados", () => {
   for (const hash of ["#/nova", "#/nova?novo=1", "#/nova?rascunho=abc", "#/vistorias"]) assert.equal(redirecionamento(hash, false), null, hash);
+  // O dashboard só existe no computador.
+  for (const hash of ["#/dashboard", "#/dashboard?x=1"]) assert.equal(redirecionamento(hash, false), "#/inicio", hash);
+  assert.equal(redirecionamento("#/dashboard", true), null);
+  assert.equal(redirecionamento("#/dashboards", false), null);
 });

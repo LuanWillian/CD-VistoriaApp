@@ -13,6 +13,7 @@ export function linhaDaVistoria(v) {
   return {
     id: v.id,
     user_id: v.userId,
+    loja: v.loja || null,
     chassi: v.chassi,
     marca: v.marca,
     modelo: v.modelo,
@@ -58,6 +59,7 @@ export function vistoriaDaLinha(linha) {
     userId: linha.user_id,
     numero: linha.numero,
     realizadaEm: new Date(linha.realizada_em).toISOString(),
+    loja: linha.loja ?? "",
     chassi: linha.chassi,
     marca: linha.marca,
     modelo: linha.modelo,
@@ -78,6 +80,21 @@ export function vistoriaDaLinha(linha) {
     avariasQtd: soContagem ? danos[0].count : avarias.length,
     arquivosSalvosEm: null,
     atualizadoEm: linha.updated_at ? new Date(linha.updated_at).toISOString() : new Date().toISOString(),
+  };
+}
+
+// Linha resumida para o dashboard (só o que os indicadores usam).
+export function itemDoDashboard(linha) {
+  return {
+    id: linha.id,
+    numero: linha.numero,
+    realizadaEm: new Date(linha.realizada_em).toISOString(),
+    chassi: linha.chassi,
+    marca: linha.marca ?? "",
+    modelo: linha.modelo ?? "",
+    loja: linha.loja ?? "",
+    avarias: (Array.isArray(linha.damages) ? linha.damages : [])
+      .map((d) => ({ area: d.area, tipo: d.tipo, gravidade: d.gravidade })),
   };
 }
 
@@ -197,6 +214,21 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
       // Pede uma linha a mais só para saber se existe próxima página.
       const linhas = checar(await q.range(inicio, inicio + ITENS_POR_PAGINA));
       return { itens: linhas.slice(0, ITENS_POR_PAGINA).map(vistoriaDaLinha), temMais: linhas.length > ITENS_POR_PAGINA };
+    },
+    // Todas as vistorias de [de, ate) com as avarias, em blocos de 1000 linhas
+    // (limite padrão do PostgREST).
+    async listarParaDashboard({ de, ate }) {
+      const BLOCO = 1000;
+      const itens = [];
+      for (let inicio = 0; ; inicio += BLOCO) {
+        const linhas = checar(await sb.from("inspections")
+          .select("id, numero, realizada_em, chassi, marca, modelo, loja, damages(area, tipo, gravidade)")
+          .gte("realizada_em", de).lt("realizada_em", ate)
+          .order("realizada_em", { ascending: true }).order("id", { ascending: true })
+          .range(inicio, inicio + BLOCO - 1));
+        itens.push(...linhas.map(itemDoDashboard));
+        if (linhas.length < BLOCO) return itens;
+      }
     },
     async obterVistoriaCompleta(id) {
       return vistoriaDaLinha(checar(await sb.from("inspections").select("*, damages(*, damage_photos(*))").eq("id", id).single()));

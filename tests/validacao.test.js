@@ -7,7 +7,7 @@ import { CHECKLIST_ITENS } from "../config.js";
 function completo() {
   const r = novoRascunho("u1", "v1", "2026-11-07T12:00:00.000Z");
   Object.assign(r.dados, {
-    chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000, combustivel: "Flex",
+    loja: "PG Prime Jeep Natal", chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000, combustivel: "Flex",
     fotos: { frente: true, traseira: true, chassi: true },
     checklist: Object.fromEntries(CHECKLIST_ITENS.map((i) => [i, "presente"])),
     semAvarias: true,
@@ -38,6 +38,15 @@ test("demais campos e fotos da etapa 1, na ordem", () => {
   s.dados.fotos.traseira = false;
   assert.deepEqual(faltandoParaFinalizar(s).map((f) => f.mensagem),
     ["Informe a marca", "Informe o km", "Escolha o combustível", "Falta a foto: Traseira"]);
+});
+
+test("loja de destino é obrigatória e vem primeiro na etapa 1", () => {
+  const r = completo();
+  r.dados.loja = "";
+  r.dados.marca = "";
+  assert.deepEqual(faltandoParaFinalizar(r).map((f) => f.campo), ["loja", "marca"]);
+  delete r.dados.loja; // rascunho de antes do campo existir
+  assert.equal(faltandoParaFinalizar(r)[0].mensagem, "Escolha a loja de destino");
 });
 
 test("checklist sem marcação vira uma linha agrupada", () => {

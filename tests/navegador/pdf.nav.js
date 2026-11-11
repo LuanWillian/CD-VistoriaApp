@@ -60,7 +60,7 @@ async function cenario({ avarias = 10, fotosPorAvaria = 3, numero = null, semAva
   }
   const v = {
     id: "8f3a1c2e-0000-4000-8000-000000000000", userId: "u1", numero, realizadaEm: new Date(2026, 10, 7, 15, 30).toISOString(),
-    chassi: "AB123C", marca: "Volkswagen", modelo: "Gol", cor: "Prata", km: 123456, combustivel: "Flex",
+    loja: "PG Prime Selection João Pessoa", chassi: "AB123C", marca: "Volkswagen", modelo: "Gol", cor: "Prata", km: 123456, combustivel: "Flex",
     checklist: Object.fromEntries(CHECKLIST_ITENS.map((item, i) => [item, i % 4 ? "presente" : "ausente"])),
     checklistObs: "Estepe sem calota.", semAvarias, avarias: semAvarias ? [] : lista,
     vistoriadorNome: "Ana Lima", motoristaNome: "José 🚚",

@@ -120,3 +120,21 @@ teste("etapa 1: teclado do Android compondo não deixa o chassi passar de 6", as
     await t.fim();
   }
 });
+
+teste("etapa 1: loja de destino é uma lista, vem primeiro e mostra erro se ficar sem escolha", async () => {
+  const t = await montarEtapa(etapa);
+  try {
+    const loja = t.el.querySelector("#loja");
+    igual(t.el.querySelector("select, input").id, "loja", "a loja deveria ser o primeiro campo");
+    igual(loja.options[0].value, "");
+    ok(loja.options.length > 5, "lista de lojas vazia");
+    loja.dispatchEvent(new FocusEvent("blur"));
+    igual(t.el.querySelector("#loja-erro").textContent, "Escolha a loja de destino");
+    loja.value = "PG Prime Volvo Natal";
+    loja.dispatchEvent(new Event("change", { bubbles: true }));
+    igual(t.editor.rascunho.dados.loja, "PG Prime Volvo Natal");
+    igual(t.el.querySelector("#loja-erro").textContent, "");
+  } finally {
+    await t.fim();
+  }
+});

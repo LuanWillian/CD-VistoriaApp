@@ -11,7 +11,8 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 
 1. Crie um projeto em [supabase.com](https://supabase.com) (região mais próxima, por exemplo São Paulo).
 2. Rode a migration:
-   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, cada uma numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql`, `supabase/migrations/0003_leitura_para_todos.sql` e `supabase/migrations/0004_exclusao_para_todos.sql`.
+   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, cada uma numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql`, `supabase/migrations/0003_leitura_para_todos.sql`, `supabase/migrations/0004_exclusao_para_todos.sql` e `supabase/migrations/0005_loja_destino.sql`.
+   - **Projeto que já está no ar:** rode a `0005_loja_destino.sql` **antes** de publicar a versão com o campo Loja e o dashboard. Sem a coluna `loja`, o servidor recusa o envio das vistorias novas.
    - **Pela CLI:** `npx --yes supabase@2.122.0 link --project-ref <ref-do-projeto>` e depois `npx supabase@2.122.0 db push`.
 3. Crie o primeiro usuário: Authentication → Users → Add user → Create new user. Informe e-mail e senha e marque **Auto Confirm User**. Não há cadastro público: todo vistoriador é criado aqui.
    - **Cadastre o nome do vistoriador** (obrigatório): copie o **UID** do usuário em Authentication → Users. Em Table Editor → `perfis` → Insert row, cole o UID em `id` e escreva o nome completo em `nome`. Esse é o nome que aparece na etapa de assinaturas e no laudo; o vistoriador não consegue mudá-lo. Sem esse cadastro, o app avisa "Seu nome de vistoriador não está cadastrado" e não deixa finalizar. Se o nome for cadastrado ou corrigido depois, ele vale a partir da próxima vez que o vistoriador abrir o app com internet.
@@ -79,14 +80,17 @@ A cada deploy, troque `const CACHE_VERSION = "v1";` no `sw.js` (por exemplo, par
 
 ## 6. Editar listas
 
+**Dashboard do gerente (`#/dashboard`):** só no navegador do computador, pelo link "Dashboard" no topo. Mostra, no período escolhido, o volume de vistorias (com comparação ao período anterior), as avarias por gravidade, área e tipo, e as tabelas por marca e por loja de destino. Precisa de internet. Vistorias feitas antes do campo Loja aparecem como "Sem loja informada".
+
 As listas ficam em `config.js`:
 - itens do checklist (`CHECKLIST_ITENS`);
 - áreas e tipos de avaria (`AREAS_AVARIA`, `TIPOS_AVARIA`);
+- lojas de destino (`LOJAS`), usadas na etapa "Dados do veículo" e nos filtros do dashboard;
 - combustíveis;
 - parâmetros de foto e de PDF;
 - dias de cache de fotos.
 
-Mudar áreas e tipos não exige migration. Combustível e gravidade têm `check` no banco: se mudar essas listas, ajuste a migration também. Os ícones ficam em `icons/` (logo-*.png); ao trocar a logo, use nomes de arquivo novos, porque essa pasta tem cache imutável.
+Mudar áreas, tipos e lojas não exige migration (renomear uma loja não muda as vistorias antigas, que ficam com o nome antigo no dashboard). Combustível e gravidade têm `check` no banco: se mudar essas listas, ajuste a migration também. Os ícones ficam em `icons/` (logo-*.png); ao trocar a logo, use nomes de arquivo novos, porque essa pasta tem cache imutável.
 
 ## 7. Testes
 

@@ -140,7 +140,7 @@ export function novoRascunho(userId, id, agoraIso) {
     criadoEm: agoraIso,
     atualizadoEm: agoraIso,
     dados: {
-      chassi: "", marca: "", modelo: "", cor: "", km: null, combustivel: null,
+      loja: "", chassi: "", marca: "", modelo: "", cor: "", km: null, combustivel: null,
       fotos: { frente: false, traseira: false, chassi: false },
       checklist: {}, checklistObs: "",
       semAvarias: false, avarias: [],
@@ -157,6 +157,7 @@ export function vistoriaDoRascunho(rascunho, realizadaEm) {
     userId: rascunho.userId,
     numero: null,
     realizadaEm,
+    loja: String(d.loja ?? "").trim(),
     chassi: d.chassi,
     marca: d.marca.trim(),
     modelo: d.modelo.trim(),

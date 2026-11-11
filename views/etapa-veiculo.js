@@ -1,5 +1,5 @@
 // Etapa 1 — Dados do veículo e as 3 fotos fixas (Frente, Traseira, Chassi).
-import { COMBUSTIVEIS, FOTOS_VEICULO } from "../config.js";
+import { COMBUSTIVEIS, FOTOS_VEICULO, LOJAS } from "../config.js";
 import { ARQUIVO, capitalizar, formatarKm, formatarMarca, lerKm, normalizarChassi } from "../formatos.js";
 import { faltandoParaFinalizar } from "../validacao.js";
 import { $, $$, esc, icone } from "../ui.js";
@@ -22,6 +22,15 @@ export function montar(el, editor, ctx) {
   el.innerHTML = `
     <section class="pilha" aria-labelledby="titulo-etapa">
       <h2 class="titulo" id="titulo-etapa" tabindex="-1">Dados do veículo</h2>
+
+      <div class="campo">
+        <label class="rotulo" for="loja">Loja de destino</label>
+        <select class="entrada" id="loja" aria-describedby="loja-erro">
+          <option value="">Escolha a loja</option>
+          ${LOJAS.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join("")}
+        </select>
+        <p class="erro-campo" id="loja-erro" aria-live="polite"></p>
+      </div>
 
       <div class="campo">
         <div class="entre">
@@ -83,6 +92,19 @@ export function montar(el, editor, ctx) {
     p.textContent = msg;
     $(`#${campo}`, el)?.setAttribute("aria-invalid", msg ? "true" : "false");
   };
+
+  // ---------- Loja de destino ----------
+  const loja = $("#loja", el);
+  loja.value = LOJAS.includes(d.loja) ? d.loja : "";
+  loja.addEventListener("change", () => {
+    editor.alterar((dd) => { dd.loja = loja.value; }, { imediato: true });
+    tocados.add("loja");
+    mostrarErro("loja");
+  });
+  loja.addEventListener("blur", () => {
+    tocados.add("loja");
+    mostrarErro("loja");
+  });
 
   // ---------- Chassi ----------
   const chassi = $("#chassi", el);
@@ -240,7 +262,7 @@ export function montar(el, editor, ctx) {
   return {
     // Mostra os erros de todos os campos (usado ao tentar finalizar).
     mostrarTodos() {
-      ["chassi", "marca", "modelo", "cor", "km", "combustivel"].forEach((c) => {
+      ["loja", "chassi", "marca", "modelo", "cor", "km", "combustivel"].forEach((c) => {
         tocados.add(c);
         mostrarErro(c);
       });

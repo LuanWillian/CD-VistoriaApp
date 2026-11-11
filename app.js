@@ -13,8 +13,9 @@ import * as viewNova from "./views/nova.js";
 import * as viewVistorias from "./views/vistorias.js";
 import * as viewDetalhe from "./views/detalhe.js";
 import * as viewInicio from "./views/inicio.js";
+import * as viewDashboard from "./views/dashboard.js";
 
-const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio };
+const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, dashboard: viewDashboard };
 
 // O menu #/inicio é a página principal em todos os ambientes. A escolha acontece
 // aqui, antes de qualquer tela ser desenhada (sem piscar).
@@ -76,6 +77,7 @@ function lerRota() {
   const m = caminho.match(/^\/vistoria\/([\w-]+)$/);
   if (m) return { nome: "detalhe", params: { id: m[1], busca } };
   if (caminho === "/vistorias") return { nome: "vistorias", params: { busca } };
+  if (desktop && caminho === "/dashboard") return { nome: "dashboard", params: { busca } };
   if (!desktop && /^\/nova(\/|$)/.test(caminho)) return { nome: "nova", params: { busca } };
   return { nome: "inicio", params: { busca } }; // #/inicio e qualquer rota desconhecida
 }
@@ -92,6 +94,7 @@ async function renderizar() {
   const { nome, params } = lerRota();
   // No menu não aparece a seta de voltar ao menu.
   document.body.classList.toggle("na-inicio", nome === "inicio");
+  marcarNavTopo(nome);
   if (!desktop) {
     nivelAtual = viewInicio.nivelDaTela(history.state, nome, nivelAtual);
     if (history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
@@ -175,11 +178,20 @@ async function mostrarLogin() {
   document.body.classList.remove("com-acoes");
   tituloComoLinkDoMenu(false);
   $("#btn-menu").hidden = true;
+  $("#topo-nav").hidden = true;
   $("#status-rede").hidden = true;
   $("#faixa-sessao").hidden = true;
   const raiz = document.createElement("div");
   main.replaceChildren(raiz);
   await viewLogin.montar(raiz, ctx, {});
+}
+
+// Computador: links "Vistorias" (painel do menu) e "Dashboard" no topo.
+function marcarNavTopo(nome) {
+  for (const a of document.querySelectorAll("#topo-nav [data-rota]")) {
+    if (a.dataset.rota === nome) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  }
 }
 
 // O título "CD Vistoria" vira o caminho de volta ao menu (em todos os ambientes).
@@ -210,6 +222,7 @@ function entrarNoApp() {
   noApp = true;
   tituloComoLinkDoMenu(true);
   $("#btn-menu").hidden = false;
+  $("#topo-nav").hidden = !desktop;
   $("#status-rede").hidden = false;
   if (!location.hash || location.hash === "#") location.replace("#/inicio");
   renderizar();

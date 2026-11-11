@@ -12,7 +12,7 @@ const U = { id: "u-teste", email: "teste@local", nome: "Ana Lima" };
 function rascunhoCompleto() {
   const r = novoRascunho(U.id, crypto.randomUUID(), new Date().toISOString());
   Object.assign(r.dados, {
-    chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000, combustivel: "Flex",
+    loja: "PG Prime GWM Natal", chassi: "AB123C", marca: "Fiat", modelo: "Uno", cor: "Prata", km: 1000, combustivel: "Flex",
     fotos: { frente: true, traseira: true, chassi: true },
     checklist: Object.fromEntries(CHECKLIST_ITENS.map((i) => [i, "presente"])),
     semAvarias: true, vistoriadorNome: "Nome Digitado", motoristaNome: "Beto Souza",

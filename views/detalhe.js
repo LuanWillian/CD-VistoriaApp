@@ -194,7 +194,7 @@ export async function montar(el, ctx, params) {
         <section class="secao det-dados" aria-labelledby="h-dados">
           <h2 id="h-dados">Dados do veículo</h2>
           <dl class="dados">
-            ${[["Chassi", v.chassi], ["Marca", v.marca], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
+            ${[["Loja de destino", v.loja || "—"], ["Chassi", v.chassi], ["Marca", v.marca], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
               .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
           </dl>
         </section>
