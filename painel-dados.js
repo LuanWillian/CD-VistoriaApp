@@ -1,19 +1,24 @@
 // Regras do painel do computador (views/painel.js): métricas, busca e paginação.
 // Só funções puras sobre a lista de vistorias; nada de tela nem de armazenamento.
 import { nomeVistoria, periodo } from "./formatos.js";
+import { dentro, intervaloDoDashboard, lojaDe, marcaDe } from "./dashboard-dados.js";
 
 // Sem acento e sem diferenciar maiúsculas: "Ônix" acha "onix".
 export const semAcento = (s) => String(s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 export const maisRecentesPrimeiro = (itens) => [...itens].sort((a, b) => b.realizadaEm.localeCompare(a.realizadaEm));
 
-// Mesmos campos da busca da tela Vistorias (chassi, marca, modelo, número) e mesmos
-// períodos do filtro (hoje, 7d, 30d, todos; meia-noite no fuso do navegador).
-export function filtrarVistorias(itens, { busca = "", periodo: tipo = "todos" } = {}, agora = new Date()) {
-  const { de } = periodo(tipo, agora);
+// Busca nos mesmos campos da tela Vistorias (chassi, marca, modelo, número).
+// Período, marca e loja funcionam igual aos filtros do dashboard: "todos" ou
+// os períodos de intervaloDoDashboard (hoje, 7d, 30d, mes, personalizado com
+// de/ate "aaaa-mm-dd"). Personalizado incompleto ou invertido não filtra a data.
+export function filtrarVistorias(itens, { busca = "", periodo: tipo = "todos", de = "", ate = "", marca = "", loja = "" } = {}, agora = new Date()) {
+  const intervalo = tipo === "todos" ? null : intervaloDoDashboard(tipo, agora, { de, ate });
   const t = semAcento(busca).trim();
   return itens.filter((v) => {
-    if (de && v.realizadaEm < de) return false;
+    if (intervalo && !dentro(v.realizadaEm, intervalo)) return false;
+    if (marca && marcaDe(v) !== marca) return false;
+    if (loja && lojaDe(v) !== loja) return false;
     if (!t) return true;
     return [v.chassi, v.marca, v.modelo, nomeVistoria(v)].some((x) => semAcento(x).includes(t));
   });

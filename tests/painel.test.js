@@ -37,6 +37,22 @@ test("filtro: períodos Hoje, 7 dias, 30 dias e Todos, combinados com a busca", 
   assert.deepEqual(ids({ periodo: "7d", busca: "jeep" }), ["1", "2"]);
 });
 
+test("filtro: Este mês, Personalizado, marca e loja (iguais ao dashboard)", () => {
+  const lista = [
+    v("a", { realizadaEm: em(0), loja: "PG Prime Jeep Natal" }),
+    v("b", { realizadaEm: em(8), marca: "BMW", loja: "PG Prime BMW Natal" }),
+    v("c", { realizadaEm: em(12), loja: "" }),
+  ];
+  const ids = (f) => filtrarVistorias(lista, f, AGORA).map((x) => x.id);
+  assert.deepEqual(ids({ periodo: "mes" }), ["a", "b"]); // 01 a 09/11
+  assert.deepEqual(ids({ periodo: "personalizado", de: "2026-10-28", ate: "2026-10-31" }), ["c"]);
+  assert.equal(ids({ periodo: "personalizado", de: "", ate: "" }).length, 3, "personalizado incompleto não filtra");
+  assert.deepEqual(ids({ marca: "BMW" }), ["b"]);
+  assert.deepEqual(ids({ loja: "PG Prime Jeep Natal" }), ["a"]);
+  assert.deepEqual(ids({ loja: "Sem loja informada" }), ["c"]);
+  assert.deepEqual(ids({ marca: "Jeep", busca: "vis-a" }), ["a"]);
+});
+
 test("paginação: 25 por página, contador 1-based e página corrigida", () => {
   const muitos = Array.from({ length: 60 }, (_, i) => i);
   const p1 = paginar(muitos, 0, 25);

@@ -2,13 +2,16 @@
 // métricas, busca, filtros e tabela de vistorias. Só consulta: não existe
 // iniciar vistoria aqui. Os dados são os da tela Vistorias (servidor quando há
 // conexão, senão o que está guardado no aparelho).
-import { ITENS_POR_PAGINA_PAINEL, NOME_PADRAO_PAINEL } from "../config.js";
+import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
+import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, nomeVistoria } from "../formatos.js";
 import { filtrarVistorias, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
-import { $, $$, icone } from "../ui.js";
+import { $, $$, esc, icone } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
 
-const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["todos", "Todos"]];
+// Mesmos períodos do dashboard, mais "Todos" (o padrão da lista).
+const PERIODOS = [["todos", "Todos"], ["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
+const hojeCampo = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const LIMITE_PAGINAS_SERVIDOR = 50;
 
 function el(tag, classe, texto) {
@@ -20,7 +23,10 @@ function el(tag, classe, texto) {
 
 export async function montar(raiz, ctx) {
   const usuario = ctx.auth.usuarioAtual();
-  const estado = { busca: "", periodo: "todos", pagina: 0, itens: [], remotos: null, carregando: true };
+  const estado = {
+    busca: "", periodo: "todos", de: hojeCampo(new Date(Date.now() - 29 * 86400000)), ate: hojeCampo(),
+    marca: "", loja: "", pagina: 0, itens: [], remotos: null, carregando: true,
+  };
   let ativo = true;
   let geracao = 0;
 
@@ -34,12 +40,22 @@ export async function montar(raiz, ctx) {
             ${icone("busca")}
             <input class="entrada" id="dash-busca" type="search" placeholder="Buscar por chassi, marca, modelo..." aria-label="Buscar vistorias" autocomplete="off">
           </div>
-          <div class="dash-filtros">
-            <div class="chips" role="radiogroup" aria-label="Período" id="dash-periodos">
-              ${PERIODOS.map(([valor, rotulo]) => `<button type="button" class="chip" role="radio" aria-checked="${valor === "todos"}" data-periodo="${valor}">${rotulo}</button>`).join("")}
-            </div>
-            <button type="button" class="btn btn-texto" id="dash-atualizar">${icone("atualizar")} Atualizar</button>
+          <button type="button" class="btn btn-texto" id="dash-atualizar">${icone("atualizar")} Atualizar</button>
+        </div>
+        <div class="dash-filtros">
+          <div class="db-segmentos" role="radiogroup" aria-label="Período" id="dash-periodos">
+            ${PERIODOS.map(([valor, rotulo]) => `<button type="button" role="radio" aria-checked="${valor === "todos"}" data-periodo="${valor}">${valor === "personalizado" ? `${rotulo} ${icone("calendario", "ic db-ic-peq")}` : rotulo}</button>`).join("")}
           </div>
+          <select class="entrada db-select" id="dash-marca" aria-label="Marca"><option value="">Todas as marcas</option></select>
+          <select class="entrada db-select" id="dash-loja" aria-label="Loja de destino">
+            <option value="">Todas as lojas</option>
+            ${LOJAS.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join("")}
+            <option value="${esc(SEM_LOJA)}">${esc(SEM_LOJA)}</option>
+          </select>
+        </div>
+        <div class="db-datas dash-datas" id="dash-datas" hidden>
+          <label>De <input class="entrada" type="date" id="dash-de"></label>
+          <label>Até <input class="entrada" type="date" id="dash-ate"></label>
         </div>
         <p class="pequeno texto-2" id="dash-status" role="status"></p>
         <div class="dash-rolagem">
@@ -158,12 +174,22 @@ export async function montar(raiz, ctx) {
     $("#dash-status", raiz).textContent = !ctx.online() ? "Offline: mostrando as vistorias guardadas neste aparelho." : "";
   }
 
+  // Marcas das vistorias carregadas (a escolhida continua na lista mesmo sem itens).
+  function atualizarMarcas() {
+    const sel = $("#dash-marca", raiz);
+    const marcas = marcasDisponiveis(estado.itens);
+    if (estado.marca && !marcas.includes(estado.marca)) marcas.push(estado.marca);
+    sel.replaceChildren(new Option("Todas as marcas", ""), ...marcas.map((m) => new Option(m, m)));
+    sel.value = estado.marca;
+  }
+
   async function atualizarDados() {
     const minha = ++geracao;
     const itens = await lerLocais();
     if (!ativo || minha !== geracao) return;
     estado.itens = itens;
     estado.carregando = false;
+    atualizarMarcas();
     desenharTabela();
   }
 
@@ -189,7 +215,23 @@ export async function montar(raiz, ctx) {
     estado.periodo = valor;
     estado.pagina = 0;
     $$("[data-periodo]", raiz).forEach((c) => c.setAttribute("aria-checked", String(c.dataset.periodo === valor)));
+    $("#dash-datas", raiz).hidden = valor !== "personalizado";
   };
+  for (const [id, campo] of [["dash-de", "de"], ["dash-ate", "ate"]]) {
+    $(`#${id}`, raiz).value = estado[campo];
+    $(`#${id}`, raiz).addEventListener("change", (e) => {
+      estado[campo] = e.target.value;
+      estado.pagina = 0;
+      desenharTabela();
+    });
+  }
+  for (const [id, campo] of [["dash-marca", "marca"], ["dash-loja", "loja"]]) {
+    $(`#${id}`, raiz).addEventListener("change", (e) => {
+      estado[campo] = e.target.value;
+      estado.pagina = 0;
+      desenharTabela();
+    });
+  }
   $("#dash-periodos", raiz).addEventListener("click", (e) => {
     const chip = e.target.closest("[data-periodo]");
     if (!chip) return;
@@ -208,6 +250,10 @@ export async function montar(raiz, ctx) {
     clearTimeout(espera);
     estado.busca = "";
     $("#dash-busca", raiz).value = "";
+    estado.marca = "";
+    estado.loja = "";
+    $("#dash-marca", raiz).value = "";
+    $("#dash-loja", raiz).value = "";
     definirPeriodo("todos");
     desenharTabela();
   });
