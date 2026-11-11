@@ -218,9 +218,22 @@ if (!desktop) {
   });
 }
 
+// Botão da conta no topo: nome do vistoriador (do perfil) + ícone de pessoa.
+// No computador mostra o nome inteiro; no celular e no app, só o primeiro nome
+// (o CSS corta se não couber). Sem nome no perfil, fica só o ícone.
+function mostrarUsuarioNoTopo() {
+  const u = ctx.auth.usuarioAtual();
+  const nome = String(u?.nome ?? "").trim();
+  const curto = desktop ? nome : nome.split(/\s+/)[0] || "";
+  $("#topo-nome").textContent = curto;
+  $("#topo-nome").hidden = !curto;
+  $("#btn-menu").setAttribute("aria-label", nome ? `Conta de ${nome}: abrir menu` : "Conta: abrir menu");
+}
+
 function entrarNoApp() {
   noApp = true;
   tituloComoLinkDoMenu(true);
+  mostrarUsuarioNoTopo();
   $("#btn-menu").hidden = false;
   $("#topo-nav").hidden = !desktop;
   $("#status-rede").hidden = false;
@@ -240,7 +253,7 @@ function abrirMenu() {
     menu.setAttribute("aria-label", "Menu");
     menu.innerHTML = `
       <div class="menu-lista">
-        <p class="email" id="menu-email"></p>
+        <div class="email"><p class="menu-nome" id="menu-nome"></p><p id="menu-email"></p></div>
         <button type="button" class="menu-item" data-acao="instalar" hidden>${icone("baixar")} Instalar app</button>
         <button type="button" class="menu-item" data-acao="sair">${icone("sair")} Sair</button>
       </div>`;
@@ -254,6 +267,8 @@ function abrirMenu() {
     });
     document.body.append(menu);
   }
+  $("#menu-nome", menu).textContent = ctx.auth.usuarioAtual()?.nome || "";
+  $("#menu-nome", menu).hidden = !ctx.auth.usuarioAtual()?.nome;
   $("#menu-email", menu).textContent = ctx.auth.usuarioAtual()?.email || "";
   // Navegador do computador: sem opção de instalar o app.
   $('[data-acao="instalar"]', menu).hidden = desktop || !window.__podeInstalar;

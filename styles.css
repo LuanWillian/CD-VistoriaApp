@@ -88,6 +88,21 @@ button:disabled { cursor: default; opacity: 0.55; }
 }
 .btn-topo:active { background: rgba(255, 255, 255, 0.16); }
 
+/* Botão da conta (nome + ícone de pessoa) no lugar do menu sanduíche. */
+.btn-usuario {
+  display: inline-flex; align-items: center; gap: 8px; min-height: var(--alvo); max-width: 45vw;
+  padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: #fff;
+  font-size: 15px; font-weight: 600; -webkit-tap-highlight-color: transparent;
+}
+.btn-usuario-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-usuario-nome[hidden] { display: none; }
+.btn-usuario:active { background: rgba(255, 255, 255, 0.16); }
+@media (hover: hover) { .btn-usuario:hover { background: rgba(255, 255, 255, 0.12); } }
+.topo:has(.btn-usuario:not([hidden])) .topo-titulo { flex-shrink: 0; }
+.btn-usuario { flex-shrink: 1; min-width: 0; }
+/* Celular bem estreito: o título tem prioridade; o botão fica só com o ícone. */
+@media (max-width: 359px) { .btn-usuario { padding: 0 10px; } .btn-usuario-nome { display: none; } }
+
 /* Título "CD Vistoria" vira o link de volta ao menu #/inicio (em todos os ambientes). */
 .topo-link {
   display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: var(--alvo);
@@ -437,6 +452,8 @@ body.com-acoes .avisos { bottom: calc(var(--acoes-h) + var(--seguro-baixo) + 12p
 dialog.menu { margin: calc(var(--topo-h) + 4px) 8px auto auto; max-width: 300px; }
 .menu-lista { display: grid; padding: 8px; }
 .menu-lista .email { padding: 10px 12px; color: var(--texto-2); font-size: 14px; border-bottom: 1px solid var(--linha); margin-bottom: 4px; word-break: break-all; }
+.menu-lista .menu-nome { color: var(--texto); font-size: 15px; font-weight: 700; word-break: normal; }
+.menu-lista .menu-nome[hidden] { display: none; }
 .menu-item { display: flex; align-items: center; gap: 12px; min-height: var(--alvo); padding: 8px 12px; border: 0; border-radius: var(--raio-sm); background: none; text-align: left; font-weight: 600; width: 100%; }
 .menu-item:active { background: var(--fundo); }
 
