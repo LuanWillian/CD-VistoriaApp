@@ -236,7 +236,8 @@ function entrarNoApp() {
   mostrarUsuarioNoTopo();
   $("#btn-menu").hidden = false;
   $("#topo-nav").hidden = !desktop;
-  $("#status-rede").hidden = false;
+  // Computador: sem o selo de conexão (Online/Offline/pendentes) no topo.
+  $("#status-rede").hidden = desktop;
   if (!location.hash || location.hash === "#") location.replace("#/inicio");
   renderizar();
   storage.limparFotosAntigas(DIAS_CACHE_FOTOS).catch(console.error);
