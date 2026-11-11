@@ -219,12 +219,12 @@ if (!desktop) {
 }
 
 // Botão da conta no topo: nome do vistoriador (do perfil) + ícone de pessoa.
-// No computador mostra o nome inteiro; no celular e no app, só o primeiro nome
-// (o CSS corta se não couber). Sem nome no perfil, fica só o ícone.
+// O nome aparece só no navegador do computador; no celular e no app instalado
+// fica só o ícone. Sem nome no perfil, também fica só o ícone.
 function mostrarUsuarioNoTopo() {
   const u = ctx.auth.usuarioAtual();
   const nome = String(u?.nome ?? "").trim();
-  const curto = desktop ? nome : nome.split(/\s+/)[0] || "";
+  const curto = desktop ? nome : "";
   $("#topo-nome").textContent = curto;
   $("#topo-nome").hidden = !curto;
   $("#btn-menu").setAttribute("aria-label", nome ? `Conta de ${nome}: abrir menu` : "Conta: abrir menu");
