@@ -50,8 +50,7 @@ teste("painel (computador): tabela com as vistorias, linha e botão abrem os det
     igual(linhas.length, 2);
     ok(linhas[0].textContent.includes("VIS-000002"), "a mais recente vem primeiro");
     igual(el.querySelector("#dash-corpo i"), null, "texto digitado não vira HTML");
-    igual(el.querySelector('[data-metrica="total"]').textContent, "2");
-    igual(el.querySelector('[data-metrica="pendentes"]').textContent, "1");
+    igual(el.querySelector(".dash-metrica"), null, "os cartões de resumo foram removidos");
     igual(el.querySelector("#dash-contador").textContent, "Mostrando 1–2 de 2");
     linhas[0].querySelector("td").click();
     linhas[0].querySelector("a").click();

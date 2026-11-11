@@ -4,12 +4,11 @@
 // conexão, senão o que está guardado no aparelho).
 import { ITENS_POR_PAGINA_PAINEL, NOME_PADRAO_PAINEL } from "../config.js";
 import { formatarDataHora, nomeVistoria } from "../formatos.js";
-import { calcularMetricas, filtrarVistorias, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
+import { filtrarVistorias, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
 import { $, $$, icone } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["todos", "Todos"]];
-const METRICAS = [["hoje", "Vistorias hoje"], ["semana", "Total na semana"], ["pendentes", "Pendentes de sincronização"], ["total", "Total de vistorias"]];
 const LIMITE_PAGINAS_SERVIDOR = 50;
 
 function el(tag, classe, texto) {
@@ -28,10 +27,6 @@ export async function montar(raiz, ctx) {
   raiz.innerHTML = `
     <div class="dashboard-desktop pilha">
       <h1 class="titulo" id="dash-saudacao"></h1>
-      <section class="dash-metricas" aria-label="Resumo">
-        ${METRICAS.map(([chave, rotulo]) => `
-          <div class="cartao dash-metrica"><p class="dash-numero" data-metrica="${chave}">–</p><p class="dash-rotulo">${rotulo}</p></div>`).join("")}
-      </section>
       <section class="secao dash-tabela-bloco" aria-labelledby="dash-titulo-tabela">
         <h2 class="sr-only" id="dash-titulo-tabela">Vistorias</h2>
         <div class="dash-ferramentas">
@@ -110,11 +105,6 @@ export async function montar(raiz, ctx) {
   }
 
   // ---------- Desenho ----------
-  function desenharMetricas() {
-    const m = calcularMetricas(estado.itens);
-    for (const [chave] of METRICAS) $(`[data-metrica="${chave}"]`, raiz).textContent = String(m[chave]);
-  }
-
   function linha(v) {
     const tr = el("tr");
     tr.dataset.id = v.id;
@@ -174,7 +164,6 @@ export async function montar(raiz, ctx) {
     if (!ativo || minha !== geracao) return;
     estado.itens = itens;
     estado.carregando = false;
-    desenharMetricas();
     desenharTabela();
   }
 
