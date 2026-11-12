@@ -6,8 +6,9 @@
 // assinaturas; rodapé com empresa, número, chassi e página.
 import { CHECKLIST_ITENS, EMPRESA, FOTOS_VEICULO, GRAVIDADES, PDF_FOTO } from "./config.js";
 import {
-  ARQUIVO, arquivoAvaria, formatarDataHora, formatarKm, formatarMarca, nomeArquivoPdf, nomeVistoria, textoPdf,
+  ARQUIVO, arquivoAvaria, arquivoReceb, formatarDataHora, formatarKm, formatarMarca, nomeArquivoPdf, nomeVistoria, textoPdf,
 } from "./formatos.js";
+import { STATUS_RECEBIMENTO } from "./recebimento-dados.js";
 import { carregarScript } from "./ui.js";
 
 export class ImagemAusenteError extends Error {
@@ -431,6 +432,50 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     escrever(funcao, centro, y + caixaH + 13, { align: "center" });
   });
   y += caixaH + 18;
+
+  // ---------- 6b. Recebimento na loja (só depois de recebido) ----------
+  const rec = v.recebimento;
+  if (rec) {
+    const divergencia = rec.status === "divergencia";
+    const desc = divergencia && rec.descricao ? linhas(`O que está diferente: ${rec.descricao}`, LARG, 10.5) : [];
+    secao("Recebimento na loja", 30 + desc.length * 4.8, STATUS_RECEBIMENTO[rec.status]);
+    fonte("bold", 11.5, COR.texto);
+    escrever(umaLinha(`Recebido por ${rec.recebedorNome} — ${rec.loja}`, LARG - 45), M, y + 4);
+    selo(STATUS_RECEBIMENTO[rec.status], M + LARG, y + 4, {
+      alinhar: "direita", fundo: divergencia ? rgb("#F28C28") : rgb("#1B7F3B"), cor: divergencia ? rgb("#1A1A1A") : [255, 255, 255],
+    });
+    fonte("normal", 10, COR.texto2);
+    escrever(`Data/hora do recebimento: ${formatarDataHora(rec.recebidoEm)}`, M, y + 10);
+    y += 16;
+    if (desc.length) {
+      fonte("normal", 10.5, COR.texto);
+      escrever(desc, M, y);
+      y += desc.length * 4.8 + 2;
+    }
+    if (divergencia && rec.fotos.length) {
+      const vao = 4;
+      const celW = (LARG - 2 * vao) / 3;
+      const celH = celW * 0.75;
+      for (let l = 0; l < Math.ceil(rec.fotos.length / 3); l++) {
+        garantir(celH + vao);
+        const ids = rec.fotos.slice(l * 3, l * 3 + 3);
+        const imgs = await Promise.all(ids.map((id) => imagem(arquivoReceb(id), { proporcao: 4 / 3 })));
+        imgs.forEach((img, k) => doc.addImage(img.dados, "JPEG", M + k * (celW + vao), y, celW, celH, undefined, "FAST"));
+        y += celH + vao;
+      }
+    }
+    garantir(caixaH + 18);
+    const img = await imagem(ARQUIVO.recebAssinatura, { tipo: "PNG", lado: 900 });
+    const centro = M + LARG / 4;
+    const p = encaixar(img, centro - caixaW / 2, y + 2, caixaW, caixaH);
+    doc.addImage(img.dados, "PNG", p.x, p.y, p.w, p.h, undefined, "FAST");
+    linha(centro - 36, y + caixaH + 4, centro + 36, y + caixaH + 4, COR.preto, 0.4);
+    fonte("bold", 11.5, COR.texto);
+    escrever(umaLinha(rec.recebedorNome || "—", 72), centro, y + caixaH + 10, { align: "center" });
+    fonte("normal", 10, COR.texto2);
+    escrever("Recebido na loja", centro, y + caixaH + 15, { align: "center" });
+    y += caixaH + 20;
+  }
 
   // ---------- 7. Rodapé em todas as páginas ----------
   const total = doc.getNumberOfPages();

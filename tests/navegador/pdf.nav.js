@@ -145,3 +145,25 @@ teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorid
   igual(cor("Grave"), "198,40,40");
   igual(cor("Ausente"), "17,17,17", "Ausente continua preto");
 });
+
+teste("pdf: seção Recebimento na loja só quando há recebimento, com divergência, fotos e assinatura", async () => {
+  const sem = await cenario({ avarias: 0, numero: "VIS-000030" });
+  const r0 = await gerarPdf(sem.v, sem.obter, { depurar: true });
+  ok(!r0.textos.some((x) => x.includes("Recebimento na loja")), "sem recebimento não pode ter a seção");
+
+  const { v, obter } = await cenario({ avarias: 1, fotosPorAvaria: 1, numero: "VIS-000031" });
+  const extras = new Map([["receb_assinatura.png", await assinatura()], ["receb_f1.jpg", await foto(91)]]);
+  v.recebimento = {
+    id: "r1", userId: "uL", status: "divergencia", recebedorNome: "Davi Loja", loja: "PG Prime BMW Natal",
+    recebidoEm: new Date(2026, 10, 12, 14, 5).toISOString(), descricao: "Risco novo na porta traseira direita",
+    assinatura: "uL/v/receb_assinatura.png", fotos: ["f1"],
+  };
+  const r = await gerarPdf(v, async (nome) => extras.get(nome) ?? obter(nome), { depurar: true });
+  for (const t of ["Recebimento na loja", "Com divergência", "Recebido por Davi Loja — PG Prime BMW Natal", "12/11/2026 14:05",
+    "Risco novo na porta traseira direita", "Recebido na loja"]) {
+    ok(r.textos.some((x) => x.includes(t)), `faltou: ${t}`);
+  }
+  const pos = (texto) => r.textos.findIndex((x) => x.includes(texto));
+  ok(pos("Assinaturas") < pos("Recebimento na loja"), "a seção vem depois das Assinaturas");
+  ok(r.blob.size < 10 * 1024 * 1024);
+});
