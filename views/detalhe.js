@@ -190,11 +190,15 @@ export async function montar(el, ctx, params) {
           ${podeExcluir() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
         </div>
         </div>
-        <div class="detalhe-corpo">
+        <div class="detalhe-corpo${v.loja ? " com-loja" : ""}">
+        ${v.loja ? `<section class="secao det-loja" aria-labelledby="h-loja">
+          <h2 id="h-loja">Loja de destino</h2>
+          <p class="loja-destino"><span class="loja-icone" aria-hidden="true">${icone("loja")}</span><span>${esc(v.loja)}</span></p>
+        </section>` : ""}
         <section class="secao det-dados" aria-labelledby="h-dados">
           <h2 id="h-dados">Dados do veículo</h2>
           <dl class="dados">
-            ${[["Loja de destino", v.loja || "—"], ["Chassi", v.chassi], ["Marca", v.marca], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
+            ${[["Chassi", v.chassi], ["Marca", v.marca], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
               .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
           </dl>
         </section>

@@ -702,3 +702,15 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
 /* Painel do computador: busca + Atualizar numa linha; filtros do dashboard na de baixo. */
 .dashboard-desktop .dash-filtros { margin-bottom: 8px; }
 .dashboard-desktop .dash-datas { justify-content: flex-start; margin-bottom: 8px; }
+
+/* Detalhe: card só da loja de destino (vistorias antigas, sem loja, não têm o card). */
+.loja-destino { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 700; line-height: 1.3; }
+.loja-icone { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border-radius: var(--raio-sm); background: var(--principal-clara); }
+@media (min-width: 1024px) and (pointer: fine) {
+  .detalhe-corpo.com-loja { grid-template-rows: auto auto auto 1fr; }
+  .com-loja .det-loja { grid-column: 1; grid-row: 1; }
+  .com-loja .det-dados { grid-row: 2; }
+  .com-loja .det-avarias { grid-row: 3; }
+  .com-loja .det-assin { grid-row: 4; }
+  .com-loja .det-dir { grid-row: 1 / span 4; }
+}
