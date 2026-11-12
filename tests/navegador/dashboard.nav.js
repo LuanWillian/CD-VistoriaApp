@@ -14,7 +14,7 @@ function dadosFalsos() {
   ];
 }
 
-async function montarDashboard({ online = true, falhar = false } = {}) {
+async function montarDashboard({ online = true, falhar = false, dados = dadosFalsos } = {}) {
   const chamadas = [];
   const navegacoes = [];
   const ctx = {
@@ -25,7 +25,7 @@ async function montarDashboard({ online = true, falhar = false } = {}) {
       async listarParaDashboard(p) {
         chamadas.push(p);
         if (falhar) throw new TypeError("failed to fetch");
-        return dadosFalsos().filter((v) => v.realizadaEm >= p.de && v.realizadaEm < p.ate);
+        return dados().filter((v) => v.realizadaEm >= p.de && v.realizadaEm < p.ate);
       },
     },
   };
@@ -39,7 +39,7 @@ teste("dashboard: indicadores, tabelas e sem HTML vindo dos dados", async () => 
   const t = await montarDashboard();
   try {
     igual(t.chamadas.length, 1, "uma consulta só (período anterior + atual)");
-    const kpis = [...t.el.querySelectorAll(".db-kpi-num")].map((n) => n.textContent);
+    const kpis = [...t.el.querySelectorAll(".db-kpis .db-kpi-num")].map((n) => n.textContent);
     igual(kpis, ["2", "1", "2", "1"]); // 2 vistorias, 1 com avaria, 2 avarias, 1 grave
     ok(t.el.textContent.includes("1 no período anterior"), "falta a comparação com o período anterior");
     const colunas = t.el.querySelectorAll(".db-coluna");
@@ -125,6 +125,38 @@ teste("dashboard: cartões de avaria abrem a lista de veículos e clicar de novo
     t.el.querySelector(".db-fechar-lista").click();
     igual(titulo(), "Últimas vistorias com avaria");
     igual(t.navegacoes.length, 0, "clicar no cartão não abre vistoria");
+  } finally {
+    t.fim();
+  }
+});
+
+teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna Divergências", async () => {
+  const agora = new Date();
+  const dia = (n) => new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - n, 10).toISOString();
+  const rec = (status) => ({ id: `r-${status}`, userId: "uL", status, recebedorNome: "Davi", loja: "PG Prime BMW Natal", recebidoEm: dia(0), descricao: "x", assinatura: "p", fotos: [] });
+  const base = { chassi: "AB123C", marca: "BMW", modelo: "X1", loja: "PG Prime BMW Natal", avarias: [] };
+  const t = await montarDashboard({ dados: () => [
+    { ...base, id: "w1", numero: "VIS-1", realizadaEm: dia(1), recebimento: null },
+    { ...base, id: "w2", numero: "VIS-2", realizadaEm: dia(2), recebimento: rec("conforme") },
+    { ...base, id: "w3", numero: "VIS-3", realizadaEm: dia(3), recebimento: rec("divergencia") },
+    { ...base, id: "w4", numero: "VIS-4", realizadaEm: dia(4), loja: "", recebimento: null },
+  ] });
+  try {
+    const bloco = () => t.el.querySelector(".db-receb"); // a tela é redesenhada a cada clique
+    ok(bloco(), "falta o bloco Recebimento nas lojas");
+    const nums = [...bloco().querySelectorAll(".db-kpi-num")].map((n) => n.textContent);
+    igual(nums, ["1", "1", "1"]);
+    const titulo = () => t.el.querySelector("#db-h-ultimas").textContent.trim();
+    bloco().querySelector('[data-lista="aguardando"]').click();
+    igual(titulo(), "Veículos aguardando recebimento (1)");
+    ok([...t.el.querySelectorAll("#db-lista th")].some((th) => th.textContent.trim() === "Recebimento"), "a lista mostra a coluna Recebimento");
+    bloco().querySelector('[data-lista="divergencia"]').click();
+    igual(titulo(), "Veículos recebidos com divergência (1)");
+    ok(t.el.querySelector("#db-lista .selo-receb-divergencia"));
+    bloco().querySelector('[data-lista="divergencia"]').click();
+    igual(titulo(), "Últimas vistorias com avaria");
+    const cab = [...t.el.querySelectorAll("#db-h-loja ~ * thead th")].map((th) => th.textContent.trim());
+    ok(cab.includes("Divergências"), "falta a coluna Divergências");
   } finally {
     t.fim();
   }

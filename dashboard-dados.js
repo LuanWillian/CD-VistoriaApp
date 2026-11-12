@@ -6,6 +6,7 @@
 // { id, numero, realizadaEm (ISO), chassi, marca, modelo, loja ("" se não tem),
 //   avarias: [{ area, tipo, gravidade }] }
 import { formatarMarca, periodoPersonalizado } from "./formatos.js";
+import { situacaoRecebimento } from "./recebimento-dados.js";
 
 export const SEM_LOJA = "Sem loja informada";
 const ORDEM_GRAVIDADE = ["Leve", "Moderada", "Grave"];
@@ -164,6 +165,7 @@ function agrupar(itens, chave) {
       comAvaria,
       pctComAvaria: pct(comAvaria, lista.length),
       graves: lista.reduce((s, v) => s + graves(v), 0),
+      divergencias: lista.filter((v) => situacaoRecebimento(v) === "divergencia").length,
       ultima: lista.reduce((u, v) => (v.realizadaEm > u ? v.realizadaEm : u), ""),
     };
   }).sort((x, y) => y.vistorias - x.vistorias || x.nome.localeCompare(y.nome, "pt-BR"));
@@ -206,4 +208,10 @@ export function formatarPct(valor, { sinal = false, casas = 1 } = {}) {
   const arred = Number(valor.toFixed(casas));
   const texto = arred.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: casas });
   return `${sinal && arred > 0 ? "+" : ""}${texto}%`;
+}
+
+// Lista aberta pelos cartões "Aguardando recebimento" / "Recebidos com divergência".
+export function listaPorRecebimento(itens, situacao) {
+  return itens.filter((v) => situacaoRecebimento(v) === situacao)
+    .sort((x, y) => y.realizadaEm.localeCompare(x.realizadaEm));
 }

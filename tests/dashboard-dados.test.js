@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, formatarPct, gravidadeMaxima, intervaloDoDashboard, marcasDisponiveis,
+  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, formatarPct, listaPorRecebimento, gravidadeMaxima, intervaloDoDashboard, marcasDisponiveis,
   porGravidade, porLoja, porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
 } from "../dashboard-dados.js";
 
@@ -148,4 +148,20 @@ test("descrição do período para o cartão: nome do filtro e datas, com o per�
   assert.equal(descreverPeriodo("30d", intervaloDoDashboard("30d", AGORA)).datas, "13/10 a 11/11");
   const virada = intervaloDoDashboard("personalizado", AGORA, { de: "2025-12-20", ate: "2026-01-05" });
   assert.deepEqual(descreverPeriodo("personalizado", virada), { nome: "Período personalizado", datas: "20/12/2025 a 05/01/2026", anterior: "03/12 a 19/12" });
+});
+
+test("recebimento: divergências por loja e lista por situação (mais recentes primeiro)", () => {
+  const rec = (status) => ({ id: `r${status}`, userId: "uL", status, recebedorNome: "D", loja: "L", recebidoEm: em(11), descricao: "x", assinatura: "p", fotos: [] });
+  const itens = [
+    v("1", { realizadaEm: em(8), recebimento: rec("divergencia") }),
+    v("2", { realizadaEm: em(9), recebimento: rec("divergencia") }),
+    v("3", { realizadaEm: em(10), recebimento: null }),
+    v("4", { realizadaEm: em(7), recebimento: rec("conforme") }),
+    v("5", { loja: "", recebimento: null }),
+  ];
+  const jeep = porLoja(itens).find((l) => l.nome === "PG Prime Jeep Natal");
+  assert.equal(jeep.divergencias, 2);
+  assert.equal(porLoja(itens).find((l) => l.nome === SEM_LOJA).divergencias, 0);
+  assert.deepEqual(listaPorRecebimento(itens, "divergencia").map((x) => x.id), ["2", "1"]);
+  assert.deepEqual(listaPorRecebimento(itens, "aguardando").map((x) => x.id), ["3"]);
 });

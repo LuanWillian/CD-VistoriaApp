@@ -768,3 +768,13 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
 .receb-opcoes [data-status="conforme"][aria-checked="true"] { border-color: var(--ok); background: var(--ok-fundo); color: var(--ok); }
 .receb-opcoes [data-status="divergencia"][aria-checked="true"] { border-color: var(--pendente); background: var(--pendente-fundo); color: var(--pendente); }
 .receb-form .campo[hidden] { display: none; }
+
+/* Dashboard: bloco Recebimento nas lojas. */
+.db .db-receb { display: grid; gap: 10px; }
+.db .db-bloco-titulo { font-size: 17px; }
+.db .db-receb-cartoes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.db .db-kpi-conforme { border-left: 4px solid var(--ok); }
+.db .db-kpi-divergencia { border-left: 4px solid var(--moderada); }
+.db .db-kpi-divergencia .db-kpi-num { color: var(--pendente); }
+.db .db-divergencia { color: var(--pendente); font-weight: 700; }
+@media (max-width: 900px) { .db .db-receb-cartoes { grid-template-columns: 1fr; } }

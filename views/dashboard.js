@@ -4,10 +4,12 @@
 import { GRAVIDADES, LOJAS } from "../config.js";
 import { formatarDataHora, nomeVistoria } from "../formatos.js";
 import {
-  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, marcaDe, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
+  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, listaPorRecebimento, marcaDe, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
   porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
 } from "../dashboard-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
+import { contarRecebimentos } from "../recebimento-dados.js";
+import { seloRecebimento } from "./card-recebimento.js";
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
 const COR_GRAVIDADE = Object.fromEntries(GRAVIDADES.map((g) => [g.valor, g]));
@@ -199,11 +201,19 @@ export async function montar(raiz, ctx) {
     const tipos = rankingTipos(itens);
     const marcas = porMarca(itens);
     const lojas = porLoja(itens);
-    const ultimas = estado.lista
+    const listaReceb = estado.lista === "aguardando" || estado.lista === "divergencia";
+    const contRec = contarRecebimentos(itens);
+    const ultimas = listaReceb ? listaPorRecebimento(itens, estado.lista) : estado.lista
       ? ultimasComAvaria(itens, null, { soGraves: estado.lista === "graves" })
       : ultimasComAvaria(itens);
-    const tituloLista = { "": "Últimas vistorias com avaria", avaria: "Veículos com avaria", graves: "Veículos com avaria grave" }[estado.lista];
-    const vazioLista = estado.lista === "graves" ? "Nenhum veículo com avaria grave no período." : "Nenhuma vistoria com avaria no período.";
+    const tituloLista = {
+      "": "Últimas vistorias com avaria", avaria: "Veículos com avaria", graves: "Veículos com avaria grave",
+      aguardando: "Veículos aguardando recebimento", divergencia: "Veículos recebidos com divergência",
+    }[estado.lista];
+    const vazioLista = {
+      graves: "Nenhum veículo com avaria grave no período.", aguardando: "Nenhum veículo aguardando recebimento no período.",
+      divergencia: "Nenhum veículo recebido com divergência no período.",
+    }[estado.lista] || "Nenhuma vistoria com avaria no período.";
     // Cartão que abre a lista: botão de verdade (teclado e leitor de tela), marcado quando ativo.
     const cartaoLista = (tipo, classe, conteudoHtml, rotulo) => `<button type="button" class="cartao db-kpi db-kpi-botao ${classe}" data-lista="${tipo}"
       aria-pressed="${estado.lista === tipo}" aria-controls="db-lista" title="${rotulo}">${conteudoHtml}
@@ -225,6 +235,18 @@ export async function montar(raiz, ctx) {
           <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.avarias)}</span></p></div>
         ${cartaoLista("graves", "db-kpi-grave", `<span class="db-kpi-rot">Avarias graves</span>
           <span class="db-kpi-linha"><span class="db-kpi-num">${num(r.graves)}</span><span class="db-kpi-extra">(${formatarPct(r.pctGraves)} do total)</span></span>`, "Ver os veículos com avaria grave")}
+      </section>
+
+      <section class="db-receb" aria-labelledby="db-h-receb">
+        <h2 class="db-bloco-titulo" id="db-h-receb">Recebimento nas lojas</h2>
+        <div class="db-receb-cartoes">
+          ${cartaoLista("aguardando", "db-kpi-aguardando", `<span class="db-kpi-rot">Aguardando recebimento</span>
+            <span class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.aguardando)}</span></span>`, "Ver os veículos aguardando recebimento")}
+          <div class="cartao db-kpi db-kpi-conforme"><p class="db-kpi-rot">Recebidos conforme</p>
+            <p class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.conforme)}</span></p></div>
+          ${cartaoLista("divergencia", "db-kpi-divergencia", `<span class="db-kpi-rot">Recebidos com divergência</span>
+            <span class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.divergencia)}</span></span>`, "Ver os veículos recebidos com divergência")}
+        </div>
       </section>
 
       <section class="secao" aria-labelledby="db-h-volume">
@@ -270,9 +292,9 @@ export async function montar(raiz, ctx) {
         <section class="secao" aria-labelledby="db-h-loja">
           <h2 id="db-h-loja">Por loja de destino</h2>
           ${lojas.length ? `<div class="dash-rolagem"><table class="db-tabela">
-            <thead><tr><th scope="col">Loja</th><th scope="col" class="db-n">Vist.</th><th scope="col" class="db-n">Avaria</th><th scope="col" class="db-n">%</th><th scope="col" class="db-n">Última vistoria</th></tr></thead>
+            <thead><tr><th scope="col">Loja</th><th scope="col" class="db-n">Vist.</th><th scope="col" class="db-n">Avaria</th><th scope="col" class="db-n">%</th><th scope="col" class="db-n">Divergências</th><th scope="col" class="db-n">Última vistoria</th></tr></thead>
             <tbody>${lojas.map((l) => `<tr><td class="db-forte${l.nome === SEM_LOJA ? " texto-2" : ""}">${esc(l.nome)}</td><td class="db-n">${num(l.vistorias)}</td>
-              <td class="db-n">${num(l.comAvaria)}</td><td class="db-n">${formatarPct(l.pctComAvaria)}</td><td class="db-n texto-2">${quando(l.ultima)}</td></tr>`).join("")}</tbody>
+              <td class="db-n">${num(l.comAvaria)}</td><td class="db-n">${formatarPct(l.pctComAvaria)}</td><td class="db-n${l.divergencias ? " db-divergencia" : ""}">${num(l.divergencias)}</td><td class="db-n texto-2">${quando(l.ultima)}</td></tr>`).join("")}</tbody>
           </table></div>` : `<p class="texto-2">Nenhuma vistoria no período.</p>`}
         </section>
       </div>
@@ -283,11 +305,11 @@ export async function montar(raiz, ctx) {
           ${estado.lista ? `<button type="button" class="btn btn-texto db-fechar-lista" data-lista="">${icone("x", "ic db-ic-peq")} Voltar às últimas</button>` : ""}
         </div>
         ${ultimas.length ? `<div class="dash-rolagem"><table class="db-tabela db-clicavel">
-          <thead><tr><th scope="col">Nº</th><th scope="col">Data/Hora</th><th scope="col">Marca/Modelo</th><th scope="col">Chassi</th><th scope="col">Loja</th><th scope="col">Gravidade</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+          <thead><tr><th scope="col">Nº</th><th scope="col">Data/Hora</th><th scope="col">Marca/Modelo</th><th scope="col">Chassi</th><th scope="col">Loja</th><th scope="col">${listaReceb ? "Recebimento" : "Gravidade"}</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
           <tbody>${ultimas.map((v) => `<tr data-id="${esc(v.id)}">
             <td class="db-forte">${esc(nomeVistoria(v))}</td><td class="dash-num">${formatarDataHora(v.realizadaEm)}</td>
             <td>${esc([v.marca && marcaDe(v), v.modelo].filter(Boolean).join(" ") || "—")}</td><td class="dash-chassi">${esc(v.chassi || "—")}</td>
-            <td class="texto-2">${esc(v.loja || "—")}</td><td>${seloGravidade(v.gravidadeMaxima)}</td>
+            <td class="texto-2">${esc(v.loja || "—")}</td><td>${listaReceb ? seloRecebimento(v) : seloGravidade(v.gravidadeMaxima)}</td>
             <td class="db-acoes"><a class="db-ver" href="#/vistoria/${encodeURIComponent(v.id)}">Ver ${icone("avancar", "ic db-ic-peq")}</a></td></tr>`).join("")}</tbody>
         </table></div>` : `<p class="texto-2">${vazioLista}</p>`}
       </section>
