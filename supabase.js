@@ -2,7 +2,7 @@
 // (snake_case, caminhos no bucket) e o formato local das vistorias.
 // O cliente vem de vendor/supabase-2.118.0.umd.js (global `supabase`) e só é
 // criado em criarRemoto(); importar este arquivo não toca no navegador.
-import { ARQUIVO, arquivoAvaria, caminhoRemoto } from "./formatos.js";
+import { ARQUIVO, arquivoAvaria, arquivoReceb, caminhoDoArquivo, caminhoRemoto } from "./formatos.js";
 import { ITENS_POR_PAGINA } from "./config.js";
 
 const BUCKET = "vistorias";
@@ -70,6 +70,7 @@ export function vistoriaDaLinha(linha) {
     checklistObs: linha.checklist_obs ?? "",
     semAvarias: linha.sem_avarias ?? false,
     avarias,
+    recebimento: recebimentoDaLinha(linha.recebimentos),
     vistoriadorNome: linha.vistoriador_nome ?? "",
     motoristaNome: linha.motorista_nome ?? "",
     status: "sincronizada",
@@ -93,10 +94,39 @@ export function itemDoDashboard(linha) {
     marca: linha.marca ?? "",
     modelo: linha.modelo ?? "",
     loja: linha.loja ?? "",
+    recebimento: recebimentoDaLinha(linha.recebimentos),
     avarias: (Array.isArray(linha.damages) ? linha.damages : [])
       .map((d) => ({ area: d.area, tipo: d.tipo, gravidade: d.gravidade })),
   };
 }
+
+// ---------- Recebimento na loja ----------
+// O PostgREST devolve o recebimento embutido como objeto (relação 1:1) ou, em
+// algumas versões, como lista de um; sem recebimento, null ou lista vazia.
+export function recebimentoDaLinha(dado) {
+  const r = Array.isArray(dado) ? dado[0] : dado;
+  if (!r) return null;
+  return {
+    id: r.id,
+    userId: r.user_id,
+    status: r.status,
+    recebedorNome: r.recebedor_nome,
+    loja: r.loja,
+    recebidoEm: new Date(r.recebido_em).toISOString(),
+    descricao: r.descricao ?? "",
+    assinatura: r.assinatura,
+    fotos: (r.recebimento_fotos || []).map((f) => f.id),
+  };
+}
+
+// Nome, loja, conta e data ficam de fora: o banco preenche (gatilho).
+export function linhaDoRecebimento(r, inspectionId) {
+  const descricao = String(r.descricao ?? "").trim();
+  return { id: r.id, inspection_id: inspectionId, status: r.status, descricao: descricao || null, assinatura: r.assinatura };
+}
+
+const CAMPOS_RECEBIMENTO = "recebimentos(*, recebimento_fotos(id, path))";
+const CAMPOS_LISTA = `id, user_id, numero, realizada_em, chassi, marca, modelo, loja, foto_frente, damages(count), ${CAMPOS_RECEBIMENTO}`;
 
 // ---------- Erros ----------
 const MENSAGEM_REDE = "Sem conexão com o servidor.";
@@ -104,7 +134,6 @@ const MENSAGEM_SESSAO = "Sua sessão expirou. Entre novamente para enviar as vis
 const DETALHES = {
   23514: "valor fora do permitido",
   23505: "registro duplicado",
-  23503: "referência inexistente",
   23502: "campo obrigatório vazio",
   42501: "permissão negada",
 };
@@ -119,6 +148,7 @@ export function classificarErro(e, online = true) {
   if (status === 401 || e?.code === "PGRST301" || e?.code === "PGRST303" || /jwt expired/i.test(msg)) {
     return { tipo: "sessao", mensagem: MENSAGEM_SESSAO };
   }
+  if (e?.code === "23503") return { tipo: "servidor", mensagem: "Esta vistoria foi excluída pelo CD." };
   const detalhe = DETALHES[e?.code] || (status === 413 ? "arquivo grande demais" : msg || "erro desconhecido");
   return { tipo: "servidor", mensagem: `O servidor recusou os dados: ${detalhe}.` };
 }
@@ -152,6 +182,16 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
     return data;
   };
   const usuario = (u) => (u ? { id: u.id, email: u.email } : null);
+  // Consulta em blocos de 1000 linhas (limite padrão do PostgREST) até acabar.
+  async function emBlocos(montar, mapa) {
+    const BLOCO = 1000;
+    const itens = [];
+    for (let inicio = 0; ; inicio += BLOCO) {
+      const linhas = checar(await montar(sb.from("inspections")).range(inicio, inicio + BLOCO - 1));
+      itens.push(...linhas.map(mapa));
+      if (linhas.length < BLOCO) return itens;
+    }
+  }
 
   return {
     classificarErro,
@@ -176,8 +216,8 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
       }
     },
     async obterPerfil(userId) {
-      const linha = checar(await sb.from("perfis").select("nome").eq("id", userId).maybeSingle());
-      return linha?.nome ?? null;
+      const linha = checar(await sb.from("perfis").select("nome, papel, loja").eq("id", userId).maybeSingle());
+      return linha ? { nome: linha.nome ?? null, papel: linha.papel ?? "vistoriador", loja: linha.loja ?? null } : null;
     },
     aoMudarSessao(cb) {
       const { data } = sb.auth.onAuthStateChange((evento, s) => cb(evento, usuario(s?.user)));
@@ -216,37 +256,37 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
       return { itens: linhas.slice(0, ITENS_POR_PAGINA).map(vistoriaDaLinha), temMais: linhas.length > ITENS_POR_PAGINA };
     },
     // Painel do computador: TODAS as vistorias (mesmos campos da lista), mais
-    // recentes primeiro, em blocos de 1000 linhas (limite padrão do PostgREST).
-    // Sem teto: o painel não pode esconder vistorias antigas sem avisar.
-    async listarTodasVistorias() {
-      const BLOCO = 1000;
-      const itens = [];
-      for (let inicio = 0; ; inicio += BLOCO) {
-        const linhas = checar(await sb.from("inspections")
-          .select("id, user_id, numero, realizada_em, chassi, marca, modelo, loja, foto_frente, damages(count)")
-          .order("realizada_em", { ascending: false }).order("id", { ascending: false })
-          .range(inicio, inicio + BLOCO - 1));
-        itens.push(...linhas.map(vistoriaDaLinha));
-        if (linhas.length < BLOCO) return itens;
-      }
+    // recentes primeiro. Sem teto: o painel não pode esconder vistorias antigas.
+    listarTodasVistorias() {
+      return emBlocos((q) => q.select(CAMPOS_LISTA)
+        .order("realizada_em", { ascending: false }).order("id", { ascending: false }), vistoriaDaLinha);
     },
-    // Todas as vistorias de [de, ate) com as avarias, em blocos de 1000 linhas
-    // (limite padrão do PostgREST).
-    async listarParaDashboard({ de, ate }) {
-      const BLOCO = 1000;
-      const itens = [];
-      for (let inicio = 0; ; inicio += BLOCO) {
-        const linhas = checar(await sb.from("inspections")
-          .select("id, numero, realizada_em, chassi, marca, modelo, loja, damages(area, tipo, gravidade)")
-          .gte("realizada_em", de).lt("realizada_em", ate)
-          .order("realizada_em", { ascending: true }).order("id", { ascending: true })
-          .range(inicio, inicio + BLOCO - 1));
-        itens.push(...linhas.map(itemDoDashboard));
-        if (linhas.length < BLOCO) return itens;
-      }
+    // Conta de loja: o RLS já devolve só as vistorias da loja dela; mais antigas primeiro.
+    listarParaLoja() {
+      return emBlocos((q) => q.select(CAMPOS_LISTA)
+        .order("realizada_em", { ascending: true }).order("id", { ascending: true }), vistoriaDaLinha);
+    },
+    // Todas as vistorias de [de, ate) com as avarias e o recebimento.
+    listarParaDashboard({ de, ate }) {
+      return emBlocos((q) => q.select(`id, numero, realizada_em, chassi, marca, modelo, loja, damages(area, tipo, gravidade), ${CAMPOS_RECEBIMENTO}`)
+        .gte("realizada_em", de).lt("realizada_em", ate)
+        .order("realizada_em", { ascending: true }).order("id", { ascending: true }), itemDoDashboard);
+    },
+    async obterRecebimento(inspectionId) {
+      return recebimentoDaLinha(checar(await sb.from("recebimentos").select("*, recebimento_fotos(id, path)")
+        .eq("inspection_id", inspectionId).maybeSingle()));
+    },
+    async inserirRecebimento(r, inspectionId) {
+      return recebimentoDaLinha(checar(await sb.from("recebimentos").insert(linhaDoRecebimento(r, inspectionId))
+        .select("*, recebimento_fotos(id, path)").single()));
+    },
+    async gravarFotosRecebimento(r, inspectionId) {
+      const v = { id: inspectionId, recebimento: r };
+      const linhas = r.fotos.map((fotoId) => ({ id: fotoId, recebimento_id: r.id, path: caminhoDoArquivo(v, arquivoReceb(fotoId)) }));
+      if (linhas.length) checar(await sb.from("recebimento_fotos").upsert(linhas, { onConflict: "id", ignoreDuplicates: true }));
     },
     async obterVistoriaCompleta(id) {
-      return vistoriaDaLinha(checar(await sb.from("inspections").select("*, damages(*, damage_photos(*))").eq("id", id).single()));
+      return vistoriaDaLinha(checar(await sb.from("inspections").select(`*, damages(*, damage_photos(*)), ${CAMPOS_RECEBIMENTO}`).eq("id", id).single()));
     },
     async urlsAssinadas(caminhos, segundos = 3600) {
       if (!caminhos.length) return new Map();
@@ -256,12 +296,15 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
     async baixarArquivo(caminho) {
       return checar(await bucket().download(caminho));
     },
-    async excluirVistoriaRemota(userId, id) {
+    // donoRecebimento: conta da loja que recebeu (os arquivos dela ficam na pasta dela).
+    async excluirVistoriaRemota(userId, id, { donoRecebimento } = {}) {
       checar(await sb.from("inspections").delete().eq("id", id));
-      const pasta = `${userId}/${id}`;
-      const itens = checar(await bucket().list(pasta, { limit: 1000 }));
-      const caminhos = itens.map((i) => `${pasta}/${i.name}`);
-      if (caminhos.length) checar(await bucket().remove(caminhos));
+      for (const dono of [userId, donoRecebimento].filter(Boolean)) {
+        const pasta = `${dono}/${id}`;
+        const itens = checar(await bucket().list(pasta, { limit: 1000 }));
+        const caminhos = itens.map((i) => `${pasta}/${i.name}`);
+        if (caminhos.length) checar(await bucket().remove(caminhos));
+      }
     },
   };
 }

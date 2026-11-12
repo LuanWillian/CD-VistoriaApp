@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   linhaDaVistoria, linhasDasAvarias, linhasDasFotos, vistoriaDaLinha, itemDoDashboard, classificarErro, escaparBusca, criarRemoto,
+  recebimentoDaLinha, linhaDoRecebimento,
 } from "../supabase.js";
 
 const v = {
@@ -30,7 +31,7 @@ test("linha do dashboard: só os campos dos indicadores, com as avarias", () => 
   });
   assert.deepEqual(item, {
     id: "v1", numero: "VIS-1", realizadaEm: "2026-11-07T13:00:00.000Z", chassi: "AB123C", marca: "Jeep", modelo: "Compass",
-    loja: "", avarias: [{ area: "Capô", tipo: "Risco", gravidade: "Leve" }],
+    loja: "", recebimento: null, avarias: [{ area: "Capô", tipo: "Risco", gravidade: "Leve" }],
   });
 });
 
@@ -165,4 +166,71 @@ test("listarTodasVistorias busca em blocos de 1000 até acabar, sem teto (2500 v
   assert.equal(itens.length, total);
   assert.deepEqual(faixas, [[0, 999], [1000, 1999], [2000, 2999]]);
   assert.equal(itens[2499].id, "v2499");
+});
+
+// ---------- Recebimento na loja ----------
+const linhaReceb = {
+  id: "r1", inspection_id: "v1", user_id: "uL", recebedor_nome: "João Silva", loja: "PG Prime BMW Natal",
+  status: "divergencia", descricao: "Risco novo", assinatura: "uL/v1/receb_assinatura.png", recebido_em: "2026-11-12T14:05:00+00:00",
+  recebimento_fotos: [{ id: "f1", path: "uL/v1/receb_f1.jpg" }],
+};
+const recebEsperado = {
+  id: "r1", userId: "uL", status: "divergencia", recebedorNome: "João Silva", loja: "PG Prime BMW Natal",
+  recebidoEm: "2026-11-12T14:05:00.000Z", descricao: "Risco novo", assinatura: "uL/v1/receb_assinatura.png", fotos: ["f1"],
+};
+
+test("recebimento do banco: objeto, lista de um ou nada", () => {
+  assert.deepEqual(recebimentoDaLinha(linhaReceb), recebEsperado);
+  assert.deepEqual(recebimentoDaLinha([linhaReceb]), recebEsperado);
+  assert.equal(recebimentoDaLinha(null), null);
+  assert.equal(recebimentoDaLinha([]), null);
+  assert.deepEqual(recebimentoDaLinha({ ...linhaReceb, descricao: null, recebimento_fotos: undefined }).fotos, []);
+});
+
+test("linha do recebimento para o banco: sem nome, loja nem data (o servidor preenche)", () => {
+  assert.deepEqual(linhaDoRecebimento({ id: "r1", status: "conforme", descricao: "  ", assinatura: "uL/v1/receb_assinatura.png" }, "v1"),
+    { id: "r1", inspection_id: "v1", status: "conforme", descricao: null, assinatura: "uL/v1/receb_assinatura.png" });
+});
+
+test("vistoria e item do dashboard trazem o recebimento", () => {
+  const base = { id: "v1", user_id: "u1", numero: "VIS-1", realizada_em: "2026-11-07T13:00:00Z", chassi: "AB123C", marca: "Fiat", modelo: "Uno" };
+  assert.deepEqual(vistoriaDaLinha({ ...base, recebimentos: linhaReceb }).recebimento, recebEsperado);
+  assert.equal(vistoriaDaLinha(base).recebimento, null);
+  assert.deepEqual(itemDoDashboard({ ...base, recebimentos: [linhaReceb] }).recebimento, recebEsperado);
+});
+
+test("vistoria excluída pelo CD (23503) tem mensagem própria", () => {
+  assert.equal(classificarErro({ code: "23503" }).mensagem, "Esta vistoria foi excluída pelo CD.");
+  assert.equal(classificarErro({ code: "23503" }).tipo, "servidor");
+});
+
+test("obterPerfil devolve nome, papel e loja", async () => {
+  const pedidos = [];
+  const cliente = {
+    auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
+    from: (tabela) => ({
+      select: (campos) => ({
+        eq: (col, val) => ({
+          maybeSingle: async () => {
+            pedidos.push([tabela, campos, col, val]);
+            return { data: { nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" }, error: null };
+          },
+        }),
+      }),
+    }),
+    storage: { from: () => ({}) },
+  };
+  const remoto = criarRemoto({ url: "u", chave: "k", criarCliente: () => cliente });
+  assert.deepEqual(await remoto.obterPerfil("uL"), { nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" });
+  assert.deepEqual(pedidos, [["perfis", "nome, papel, loja", "id", "uL"]]);
+});
+
+test("excluirVistoriaRemota também apaga os arquivos do recebimento na pasta da loja", async () => {
+  const chamadas = [];
+  const remoto = criarRemoto({ url: "u", chave: "k", criarCliente: () => clienteFalso(chamadas, [{ name: "frente.jpg" }]) });
+  await remoto.excluirVistoriaRemota("u1", "v1", { donoRecebimento: "uL" });
+  assert.deepEqual(chamadas, [
+    "delete inspections id=v1", "list vistorias u1/v1", "remove vistorias u1/v1/frente.jpg",
+    "list vistorias uL/v1", "remove vistorias uL/v1/frente.jpg",
+  ]);
 });
