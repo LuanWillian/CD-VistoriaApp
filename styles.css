@@ -751,3 +751,9 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
   .com-loja.com-receb .det-assin { grid-row: 5; }
   .com-loja.com-receb .det-dir { grid-row: 1 / span 5; }
 }
+
+/* Tela Recebimentos (conta de loja): abas A receber / Recebidos. */
+.receb-abas { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--linha-forte); border-radius: var(--raio-sm); overflow: hidden; background: var(--papel); }
+.receb-abas [role="tab"] { min-height: var(--alvo); border: 0; background: transparent; font-weight: 700; }
+.receb-abas [role="tab"] + [role="tab"] { border-left: 1px solid var(--linha); }
+.receb-abas [role="tab"][aria-selected="true"] { background: var(--principal); color: #fff; }

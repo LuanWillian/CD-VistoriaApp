@@ -14,8 +14,9 @@ import * as viewVistorias from "./views/vistorias.js";
 import * as viewDetalhe from "./views/detalhe.js";
 import * as viewInicio from "./views/inicio.js";
 import * as viewDashboard from "./views/dashboard.js";
+import * as viewRecebimentos from "./views/recebimentos.js";
 
-const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, dashboard: viewDashboard };
+const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, dashboard: viewDashboard, recebimentos: viewRecebimentos };
 
 // O menu #/inicio é a página principal em todos os ambientes. A escolha acontece
 // aqui, antes de qualquer tela ser desenhada (sem piscar).
@@ -80,6 +81,7 @@ function lerRota() {
   const m = caminho.match(/^\/vistoria\/([\w-]+)$/);
   if (m) return { nome: "detalhe", params: { id: m[1], busca } };
   if (caminho === "/vistorias") return { nome: "vistorias", params: { busca } };
+  if (papelAtual() === "loja" && caminho === "/recebimentos") return { nome: "recebimentos", params: { busca } };
   if (desktop && caminho === "/dashboard") return { nome: "dashboard", params: { busca } };
   if (!desktop && /^\/nova(\/|$)/.test(caminho)) return { nome: "nova", params: { busca } };
   return { nome: "inicio", params: { busca } }; // #/inicio e qualquer rota desconhecida
