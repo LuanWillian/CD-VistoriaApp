@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   capitalizar, formatarMarca, formatarDataHora, formatarData, dataArquivo, formatarKm, lerKm, normalizarChassi, idProvisorio, nomeVistoria,
-  nomeArquivoPdf, chaveLocal, caminhoRemoto, ARQUIVO, arquivoAvaria, rotuloArquivo, arquivosDaVistoria, textoPdf,
+  nomeArquivoPdf, chaveLocal, caminhoRemoto, ARQUIVO, arquivoAvaria, arquivoReceb, caminhoDoArquivo, rotuloArquivo, arquivosDaVistoria, textoPdf,
   periodo, periodoPersonalizado, novoRascunho, vistoriaDoRascunho,
 } from "../formatos.js";
 
@@ -112,4 +112,13 @@ test("formatarMarca: capitaliza e deixa GWM em maiúsculas", () => {
   assert.equal(formatarMarca("GWM"), "GWM");
   assert.equal(formatarMarca("gwm haval"), "GWM Haval");
   assert.equal(formatarMarca("gw"), "Gw", "só vira GWM com a palavra completa");
+});
+
+test("arquivos do recebimento: nomes e caminho na pasta da conta da loja", () => {
+  assert.equal(ARQUIVO.recebAssinatura, "receb_assinatura.png");
+  assert.equal(arquivoReceb("f1"), "receb_f1.jpg");
+  const v = { id: "v1", userId: "uV", recebimento: { userId: "uL" } };
+  assert.equal(caminhoDoArquivo(v, "receb_assinatura.png"), "uL/v1/receb_assinatura.png");
+  assert.equal(caminhoDoArquivo(v, "receb_f1.jpg"), "uL/v1/receb_f1.jpg");
+  assert.equal(caminhoDoArquivo(v, "frente.jpg"), "uV/v1/frente.jpg");
 });

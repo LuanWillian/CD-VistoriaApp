@@ -87,11 +87,16 @@ export const ARQUIVO = {
   chassi: "chassi.jpg",
   assVistoriador: "assinatura_vistoriador.png",
   assMotorista: "assinatura_motorista.png",
+  recebAssinatura: "receb_assinatura.png",
 };
 
 export const arquivoAvaria = (fotoId) => `avaria_${fotoId}.jpg`;
 export const chaveLocal = (id, nome) => `${id}/${nome}`;
 export const caminhoRemoto = (userId, id, nome) => `${userId}/${id}/${nome}`;
+// Arquivos do recebimento na loja ficam na pasta da conta da loja; os demais, na do vistoriador.
+export const arquivoReceb = (fotoId) => `receb_${fotoId}.jpg`;
+export const caminhoDoArquivo = (v, nome) =>
+  caminhoRemoto(nome.startsWith("receb_") ? v.recebimento?.userId : v.userId, v.id, nome);
 
 const ROTULOS = {
   [ARQUIVO.frente]: "Frente",
