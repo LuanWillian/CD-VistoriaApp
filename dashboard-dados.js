@@ -46,6 +46,21 @@ export function intervaloDoDashboard(tipo, agora = new Date(), personalizado = {
 
 export const dentro = (iso, { de, ate }) => iso >= de && iso < ate;
 
+// Texto do período para os cartões: nome do filtro e datas (dd/mm; com o ano
+// quando o intervalo atravessa anos). "ate" é exclusivo, então o último dia é ate − 1.
+const NOMES_PERIODO = { hoje: "Hoje", "7d": "Últimos 7 dias", "30d": "Últimos 30 dias", mes: "Este mês", personalizado: "Período personalizado" };
+function datasDe({ de, ate }) {
+  const ini = new Date(de);
+  const fimEx = new Date(ate);
+  const fim = new Date(fimEx.getFullYear(), fimEx.getMonth(), fimEx.getDate() - 1);
+  const comAno = ini.getFullYear() !== fim.getFullYear();
+  const f = (d) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}${comAno ? `/${d.getFullYear()}` : ""}`;
+  return f(ini) === f(fim) ? f(ini) : `${f(ini)} a ${f(fim)}`;
+}
+export function descreverPeriodo(tipo, intervalo) {
+  return { nome: NOMES_PERIODO[tipo] || "", datas: datasDe(intervalo), anterior: datasDe(intervalo.anterior) };
+}
+
 // ---------- Filtros ----------
 export const lojaDe = (v) => (String(v.loja ?? "").trim() || SEM_LOJA);
 // Marca padronizada (mesma regra do formulário): vistorias antigas digitadas como

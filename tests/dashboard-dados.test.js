@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  SEM_LOJA, dentro, filtrarDashboard, formatarPct, gravidadeMaxima, intervaloDoDashboard, marcasDisponiveis,
+  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, formatarPct, gravidadeMaxima, intervaloDoDashboard, marcasDisponiveis,
   porGravidade, porLoja, porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
 } from "../dashboard-dados.js";
 
@@ -139,4 +139,13 @@ test("eixo do gráfico e porcentagem no formato brasileiro", () => {
   assert.equal(formatarPct(12, { sinal: true, casas: 0 }), "+12%");
   assert.equal(formatarPct(-3.2, { sinal: true, casas: 0 }), "-3%");
   assert.equal(formatarPct(0), "0%");
+});
+
+test("descrição do período para o cartão: nome do filtro e datas, com o período anterior", () => {
+  assert.deepEqual(descreverPeriodo("7d", intervaloDoDashboard("7d", AGORA)), { nome: "Últimos 7 dias", datas: "05/11 a 11/11", anterior: "29/10 a 04/11" });
+  assert.deepEqual(descreverPeriodo("hoje", intervaloDoDashboard("hoje", AGORA)), { nome: "Hoje", datas: "11/11", anterior: "10/11" });
+  assert.deepEqual(descreverPeriodo("mes", intervaloDoDashboard("mes", AGORA)), { nome: "Este mês", datas: "01/11 a 11/11", anterior: "21/10 a 31/10" });
+  assert.equal(descreverPeriodo("30d", intervaloDoDashboard("30d", AGORA)).datas, "13/10 a 11/11");
+  const virada = intervaloDoDashboard("personalizado", AGORA, { de: "2025-12-20", ate: "2026-01-05" });
+  assert.deepEqual(descreverPeriodo("personalizado", virada), { nome: "Período personalizado", datas: "20/12/2025 a 05/01/2026", anterior: "03/12 a 19/12" });
 });

@@ -4,7 +4,7 @@
 import { GRAVIDADES, LOJAS } from "../config.js";
 import { formatarDataHora, nomeVistoria } from "../formatos.js";
 import {
-  SEM_LOJA, dentro, filtrarDashboard, marcaDe, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
+  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, marcaDe, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
   porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
 } from "../dashboard-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
@@ -153,6 +153,7 @@ export async function montar(raiz, ctx) {
       const todos = await ctx.remoto.listarParaDashboard({ de: intervalo.anterior.de, ate: intervalo.ate });
       if (!ativo || minha !== geracao) return;
       estado.intervalo = intervalo;
+      estado.periodoCarregado = estado.periodo; // o cartão descreve o período dos dados na tela
       estado.itens = todos.filter((v) => dentro(v.realizadaEm, intervalo));
       estado.anteriores = todos.filter((v) => dentro(v.realizadaEm, intervalo.anterior));
       estado.erro = "";
@@ -191,6 +192,7 @@ export async function montar(raiz, ctx) {
     const itens = filtrarDashboard(estado.itens, filtros);
     const anteriores = filtrarDashboard(estado.anteriores, filtros);
     const r = resumo(itens, anteriores);
+    const periodoTxt = descreverPeriodo(estado.periodoCarregado, estado.intervalo);
     const s = serie(itens, anteriores, estado.intervalo);
     const gravidades = porGravidade(itens);
     const areas = rankingAreas(itens);
@@ -214,8 +216,9 @@ export async function montar(raiz, ctx) {
       <div class="pilha${estado.carregando ? " db-atualizando" : ""}" aria-busy="${estado.carregando}">
       <section class="db-kpis" aria-label="Resumo do período">
         <div class="cartao db-kpi"><p class="db-kpi-rot">Vistorias no período</p>
+          <p class="db-kpi-periodo" id="db-kpi-periodo"><span class="db-kpi-periodo-nome">${esc(periodoTxt.nome)}</span> · ${esc(periodoTxt.datas)}</p>
           <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.total)}</span>${variacao}</p>
-          <p class="db-kpi-sub">${num(r.totalAnterior)} no período anterior</p></div>
+          <p class="db-kpi-sub">${num(r.totalAnterior)} no período anterior (${esc(periodoTxt.anterior)})</p></div>
         ${cartaoLista("avaria", "", `<span class="db-kpi-rot">Veículos com avaria</span>
           <span class="db-kpi-linha"><span class="db-kpi-num">${num(r.comAvaria)}</span><span class="db-kpi-extra">(${formatarPct(r.pctComAvaria)})</span></span>`, "Ver os veículos com avaria")}
         <div class="cartao db-kpi"><p class="db-kpi-rot">Avarias registradas</p>

@@ -731,3 +731,7 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
 
 /* Etapa 1: "Loja de destino" fica num bloco próprio, antes de "Dados do veículo". */
 .etapa-bloco-separado { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--linha); }
+
+/* Dashboard: período (nome do filtro e datas) dentro do cartão "Vistorias no período". */
+.db .db-kpi-periodo { font-size: 13px; color: var(--texto-2); }
+.db .db-kpi-periodo-nome { font-weight: 700; color: var(--texto); }
