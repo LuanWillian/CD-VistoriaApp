@@ -728,3 +728,6 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
 .db .db-lista:focus { outline: none; }
 .db .db-lista-aberta { border-color: var(--principal); }
 .db .db-fechar-lista { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+
+/* Etapa 1: "Loja de destino" fica num bloco próprio, antes de "Dados do veículo". */
+.etapa-bloco-separado { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--linha); }

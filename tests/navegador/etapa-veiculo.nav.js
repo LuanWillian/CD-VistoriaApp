@@ -126,6 +126,11 @@ teste("etapa 1: loja de destino é uma lista, vem primeiro e mostra erro se fica
   try {
     const loja = t.el.querySelector("#loja");
     igual(t.el.querySelector("select, input").id, "loja", "a loja deveria ser o primeiro campo");
+    const secoes = [...t.el.querySelectorAll("section")];
+    igual(secoes[0].querySelector("h2").textContent.trim(), "Loja de destino");
+    igual(secoes[1].querySelector("h2").textContent.trim(), "Dados do veículo");
+    igual(secoes[1].querySelector("#loja"), null, "a loja fica fora do bloco Dados do veículo");
+    ok(secoes[1].querySelector("#chassi"), "chassi continua em Dados do veículo");
     igual(loja.options[0].value, "");
     ok(loja.options.length > 5, "lista de lojas vazia");
     loja.dispatchEvent(new FocusEvent("blur"));

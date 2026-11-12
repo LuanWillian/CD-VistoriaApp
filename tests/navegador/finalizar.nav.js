@@ -76,7 +76,7 @@ teste("finalizar: lista o que falta e leva até o campo", async () => {
     [...d.querySelectorAll(".falta-item")].find((b) => b.textContent.includes("Falta a foto: Traseira")).click();
     await esperar(300);
     ok(!document.querySelector("dialog[open]"), "o diálogo não fechou");
-    igual(el.querySelector("#titulo-etapa").textContent.trim(), "Dados do veículo");
+    igual(el.querySelector("#titulo-dados").textContent.trim(), "Dados do veículo", "deveria voltar à etapa 1");
     igual(document.activeElement?.id, "foto-traseira");
   } finally {
     view.desmontar();

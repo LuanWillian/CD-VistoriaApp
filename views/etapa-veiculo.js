@@ -21,16 +21,18 @@ export function montar(el, editor, ctx) {
 
   el.innerHTML = `
     <section class="pilha" aria-labelledby="titulo-etapa">
-      <h2 class="titulo" id="titulo-etapa" tabindex="-1">Dados do veículo</h2>
-
+      <h2 class="titulo" id="titulo-etapa" tabindex="-1"><label for="loja">Loja de destino</label></h2>
       <div class="campo">
-        <label class="rotulo" for="loja">Loja de destino</label>
         <select class="entrada" id="loja" aria-describedby="loja-erro">
           <option value="">Escolha a loja</option>
           ${LOJAS.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join("")}
         </select>
         <p class="erro-campo" id="loja-erro" aria-live="polite"></p>
       </div>
+    </section>
+
+    <section class="pilha etapa-bloco-separado" aria-labelledby="titulo-dados">
+      <h2 class="titulo" id="titulo-dados">Dados do veículo</h2>
 
       <div class="campo">
         <div class="entre">
