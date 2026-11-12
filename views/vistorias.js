@@ -1,6 +1,7 @@
 // Aba "Vistorias": rascunhos em andamento, busca, filtro por período e a
 // lista (servidor + aparelho), da mais recente para a mais antiga.
 import { seloRecebimento } from "./card-recebimento.js";
+import { juntarComServidor } from "../painel-dados.js";
 import { ARQUIVO, caminhoRemoto, chaveLocal, formatarDataHora, formatarMarca, nomeVistoria, periodo, periodoPersonalizado } from "../formatos.js";
 import { $, $$, esc, icone, carregandoHtml } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
@@ -159,7 +160,7 @@ export async function montar(el, ctx) {
     if (ctx.online() && !estado.falhaRemota) {
       const porId = new Map(estado.remotos.map((v) => [v.id, v]));
       for (const v of locais) {
-        if (porId.has(v.id)) porId.set(v.id, { ...porId.get(v.id), ...v });
+        if (porId.has(v.id)) porId.set(v.id, juntarComServidor(porId.get(v.id), v));
         else if (v.status !== "sincronizada" && filtrarLocal(v)) porId.set(v.id, v);
       }
       itens = [...porId.values()].filter((v) => v.status !== "excluindo");

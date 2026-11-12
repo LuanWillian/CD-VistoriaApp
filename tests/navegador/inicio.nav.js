@@ -162,3 +162,31 @@ teste("lista do celular: cada cartão mostra o selo do recebimento na loja", asy
     t.fim();
   }
 });
+
+teste("painel (computador): coluna Recebimento e filtro de recebimento", async () => {
+  await storage.apagarBanco();
+  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, "2026-11-08T10:00:00.000Z"), id, userId: EU.id, realizadaEm: "2026-11-08T10:00:00.000Z", status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
+  await storage.salvarVistoria(v("1", { recebimento: null }));
+  await storage.salvarVistoria(v("2", { recebimento: { id: "r", userId: "u", status: "divergencia", recebedorNome: "D", loja: "PG Prime BMW Natal", recebidoEm: "2026-11-09T10:00:00.000Z", descricao: "x", assinatura: "p", fotos: [] } }));
+  const ctx = {
+    desktop: true, storage, auth: { usuarioAtual: () => EU }, online: () => false, navegar: () => {},
+    sync: { eventos: new EventTarget(), sincronizar: async () => ({}) }, remoto: {},
+  };
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const tela = await inicio.montar(el, ctx);
+  await esperar(150);
+  try {
+    ok([...el.querySelectorAll(".dash-tabela th")].some((th) => th.textContent.trim() === "Recebimento"), "falta a coluna Recebimento");
+    ok(el.querySelector("#dash-corpo .selo-receb-aguardando"), "falta o selo Aguardando");
+    ok(el.querySelector("#dash-corpo .selo-receb-divergencia"), "falta o selo Com divergência");
+    const sel = el.querySelector("#dash-recebimento");
+    igual([...sel.options].map((o) => o.text), ["Todos os recebimentos", "Aguardando", "Conforme", "Com divergência"]);
+    sel.value = "divergencia";
+    sel.dispatchEvent(new Event("change"));
+    igual(el.querySelectorAll("#dash-corpo tr").length, 1);
+  } finally {
+    tela?.desmontar?.();
+    el.remove();
+  }
+});

@@ -5,9 +5,10 @@
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
-import { filtrarVistorias, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
+import { filtrarVistorias, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
+import { seloRecebimento } from "./card-recebimento.js";
 
 // Mesmos períodos do dashboard, mais "Todos" (o padrão da lista).
 const PERIODOS = [["todos", "Todos"], ["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
@@ -24,7 +25,7 @@ export async function montar(raiz, ctx) {
   const usuario = ctx.auth.usuarioAtual();
   const estado = {
     busca: "", periodo: "todos", de: hojeCampo(new Date(Date.now() - 29 * 86400000)), ate: hojeCampo(),
-    marca: "", loja: "", pagina: 0, itens: [], remotos: null, carregando: true,
+    marca: "", loja: "", recebimento: "", pagina: 0, itens: [], remotos: null, carregando: true,
   };
   let ativo = true;
   let geracao = 0;
@@ -51,6 +52,12 @@ export async function montar(raiz, ctx) {
             ${LOJAS.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join("")}
             <option value="${esc(SEM_LOJA)}">${esc(SEM_LOJA)}</option>
           </select>
+          <select class="entrada db-select" id="dash-recebimento" aria-label="Recebimento na loja">
+            <option value="">Todos os recebimentos</option>
+            <option value="aguardando">Aguardando</option>
+            <option value="conforme">Conforme</option>
+            <option value="divergencia">Com divergência</option>
+          </select>
         </div>
         <div class="db-datas dash-datas" id="dash-datas" hidden>
           <label>De <input class="entrada" type="date" id="dash-de"></label>
@@ -62,7 +69,7 @@ export async function montar(raiz, ctx) {
             <thead>
               <tr>
                 <th scope="col">ID</th><th scope="col">Data/Hora</th><th scope="col">Veículo</th>
-                <th scope="col">Chassi</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Ações</span></th>
+                <th scope="col">Chassi</th><th scope="col">Status</th><th scope="col">Recebimento</th><th scope="col"><span class="sr-only">Ações</span></th>
               </tr>
             </thead>
             <tbody id="dash-corpo"></tbody>
@@ -89,7 +96,7 @@ export async function montar(raiz, ctx) {
       // Mesma regra da tela Vistorias: o servidor manda; do aparelho só entram as ainda não enviadas.
       const porId = new Map(estado.remotos.map((v) => [v.id, v]));
       for (const v of locais) {
-        if (porId.has(v.id)) porId.set(v.id, { ...porId.get(v.id), ...v });
+        if (porId.has(v.id)) porId.set(v.id, juntarComServidor(porId.get(v.id), v));
         else if (v.status !== "sincronizada") porId.set(v.id, v);
       }
       return [...porId.values()].filter((v) => v.status !== "excluindo");
@@ -131,7 +138,9 @@ export async function montar(raiz, ctx) {
     ver.setAttribute("aria-label", `Ver detalhes da vistoria ${nomeVistoria(v)}`);
     ver.insertAdjacentHTML("beforeend", icone("avancar"));
     acoes.append(ver);
-    tr.append(id, data, veiculo, chassi, status, acoes);
+    const receb = el("td");
+    receb.insertAdjacentHTML("beforeend", seloRecebimento(v) || "—"); // texto fixo do app
+    tr.append(id, data, veiculo, chassi, status, receb, acoes);
     return tr;
   }
 
@@ -218,7 +227,7 @@ export async function montar(raiz, ctx) {
       desenharTabela();
     });
   }
-  for (const [id, campo] of [["dash-marca", "marca"], ["dash-loja", "loja"]]) {
+  for (const [id, campo] of [["dash-marca", "marca"], ["dash-loja", "loja"], ["dash-recebimento", "recebimento"]]) {
     $(`#${id}`, raiz).addEventListener("change", (e) => {
       estado[campo] = e.target.value;
       estado.pagina = 0;
@@ -247,6 +256,8 @@ export async function montar(raiz, ctx) {
     estado.loja = "";
     $("#dash-marca", raiz).value = "";
     $("#dash-loja", raiz).value = "";
+    estado.recebimento = "";
+    $("#dash-recebimento", raiz).value = "";
     definirPeriodo("todos");
     desenharTabela();
   });

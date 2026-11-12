@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calcularMetricas, filtrarVistorias, paginar, primeiroNome, semAcento } from "../painel-dados.js";
+import { calcularMetricas, filtrarVistorias, juntarComServidor, paginar, primeiroNome, semAcento } from "../painel-dados.js";
 
 const AGORA = new Date(2026, 10, 9, 15, 0); // 09/11/2026 15:00 (fuso local)
 const em = (diasAtras, hora = 10) => new Date(2026, 10, 9 - diasAtras, hora, 0).toISOString();
@@ -70,4 +70,26 @@ test("nome: primeiro nome do perfil; vazio quando não há", () => {
   assert.equal(primeiroNome(null), "");
   assert.equal(primeiroNome("  "), "");
   assert.equal(semAcento("Ônix Açaí"), "onix acai");
+});
+
+test("filtro de recebimento: aguardando, conforme e com divergência (sem loja não aguarda)", () => {
+  const r = (status) => ({ id: `r-${status}`, userId: "uL", status, recebedorNome: "D", loja: "L", recebidoEm: em(0), descricao: "", assinatura: "p", fotos: [] });
+  const lista = [
+    v("a", { loja: "PG Prime BMW Natal", recebimento: null }),
+    v("b", { loja: "PG Prime BMW Natal", recebimento: r("conforme") }),
+    v("c", { loja: "PG Prime BMW Natal", recebimento: r("divergencia") }),
+    v("d", { loja: "", recebimento: null }),
+  ];
+  const ids = (recebimento) => filtrarVistorias(lista, { recebimento }, AGORA).map((x) => x.id);
+  assert.deepEqual(ids("aguardando"), ["a"]);
+  assert.deepEqual(ids("conforme"), ["b"]);
+  assert.deepEqual(ids("divergencia"), ["c"]);
+  assert.equal(ids("").length, 4);
+});
+
+test("junção servidor + aparelho: o recebimento do servidor vale mais que a cópia guardada", () => {
+  const remoto = v("a", { recebimento: { id: "r1", status: "conforme" } });
+  const local = v("a", { recebimento: null, status: "sincronizada" });
+  assert.deepEqual(juntarComServidor(remoto, local).recebimento, { id: "r1", status: "conforme" });
+  assert.equal(juntarComServidor(v("b", { recebimento: undefined }), v("b", { recebimento: { id: "x" } })).recebimento.id, "x");
 });

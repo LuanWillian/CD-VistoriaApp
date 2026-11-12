@@ -2,6 +2,7 @@
 // Só funções puras sobre a lista de vistorias; nada de tela nem de armazenamento.
 import { nomeVistoria, periodo } from "./formatos.js";
 import { dentro, intervaloDoDashboard, lojaDe, marcaDe } from "./dashboard-dados.js";
+import { situacaoRecebimento } from "./recebimento-dados.js";
 
 // Sem acento e sem diferenciar maiúsculas: "Ônix" acha "onix".
 export const semAcento = (s) => String(s ?? "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -12,13 +13,15 @@ export const maisRecentesPrimeiro = (itens) => [...itens].sort((a, b) => b.reali
 // Período, marca e loja funcionam igual aos filtros do dashboard: "todos" ou
 // os períodos de intervaloDoDashboard (hoje, 7d, 30d, mes, personalizado com
 // de/ate "aaaa-mm-dd"). Personalizado incompleto ou invertido não filtra a data.
-export function filtrarVistorias(itens, { busca = "", periodo: tipo = "todos", de = "", ate = "", marca = "", loja = "" } = {}, agora = new Date()) {
+// recebimento: "" (todos) | "aguardando" | "conforme" | "divergencia".
+export function filtrarVistorias(itens, { busca = "", periodo: tipo = "todos", de = "", ate = "", marca = "", loja = "", recebimento = "" } = {}, agora = new Date()) {
   const intervalo = tipo === "todos" ? null : intervaloDoDashboard(tipo, agora, { de, ate });
   const t = semAcento(busca).trim();
   return itens.filter((v) => {
     if (intervalo && !dentro(v.realizadaEm, intervalo)) return false;
     if (marca && marcaDe(v) !== marca) return false;
     if (loja && lojaDe(v) !== loja) return false;
+    if (recebimento && situacaoRecebimento(v) !== recebimento) return false;
     if (!t) return true;
     return [v.chassi, v.marca, v.modelo, nomeVistoria(v)].some((x) => semAcento(x).includes(t));
   });
@@ -46,3 +49,10 @@ export function paginar(itens, pagina, tamanho) {
 }
 
 export const primeiroNome = (nome) => String(nome ?? "").trim().split(/\s+/)[0] || "";
+
+// Junta a vistoria do servidor com a cópia do aparelho (a do aparelho manda no
+// estado local, como status e fotos), mas o recebimento na loja é sempre o do
+// servidor quando ele veio: a cópia guardada pode ser de antes do recebimento.
+export function juntarComServidor(remoto, local) {
+  return { ...remoto, ...local, recebimento: remoto.recebimento !== undefined ? remoto.recebimento : local.recebimento };
+}

@@ -576,7 +576,7 @@ html.app-mode { touch-action: pan-x pan-y; }
 /* A tabela cabe na janela (colunas fixas com reticências); a rolagem lateral só entra em janelas estreitas. */
 .dashboard-desktop .dash-rolagem { overflow-x: auto; }
 @media (min-width: 1024px) { .dashboard-desktop .dash-rolagem { overflow-x: clip; } }
-.dashboard-desktop .dash-tabela { width: 100%; min-width: 760px; table-layout: fixed; border-collapse: collapse; }
+.dashboard-desktop .dash-tabela { width: 100%; min-width: 900px; table-layout: fixed; border-collapse: collapse; }
 .dashboard-desktop .dash-tabela th {
   position: sticky; top: calc(var(--topo-h) + env(safe-area-inset-top, 0px)); z-index: 2;
   background: var(--papel); text-align: left; font-size: 13px; font-weight: 700; color: var(--texto-2);
@@ -586,11 +586,12 @@ html.app-mode { touch-action: pan-x pan-y; }
   padding: 8px 12px; border-bottom: 1px solid var(--linha); vertical-align: middle;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.dashboard-desktop .dash-tabela th:nth-child(1) { width: 15%; }
-.dashboard-desktop .dash-tabela th:nth-child(2) { width: 17%; }
-.dashboard-desktop .dash-tabela th:nth-child(4) { width: 15%; }
-.dashboard-desktop .dash-tabela th:nth-child(5) { width: 17%; }
-.dashboard-desktop .dash-tabela th:nth-child(6) { width: 72px; }
+.dashboard-desktop .dash-tabela th:nth-child(1) { width: 13%; }
+.dashboard-desktop .dash-tabela th:nth-child(2) { width: 15%; }
+.dashboard-desktop .dash-tabela th:nth-child(4) { width: 12%; }
+.dashboard-desktop .dash-tabela th:nth-child(5) { width: 15%; }
+.dashboard-desktop .dash-tabela th:nth-child(6) { width: 19%; }
+.dashboard-desktop .dash-tabela th:nth-child(7) { width: 64px; }
 .dashboard-desktop .dash-id { font-weight: 700; }
 .dashboard-desktop .dash-num { font-variant-numeric: tabular-nums; }
 .dashboard-desktop .dash-chassi { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
