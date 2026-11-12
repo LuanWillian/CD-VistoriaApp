@@ -128,3 +128,19 @@ teste("storage: guardarSeAusentes grava de uma vez só as que faltam e não mexe
   igual((await st.obterVistoria("r1499")).marca, "Remota");
   igual((await st.listarSincronizadas()).length, 1499);
 });
+
+teste("storage: rascunho do recebimento é salvo, lido e apagado junto com os arquivos", async () => {
+  await st.apagarBanco();
+  const dados = { id: "r1", status: "divergencia", descricao: "Risco", fotos: ["f1"], assinatura: true };
+  await st.salvarRascunhoRecebimento("v1", dados);
+  await st.salvarArquivo("receb-v1/receb_assinatura.png", blob("a", "image/png"));
+  await st.salvarArquivo("receb-v1/receb_f1.jpg", blob("f"));
+  await st.salvarArquivo("v1/frente.jpg", blob("vistoria"));
+  igual(await st.obterRascunhoRecebimento("v1"), dados);
+  igual(await st.obterRascunhoRecebimento("v2"), undefined);
+  await st.excluirRascunhoRecebimento("v1");
+  igual(await st.obterRascunhoRecebimento("v1"), undefined);
+  igual(await st.obterArquivo("receb-v1/receb_assinatura.png"), undefined);
+  igual(await st.obterArquivo("receb-v1/receb_f1.jpg"), undefined);
+  ok(await st.obterArquivo("v1/frente.jpg"), "o arquivo da vistoria não pode ser apagado junto");
+});

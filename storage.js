@@ -145,6 +145,16 @@ export const obterMeta = (chave) => tx(["meta"], "readonly", (s) => pedir(s("met
 export const salvarMeta = (chave, valor) => tx(["meta"], "readwrite", (s) => { s("meta").put(valor, chave); });
 export const removerMeta = (chave) => tx(["meta"], "readwrite", (s) => { s("meta").delete(chave); });
 
+// ---------- Rascunho do recebimento na loja ----------
+// Escolha, texto e ids das fotos em meta "receb:<vistoria>"; assinatura e fotos
+// em arquivos "receb-<vistoria>/..." (chaveRascunhoReceb em recebimento-envio.js).
+export const salvarRascunhoRecebimento = (inspectionId, dados) => salvarMeta(`receb:${inspectionId}`, dados);
+export const obterRascunhoRecebimento = (inspectionId) => obterMeta(`receb:${inspectionId}`);
+export async function excluirRascunhoRecebimento(inspectionId) {
+  await removerMeta(`receb:${inspectionId}`);
+  await excluirArquivos(`receb-${inspectionId}`);
+}
+
 // Vistorias já enviadas, de qualquer usuário: todos veem tudo, então as cópias
 // guardadas aqui (inclusive as de outras pessoas) servem para ver a lista offline.
 export const listarSincronizadas = async () =>
