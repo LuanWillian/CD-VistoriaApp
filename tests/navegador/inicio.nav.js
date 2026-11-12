@@ -240,36 +240,18 @@ teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção
   }
 });
 
-teste("menu do celular: saudação, números (Hoje, A enviar, Na loja) e últimas vistorias", async () => {
-  await storage.apagarBanco();
-  const agora = Date.now();
-  const quando = (min) => new Date(agora - min * 60000).toISOString();
-  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, quando(1)), id, userId: EU.id, realizadaEm: quando(1), status: "sincronizada", numero: `VIS-0000${id}`, chassi: `AB12${id}`, marca: "Jeep", modelo: "Compass", loja: "PG Prime Jeep Natal", recebimento: null, ...extra });
-  const conforme = { id: "r", userId: "u", status: "conforme", recebedorNome: "Ana", loja: "PG Prime Jeep Natal", recebidoEm: quando(0), descricao: "", assinatura: "p", fotos: [] };
-  await storage.salvarVistoria(v("11"));
-  await storage.salvarVistoria(v("12", { status: "pendente", numero: null, loja: "", realizadaEm: quando(2) }));
-  await storage.salvarVistoria(v("13", { realizadaEm: "2026-01-05T10:00:00.000Z", recebimento: conforme }));
-  await storage.salvarVistoria(v("14", { realizadaEm: "2026-01-04T10:00:00.000Z" }));
+teste("menu do celular: saudação e os dois atalhos, sem números nem últimas vistorias", async () => {
   const navegacoes = [];
   const el = document.createElement("div");
   document.getElementById("palco").append(el);
-  const tela = await inicio.montar(el, {
-    desktop: false, storage, auth: { usuarioAtual: () => ({ ...EU, nome: "Luan Willian" }) }, online: () => false,
-    navegar: (h) => navegacoes.push(h), remoto: {},
-  });
+  inicio.montar(el, { desktop: false, auth: { usuarioAtual: () => ({ ...EU, nome: "Luan Willian" }) }, navegar: (h) => navegacoes.push(h) });
   try {
-    await esperarAte(() => el.querySelector("#inicio-ultimas a"));
     igual(el.querySelector("h1").textContent.trim(), "Olá, Luan");
-    const num = (id) => el.querySelector(`#resumo-${id}`).textContent.trim();
-    igual([num("hoje"), num("enviar"), num("loja")], ["2", "1", "2"]);
-    const links = [...el.querySelectorAll("#inicio-ultimas a")].map((a) => a.getAttribute("href"));
-    igual(links, ["#/vistoria/11", "#/vistoria/12", "#/vistoria/13"], "as 3 mais recentes");
-    ok(el.querySelector('#inicio-ultimas a[href="#/vistoria/12"] .selo-pendente'), "a não enviada mostra Pendente");
-    ok(el.querySelector('#inicio-ultimas a[href="#/vistoria/13"] .selo-receb-conforme'), "a recebida mostra Conforme");
+    igual(el.querySelector("#inicio-resumo"), null, "os números foram removidos");
+    ok(!el.textContent.includes("Últimas vistorias"), "as últimas vistorias foram removidas");
     el.querySelector("#btn-iniciar").click();
     igual(navegacoes, ["#/nova"]);
   } finally {
-    tela?.desmontar?.();
     el.remove();
   }
 });

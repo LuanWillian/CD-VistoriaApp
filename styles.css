@@ -1240,16 +1240,6 @@ html:not(.computador) .sem-foto { color: #B8BEC7; }
 
 /* ---------- Início (views/inicio.js) ---------- */
 .cm-inicio { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding-top: 4px; }
-.cm-resumo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 4px; }
-.cm-resumo[hidden] { display: none; }
-.cm-resumo-item { min-width: 0; padding: 12px; }
-.cm-resumo-item + .cm-resumo-item { border-left: 1px solid #E4E7EB; }
-.cm-resumo-rot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4B5563; white-space: nowrap; }
-.cm-resumo-rot .ic { width: 14px; height: 14px; }
-.cm-ic-escuro { color: #111827; }
-.cm-ic-pendente { color: #8A5A00; }
-.cm-resumo-item strong { display: block; margin-top: 2px; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.cm-resumo-extra { font-size: 12px; font-weight: 400; color: #6B7280; }
 .cm-acao {
   display: flex; align-items: center; gap: 16px; width: 100%; min-height: 80px; padding: 16px;
   color: #111827; font: inherit; text-align: left; -webkit-tap-highlight-color: transparent;
@@ -1265,14 +1255,6 @@ html:not(.computador) .sem-foto { color: #B8BEC7; }
 .cm-acao-botao { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 8px; background: #111827; color: #fff; font-size: 13px; font-weight: 500; }
 .cm-acao-botao .ic { width: 16px; height: 16px; }
 .cm-acao-seta { width: 20px; height: 20px; color: #9CA3AF; }
-.cm-linha-titulo { display: flex; align-items: center; justify-content: space-between; margin: 8px 0 8px; }
-.cm-linha-titulo h2 { font-size: 14px; font-weight: 600; }
-.cm-ultimas > * + * { border-top: 1px solid #EEF0F3; }
-.cm-ultima { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; color: inherit; text-decoration: none; }
-.cm-ultima:active { background: #F9FAFB; }
-.cm-ultima-texto { display: grid; flex: 1; min-width: 0; }
-.cm-ultima-titulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
-.cm-ultima-sub { font-size: 12px; color: #6B7280; }
 
 /* ---------- Listas Vistorias e Recebimentos (views/vistorias.js, views/recebimentos.js) ---------- */
 .cm-lista-cartao { overflow: hidden; }
