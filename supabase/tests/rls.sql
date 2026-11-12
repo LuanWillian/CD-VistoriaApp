@@ -282,9 +282,16 @@ begin
   delete from public.inspections where id = '66666666-6666-4666-8666-666666666666';
   get diagnostics c = row_count;
   if c <> 0 then raise exception 'D excluiu uma vistoria'; end if;
-  delete from storage.objects where bucket_id = 'vistorias' and name like '%66666666-6666-4666-8666-666666666666%';
-  get diagnostics c = row_count;
-  if c <> 0 then raise exception 'D excluiu um arquivo'; end if;
+  -- Projetos novos do Supabase bloqueiam DELETE direto em storage.objects (só pela
+  -- Storage API). Nesse caso esta conferência é pulada com um aviso.
+  begin
+    delete from storage.objects where bucket_id = 'vistorias' and name like '%66666666-6666-4666-8666-666666666666%';
+    get diagnostics c = row_count;
+    if c <> 0 then raise exception 'D excluiu um arquivo'; end if;
+  exception when insufficient_privilege then
+    if sqlerrm not like '%Direct deletion from storage tables%' then raise; end if;
+    raise notice 'Storage: exclusão direta bloqueada pelo Supabase; a regra "loja não exclui arquivos" não pôde ser conferida por SQL.';
+  end;
 
   -- divergência sem descrição é recusada
   begin
@@ -312,12 +319,19 @@ begin
     raise exception 'segundo recebimento da mesma vistoria foi aceito';
   exception when unique_violation then null;
   end;
-  update public.recebimentos set status = 'divergencia', descricao = 'x' where id = '99999999-9999-4999-8999-999999999999';
-  get diagnostics c = row_count;
-  if c <> 0 then raise exception 'D alterou o recebimento'; end if;
-  delete from public.recebimentos where id = '99999999-9999-4999-8999-999999999999';
-  get diagnostics c = row_count;
-  if c <> 0 then raise exception 'D apagou o recebimento'; end if;
+  -- Sem permissão de update/delete: o banco recusa (permissão negada) ou não afeta nada.
+  begin
+    update public.recebimentos set status = 'divergencia', descricao = 'x' where id = '99999999-9999-4999-8999-999999999999';
+    get diagnostics c = row_count;
+    if c <> 0 then raise exception 'D alterou o recebimento'; end if;
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    delete from public.recebimentos where id = '99999999-9999-4999-8999-999999999999';
+    get diagnostics c = row_count;
+    if c <> 0 then raise exception 'D apagou o recebimento'; end if;
+  exception when insufficient_privilege then null;
+  end;
 
   -- foto do próprio recebimento
   insert into public.recebimento_fotos (id, recebimento_id, path)
@@ -376,10 +390,15 @@ begin
   get diagnostics c = row_count;
   if c <> 1 then raise exception 'B não conseguiu apagar a foto de avaria de A'; end if;
 
-  delete from storage.objects where bucket_id = 'vistorias'
-    and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/frente.jpg';
-  get diagnostics c = row_count;
-  if c <> 1 then raise exception 'B não conseguiu apagar o arquivo de A no Storage'; end if;
+  begin
+    delete from storage.objects where bucket_id = 'vistorias'
+      and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/frente.jpg';
+    get diagnostics c = row_count;
+    if c <> 1 then raise exception 'B não conseguiu apagar o arquivo de A no Storage'; end if;
+  exception when insufficient_privilege then
+    if sqlerrm not like '%Direct deletion from storage tables%' then raise; end if;
+    raise notice 'Storage: exclusão direta bloqueada pelo Supabase; a regra "vistoriador exclui arquivos" não pôde ser conferida por SQL.';
+  end;
 
   delete from public.inspections where id = '11111111-1111-4111-8111-111111111111';
   get diagnostics c = row_count;
