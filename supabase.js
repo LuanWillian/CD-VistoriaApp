@@ -215,6 +215,21 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
       const linhas = checar(await q.range(inicio, inicio + ITENS_POR_PAGINA));
       return { itens: linhas.slice(0, ITENS_POR_PAGINA).map(vistoriaDaLinha), temMais: linhas.length > ITENS_POR_PAGINA };
     },
+    // Painel do computador: TODAS as vistorias (mesmos campos da lista), mais
+    // recentes primeiro, em blocos de 1000 linhas (limite padrão do PostgREST).
+    // Sem teto: o painel não pode esconder vistorias antigas sem avisar.
+    async listarTodasVistorias() {
+      const BLOCO = 1000;
+      const itens = [];
+      for (let inicio = 0; ; inicio += BLOCO) {
+        const linhas = checar(await sb.from("inspections")
+          .select("id, user_id, numero, realizada_em, chassi, marca, modelo, loja, foto_frente, damages(count)")
+          .order("realizada_em", { ascending: false }).order("id", { ascending: false })
+          .range(inicio, inicio + BLOCO - 1));
+        itens.push(...linhas.map(vistoriaDaLinha));
+        if (linhas.length < BLOCO) return itens;
+      }
+    },
     // Todas as vistorias de [de, ate) com as avarias, em blocos de 1000 linhas
     // (limite padrão do PostgREST).
     async listarParaDashboard({ de, ate }) {

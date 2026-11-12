@@ -147,3 +147,22 @@ test("sair offline (signOut com erro) apaga a sessão salva e para a renovação
     globalThis.localStorage = anterior;
   }
 });
+
+test("listarTodasVistorias busca em blocos de 1000 até acabar, sem teto (2500 vistorias = 3 blocos)", async () => {
+  const total = 2500;
+  const faixas = [];
+  const linha = (i) => ({ id: `v${i}`, user_id: "u1", numero: `VIS-${i}`, realizada_em: "2026-11-07T13:00:00Z", chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: null, foto_frente: "x", damages: [{ count: 0 }] });
+  const consulta = {
+    select() { return this; },
+    order() { return this; },
+    async range(de, ate) {
+      faixas.push([de, ate]);
+      return { data: Array.from({ length: Math.max(0, Math.min(ate, total - 1) - de + 1) }, (_, k) => linha(de + k)), error: null };
+    },
+  };
+  const remoto = criarRemoto({ url: "u", chave: "k", criarCliente: () => ({ auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) }, from: () => consulta, storage: { from: () => ({}) } }) });
+  const itens = await remoto.listarTodasVistorias();
+  assert.equal(itens.length, total);
+  assert.deepEqual(faixas, [[0, 999], [1000, 1999], [2000, 2999]]);
+  assert.equal(itens[2499].id, "v2499");
+});

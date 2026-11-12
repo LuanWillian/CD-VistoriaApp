@@ -105,6 +105,12 @@ export const excluirRascunho = (id) => tx(["rascunhos", "arquivos"], "readwrite"
 
 // ---------- Vistorias ----------
 export const salvarVistoria = (v) => tx(["vistorias"], "readwrite", (s) => { s("vistorias").put(v); });
+// Guarda de uma vez (uma transação só) as vistorias que ainda não existem no
+// aparelho; as que já existem não são tocadas (podem ter fotos ou estado local).
+export const guardarSeAusentes = (lista) => tx(["vistorias"], "readwrite", async (s) => {
+  const existentes = new Set(await pedir(s("vistorias").getAllKeys()));
+  for (const v of lista) if (!existentes.has(v.id)) s("vistorias").put(v);
+});
 export const obterVistoria = (id) => tx(["vistorias"], "readonly", (s) => pedir(s("vistorias").get(id)));
 export const listarVistorias = async (userId) =>
   (await tx(["vistorias"], "readonly", (s) => pedir(s("vistorias").index("userId").getAll(userId)))).sort(porData("realizadaEm"));

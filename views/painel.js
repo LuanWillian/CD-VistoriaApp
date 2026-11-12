@@ -12,7 +12,6 @@ import { seloStatus } from "./detalhe.js";
 // Mesmos períodos do dashboard, mais "Todos" (o padrão da lista).
 const PERIODOS = [["todos", "Todos"], ["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
 const hojeCampo = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const LIMITE_PAGINAS_SERVIDOR = 50;
 
 function el(tag, classe, texto) {
   const e = document.createElement(tag);
@@ -100,21 +99,15 @@ export async function montar(raiz, ctx) {
     return [...doAparelho.values()].filter((v) => v.status !== "excluindo");
   }
 
-  // Busca todas as páginas do servidor (a mesma chamada da tela Vistorias, sem filtros).
+  // Busca TODAS as vistorias do servidor (blocos de 1000, sem teto) e guarda de
+  // uma vez as que faltam no aparelho, para o painel funcionar offline depois.
   async function buscarRemotos() {
     estado.remotos = null;
     if (!ctx.online()) return;
     try {
-      const todos = [];
-      for (let p = 0; p < LIMITE_PAGINAS_SERVIDOR; p++) {
-        const r = await ctx.remoto.listarVistorias({ pagina: p });
-        todos.push(...r.itens);
-        for (const item of r.itens) {
-          if (!(await ctx.storage.obterVistoria(item.id))) await ctx.storage.salvarVistoria(item);
-        }
-        if (!r.temMais) break;
-      }
+      const todos = await ctx.remoto.listarTodasVistorias();
       estado.remotos = todos;
+      await ctx.storage.guardarSeAusentes(todos);
     } catch (e) {
       console.error(e);
     }

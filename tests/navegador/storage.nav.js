@@ -118,3 +118,13 @@ teste("storage: fila de exclusões e meta", async () => {
   await st.removerMeta("usuario");
   igual(await st.obterMeta("usuario"), undefined);
 });
+
+teste("storage: guardarSeAusentes grava de uma vez só as que faltam e não mexe nas existentes", async () => {
+  await st.apagarBanco();
+  await st.salvarVistoria({ id: "a", userId: "u1", realizadaEm: "2026-11-01T10:00:00.000Z", status: "pendente", marca: "Local" });
+  const muitas = Array.from({ length: 1500 }, (_, i) => ({ id: i ? `r${i}` : "a", userId: "u2", realizadaEm: "2026-11-02T10:00:00.000Z", status: "sincronizada", marca: "Remota" }));
+  await st.guardarSeAusentes(muitas);
+  igual((await st.obterVistoria("a")).marca, "Local", "a vistoria do aparelho não pode ser sobrescrita");
+  igual((await st.obterVistoria("r1499")).marca, "Remota");
+  igual((await st.listarSincronizadas()).length, 1499);
+});
