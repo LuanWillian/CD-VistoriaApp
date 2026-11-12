@@ -735,3 +735,19 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
 /* Dashboard: período (nome do filtro e datas) dentro do cartão "Vistorias no período". */
 .db .db-kpi-periodo { font-size: 13px; color: var(--texto-2); }
 .db .db-kpi-periodo-nome { font-weight: 700; color: var(--texto); }
+
+/* Recebimento na loja: selos, card do detalhe e botão Registrar recebimento. */
+.selo-receb-aguardando { background: var(--principal-clara); color: var(--texto-2); }
+.selo-receb-conforme { background: var(--ok-fundo); color: var(--ok); }
+.selo-receb-divergencia { background: var(--pendente-fundo); color: var(--pendente); }
+.det-receb > p + p { margin-top: 6px; }
+.det-receb .receb-quem { font-weight: 700; }
+.det-receb .receb-assinatura { margin-top: 10px; }
+.receb-acao { margin-top: 16px; }
+@media (min-width: 1024px) and (pointer: fine) {
+  .detalhe-corpo.com-loja.com-receb { grid-template-rows: auto auto auto auto 1fr; }
+  .com-loja.com-receb .det-receb { grid-column: 1; grid-row: 3; }
+  .com-loja.com-receb .det-avarias { grid-row: 4; }
+  .com-loja.com-receb .det-assin { grid-row: 5; }
+  .com-loja.com-receb .det-dir { grid-row: 1 / span 5; }
+}

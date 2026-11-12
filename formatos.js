@@ -112,6 +112,13 @@ export function rotuloArquivo(nome) {
   return nome.startsWith("avaria_") ? "Foto de avaria" : nome;
 }
 
+// Arquivos do recebimento na loja (assinatura e fotos da divergência); ficam na
+// pasta da conta da loja (caminhoDoArquivo). Não entram no envio da vistoria.
+export function arquivosDoRecebimento(v) {
+  if (!v.recebimento) return [];
+  return [ARQUIVO.recebAssinatura, ...(v.recebimento.fotos || []).map(arquivoReceb)];
+}
+
 export function arquivosDaVistoria(v) {
   return [
     ARQUIVO.frente, ARQUIVO.frenteMini, ARQUIVO.traseira, ARQUIVO.chassi,

@@ -2,8 +2,11 @@
 // assinaturas e as ações Baixar PDF, Compartilhar (não existe no computador) e Excluir.
 import { CHECKLIST_ITENS, FOTOS_VEICULO } from "../config.js";
 import {
-  ARQUIVO, arquivoAvaria, arquivosDaVistoria, caminhoRemoto, chaveLocal, formatarDataHora, formatarKm, formatarMarca, nomeVistoria,
+  ARQUIVO, arquivoAvaria, arquivosDaVistoria, arquivosDoRecebimento, caminhoDoArquivo, chaveLocal, formatarDataHora, formatarKm,
+  formatarMarca, nomeVistoria,
 } from "../formatos.js";
+import { htmlCardRecebimento } from "./card-recebimento.js";
+import { situacaoRecebimento } from "../recebimento-dados.js";
 import { $, esc, icone, carregandoHtml } from "../ui.js";
 import { gerarPdf } from "../pdf.js";
 import { emDesktop, ligarAmpliar, miniaturaHtml } from "../photos.js";
@@ -57,6 +60,8 @@ function telaSimples(el, titulo, texto, desktop) {
 
 export async function montar(el, ctx, params) {
   const { id } = params;
+  // modo "loja": conta de loja conferindo o carro (sem PDF, Compartilhar e Excluir).
+  const modoLoja = params.modo === "loja";
   const nova = params.busca.has("nova");
   const usuario = ctx.auth.usuarioAtual();
   const urls = [];
@@ -66,9 +71,9 @@ export async function montar(el, ctx, params) {
   // ---------- Carregamento ----------
   async function baixarCompleta() {
     const completa = await ctx.remoto.obterVistoriaCompleta(id);
-    for (const nome of arquivosDaVistoria(completa)) {
+    for (const nome of [...arquivosDaVistoria(completa), ...arquivosDoRecebimento(completa)]) {
       try {
-        const blob = await ctx.remoto.baixarArquivo(caminhoRemoto(completa.userId, id, nome));
+        const blob = await ctx.remoto.baixarArquivo(caminhoDoArquivo(completa, nome));
         await ctx.storage.salvarArquivo(chaveLocal(id, nome), blob);
       } catch {
         // arquivo indisponível agora: a tela usa URL assinada e o PDF tenta de novo depois
@@ -85,9 +90,14 @@ export async function montar(el, ctx, params) {
   if (v && v.userId !== usuario.id && v.status !== "sincronizada") v = null;
   // Excluir só existe no navegador do computador (qualquer conta pode excluir). No app
   // instalado e no navegador de celular/tablet a opção não aparece.
-  const podeExcluir = () => ctx.desktop;
+  const podeExcluir = () => ctx.desktop && !modoLoja;
   try {
     if ((!v || (v.origem === "remota" && !v.completa)) && ctx.online()) v = await baixarCompleta();
+    // O recebimento na loja acontece depois do envio: com internet, sempre o do servidor.
+    else if (v?.numero && ctx.online() && ctx.remoto.obterRecebimento) {
+      v = { ...v, recebimento: await ctx.remoto.obterRecebimento(id) };
+      await ctx.storage.salvarVistoria(v);
+    }
   } catch (e) {
     console.error(e);
   }
@@ -109,7 +119,7 @@ export async function montar(el, ctx, params) {
   const fontes = new Map();
   async function carregarFontes() {
     const faltando = [];
-    for (const nome of arquivosDaVistoria(v)) {
+    for (const nome of [...arquivosDaVistoria(v), ...arquivosDoRecebimento(v)]) {
       const blob = await ctx.storage.obterArquivo(chaveLocal(id, nome));
       if (blob) {
         const u = URL.createObjectURL(blob);
@@ -121,9 +131,9 @@ export async function montar(el, ctx, params) {
     }
     if (faltando.length && ctx.online() && v.numero) {
       try {
-        const assinadas = await ctx.remoto.urlsAssinadas(faltando.map((n) => caminhoRemoto(v.userId, id, n)));
+        const assinadas = await ctx.remoto.urlsAssinadas(faltando.map((n) => caminhoDoArquivo(v, n)));
         faltando.forEach((n) => {
-          const u = assinadas.get(caminhoRemoto(v.userId, id, n));
+          const u = assinadas.get(caminhoDoArquivo(v, n));
           if (u) fontes.set(n, u);
         });
       } catch { /* sem imagens remotas agora */ }
@@ -135,7 +145,7 @@ export async function montar(el, ctx, params) {
     if (local) return local;
     if (!ctx.online() || !v.numero) return null;
     try {
-      const blob = await ctx.remoto.baixarArquivo(caminhoRemoto(v.userId, id, nome));
+      const blob = await ctx.remoto.baixarArquivo(caminhoDoArquivo(v, nome));
       await ctx.storage.salvarArquivo(chaveLocal(id, nome), blob);
       return blob;
     } catch {
@@ -170,9 +180,13 @@ export async function montar(el, ctx, params) {
   }
 
   function desenhar() {
+    const cardReceb = htmlCardRecebimento(v, fontes);
+    const podeReceber = modoLoja && situacaoRecebimento(v) === "aguardando";
     el.innerHTML = `
       <div class="pilha detalhe-pagina">
-        <a class="btn btn-texto" href="${ctx.desktop ? "#/inicio" : "#/vistorias"}">${icone("voltar")} ${ctx.desktop ? "Início" : "Vistorias"}</a>
+        ${modoLoja
+    ? `<a class="btn btn-texto" href="#/recebimentos">${icone("voltar")} Recebimentos</a>`
+    : `<a class="btn btn-texto" href="${ctx.desktop ? "#/inicio" : "#/vistorias"}">${icone("voltar")} ${ctx.desktop ? "Início" : "Vistorias"}</a>`}
         <div id="faixa-nova" role="status" aria-live="polite"></div>
         <div class="pilha detalhe-cabeca">
         <header class="cartao detalhe-topo">
@@ -183,14 +197,14 @@ export async function montar(el, ctx, params) {
           <p class="texto-2">Realizada em ${formatarDataHora(v.realizadaEm)}</p>
           <div id="detalhe-erro"></div>
         </header>
-        <div class="acoes-detalhe">
-          <button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>
-          ${ctx.desktop ? "" : `<button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>`}
+        <div class="acoes-detalhe"${modoLoja ? " hidden" : ""}>
+          ${modoLoja ? "" : `<button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>`}
+          ${ctx.desktop || modoLoja ? "" : `<button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>`}
           ${nova && !ctx.desktop ? `<a class="btn btn-secundario" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
           ${podeExcluir() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
         </div>
         </div>
-        <div class="detalhe-corpo${v.loja ? " com-loja" : ""}">
+        <div class="detalhe-corpo${v.loja ? " com-loja" : ""}${cardReceb ? " com-receb" : ""}">
         ${v.loja ? `<section class="secao det-loja" aria-labelledby="h-loja">
           <h2 id="h-loja">Loja de destino</h2>
           <p class="loja-destino"><span class="loja-icone" aria-hidden="true">${icone("loja")}</span><span>${esc(v.loja)}</span></p>
@@ -202,6 +216,7 @@ export async function montar(el, ctx, params) {
               .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
           </dl>
         </section>
+        ${cardReceb}
         <div class="det-dir">
         <section class="secao" aria-labelledby="h-fotos">
           <h2 id="h-fotos">Fotos do veículo</h2>
@@ -231,6 +246,7 @@ export async function montar(el, ctx, params) {
           </div>
         </section>
         </div>
+        ${podeReceber ? `<div class="receb-acao"><button type="button" class="btn btn-primario btn-bloco" id="btn-receber">${icone("check")} Registrar recebimento</button></div>` : ""}
       </div>`;
   }
 
@@ -261,6 +277,7 @@ export async function montar(el, ctx, params) {
   const btnCompartilhar = () => $("#btn-compartilhar", el);
   const pdfPronto = criarPdfPronto({ gerar: (alvo) => gerarPdf(alvo, obterImagem), atual: () => v });
   async function prepararPdf() {
+    if (!btnBaixar()) return; // modo loja: sem PDF
     btnBaixar().disabled = true;
     if (btnCompartilhar()) btnCompartilhar().disabled = true;
     btnBaixar().innerHTML = `${icone("carregando", "ic gira")} Preparando PDF…`;
@@ -334,7 +351,10 @@ export async function montar(el, ctx, params) {
     } else {
       await ctx.storage.salvarVistoria({ ...atual, status: "excluindo" });
       // userId: quem exclui (a fila é por conta); donoId: de quem é a pasta de arquivos no servidor.
-      await ctx.storage.enfileirarExclusao({ id, userId: usuario.id, donoId: atual.userId, criadoEm: new Date().toISOString() });
+      await ctx.storage.enfileirarExclusao({
+        id, userId: usuario.id, donoId: atual.userId, donoRecebimento: atual.recebimento?.userId || v.recebimento?.userId || null,
+        criadoEm: new Date().toISOString(),
+      });
       (ctx.sincronizar || ctx.sync.sincronizar)();
     }
     ctx.avisar("Vistoria excluída.", "sucesso");
@@ -347,7 +367,7 @@ export async function montar(el, ctx, params) {
     if (!ativo || !nova2 || nova2.status === "excluindo") return;
     v = { ...v, ...nova2 };
     atualizarStatus();
-    if (pdfPronto.desatualizado() && !btnBaixar().disabled) prepararPdf();
+    if (btnBaixar() && pdfPronto.desatualizado() && !btnBaixar().disabled) prepararPdf();
   };
   ctx.sync.eventos.addEventListener("mudou", aoMudar);
 

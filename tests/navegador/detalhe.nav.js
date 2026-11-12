@@ -17,17 +17,17 @@ function vistoria(id, userId, extra = {}) {
   return { ...vistoriaDoRascunho(r, "2026-11-08T10:00:00.000Z"), status: "sincronizada", numero: "VIS-000010", origem: "remota", completa: true, ...extra };
 }
 
-async function abrir(v, { online = false, desktop = true } = {}) {
+async function abrir(v, { online = false, desktop = true, usuario = EU, modo } = {}) {
   await storage.apagarBanco();
   await storage.salvarVistoria(v);
   const ctx = {
-    desktop, storage, auth: { usuarioAtual: () => EU }, online: () => online, navegar: () => {}, avisar: () => {},
+    desktop, storage, auth: { usuarioAtual: () => usuario }, online: () => online, navegar: () => {}, avisar: () => {},
     confirmar: async () => true, sync: { eventos: new EventTarget(), sincronizar: async () => ({}) },
     remoto: { obterVistoriaCompleta: async () => { throw new Error("offline"); }, urlsAssinadas: async () => new Map(), baixarArquivo: async () => { throw new Error("offline"); } },
   };
   const el = document.createElement("div");
   document.getElementById("palco").append(el);
-  const tela = await detalhe.montar(el, ctx, { id: v.id, busca: new URLSearchParams() });
+  const tela = await detalhe.montar(el, ctx, { id: v.id, busca: new URLSearchParams(), modo });
   await esperar(100);
   return { el, fim: () => { tela?.desmontar?.(); el.remove(); } };
 }
@@ -139,5 +139,80 @@ teste("visualizador: fora do modo grande (celular) não vira lightbox", async ()
     igual(d.getAttribute("aria-modal"), null);
   } finally {
     d.close();
+  }
+});
+
+// ---------- Recebimento na loja ----------
+const LOJA = { id: "u-loja", email: "loja@teste", nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" };
+const recebido = (status, extra = {}) => ({
+  id: "r1", userId: "u-loja", status, recebedorNome: "Davi <b>Loja</b>", loja: "PG Prime BMW Natal",
+  recebidoEm: new Date(2026, 10, 12, 14, 5).toISOString(), descricao: status === "divergencia" ? "Risco novo na porta" : "",
+  assinatura: "u-loja/x/receb_assinatura.png", fotos: [], ...extra,
+});
+const titulos = (el) => [...el.querySelectorAll(".detalhe-corpo h2")].map((h) => h.textContent.trim());
+
+teste("detalhe: card Recebimento na loja aguardando, logo depois de Dados do veículo", async () => {
+  const t = await abrir(vistoria("aguarda", "u-outro", { loja: "PG Prime BMW Natal", recebimento: null }));
+  try {
+    const card = t.el.querySelector(".det-receb");
+    ok(card, "falta o card Recebimento na loja");
+    igual(card.querySelector("h2").textContent.trim(), "Recebimento na loja");
+    ok(card.textContent.includes("Aguardando recebimento"), "falta o selo Aguardando recebimento");
+    ok(card.textContent.includes("PG Prime BMW Natal"), "falta a loja de destino");
+    const h = titulos(t.el);
+    igual(h[h.indexOf("Dados do veículo") + 1], "Recebimento na loja");
+  } finally {
+    t.fim();
+  }
+});
+
+teste("detalhe: recebido conforme e com divergência (texto escapado)", async () => {
+  const t1 = await abrir(vistoria("conf", "u-outro", { loja: "PG Prime BMW Natal", recebimento: recebido("conforme") }));
+  try {
+    const card = t1.el.querySelector(".det-receb");
+    ok(card.querySelector(".selo-receb-conforme"), "falta o selo Conforme");
+    ok(card.textContent.includes("Recebido por Davi <b>Loja</b> — PG Prime BMW Natal"), "nome/loja de quem recebeu");
+    igual(card.querySelector("b"), null, "nome com HTML não pode virar tag");
+    ok(card.textContent.includes("12/11/2026 14:05"), "falta a data e hora");
+  } finally {
+    t1.fim();
+  }
+  const t2 = await abrir(vistoria("div", "u-outro", { loja: "PG Prime BMW Natal", recebimento: recebido("divergencia") }));
+  try {
+    const card = t2.el.querySelector(".det-receb");
+    ok(card.querySelector(".selo-receb-divergencia"), "falta o selo Com divergência");
+    ok(card.textContent.includes("Com divergência"));
+    ok(card.textContent.includes("Risco novo na porta"), "falta a descrição da divergência");
+  } finally {
+    t2.fim();
+  }
+});
+
+teste("detalhe: vistoria sem loja não tem card de recebimento", async () => {
+  const t = await abrir(vistoria("semloja", "u-outro", { loja: "" }));
+  try {
+    igual(t.el.querySelector(".det-receb"), null);
+  } finally {
+    t.fim();
+  }
+});
+
+teste("detalhe modo loja: sem PDF, Compartilhar e Excluir; Registrar recebimento só se aguardando", async () => {
+  const t1 = await abrir(vistoria("l1", "u-outro", { loja: "PG Prime BMW Natal", recebimento: null }), { usuario: LOJA, modo: "loja" });
+  try {
+    igual(t1.el.querySelector("#btn-baixar"), null);
+    igual(t1.el.querySelector("#btn-compartilhar"), null);
+    igual(t1.el.querySelector("#btn-excluir"), null);
+    ok(t1.el.querySelector("#btn-receber"), "falta Registrar recebimento");
+    igual(t1.el.querySelector("#btn-receber").textContent.trim(), "Registrar recebimento");
+  } finally {
+    t1.fim();
+  }
+  const t2 = await abrir(vistoria("l2", "u-outro", { loja: "PG Prime BMW Natal", recebimento: recebido("conforme") }), { usuario: LOJA, modo: "loja" });
+  try {
+    igual(t2.el.querySelector("#btn-receber"), null, "já recebida não mostra o botão");
+    ok(t2.el.querySelector(".det-receb .selo-receb-conforme"));
+  } finally {
+    t2.fim();
   }
 });

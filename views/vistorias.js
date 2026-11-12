@@ -1,5 +1,6 @@
 // Aba "Vistorias": rascunhos em andamento, busca, filtro por período e a
 // lista (servidor + aparelho), da mais recente para a mais antiga.
+import { seloRecebimento } from "./card-recebimento.js";
 import { ARQUIVO, caminhoRemoto, chaveLocal, formatarDataHora, formatarMarca, nomeVistoria, periodo, periodoPersonalizado } from "../formatos.js";
 import { $, $$, esc, icone, carregandoHtml } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
@@ -112,6 +113,7 @@ export async function montar(el, ctx) {
             <span class="linha"><span>${formatarDataHora(v.realizadaEm)}</span></span>
             <span>${esc([formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" "))}</span>
             <span class="linha"><span>${qtd ? `${qtd} ${qtd === 1 ? "avaria" : "avarias"}` : "Sem avarias"}</span></span>
+            ${seloRecebimento(v) ? `<span class="linha">${seloRecebimento(v)}</span>` : ""}
           </div>
         </a>
         ${v.status === "erro" ? `

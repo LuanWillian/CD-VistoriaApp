@@ -62,7 +62,7 @@ teste("painel (computador): tabela com as vistorias, linha e botão abrem os det
   }
 });
 
-async function montarLista(desktop) {
+async function montarLista(desktop, itensRemotos = []) {
   await storage.apagarBanco();
   const r = novoRascunho(EU.id, "r1", new Date().toISOString());
   r.dados.chassi = "AB123C";
@@ -70,7 +70,7 @@ async function montarLista(desktop) {
   const ctx = {
     desktop, storage, auth: { usuarioAtual: () => EU }, online: () => true, avisar: () => {}, confirmar: async () => true,
     sync: { eventos: new EventTarget(), sincronizar: async () => ({}) },
-    remoto: { listarVistorias: async () => ({ itens: [], temMais: false }), urlsAssinadas: async () => new Map() },
+    remoto: { listarVistorias: async () => ({ itens: itensRemotos, temMais: false }), urlsAssinadas: async () => new Map() },
   };
   const el = document.createElement("div");
   document.getElementById("palco").append(el);
@@ -143,5 +143,22 @@ teste("menu da conta de loja sem internet continua sendo o de loja", async () =>
     igual(chamou, false, "sem internet não consulta o servidor");
   } finally {
     el.remove();
+  }
+});
+
+teste("lista do celular: cada cartão mostra o selo do recebimento na loja", async () => {
+  const base = { userId: "u-outro", realizadaEm: "2026-11-10T10:00:00.000Z", status: "sincronizada", origem: "remota", completa: false, chassi: "AB123C", marca: "BMW", modelo: "X1", avariasQtd: 0 };
+  const t = await montarLista(false, [
+    { ...base, id: "a", numero: "VIS-1", loja: "PG Prime BMW Natal", recebimento: null },
+    { ...base, id: "b", numero: "VIS-2", loja: "PG Prime BMW Natal", recebimento: { id: "r", userId: "u", status: "divergencia", recebedorNome: "Davi", loja: "PG Prime BMW Natal", recebidoEm: "2026-11-11T10:00:00.000Z", descricao: "x", assinatura: "p", fotos: [] } },
+    { ...base, id: "c", numero: "VIS-3", loja: "", recebimento: null },
+  ]);
+  try {
+    const cartao = (id) => t.el.querySelector(`a[href="#/vistoria/${id}"]`).closest("article");
+    ok(cartao("a").querySelector(".selo-receb-aguardando"), "falta Aguardando recebimento");
+    ok(cartao("b").querySelector(".selo-receb-divergencia"), "falta Com divergência");
+    igual(cartao("c").querySelector("[class*='selo-receb']"), null, "vistoria sem loja não tem selo de recebimento");
+  } finally {
+    t.fim();
   }
 });
