@@ -35,6 +35,8 @@ export function montar(el, editor, ctx) {
   async function desenhar() {
     const d = editor.rascunho.dados;
     toggle.setAttribute("aria-checked", String(Boolean(d.semAvarias)));
+    // Com "Veículo sem avarias" ligado não faz sentido adicionar avaria: o botão some.
+    $('[data-acao="adicionar"]', el).hidden = Boolean(d.semAvarias);
     if (!d.avarias.length) {
       lista.innerHTML = d.semAvarias ? "" : '<p class="texto-2">Nenhuma avaria registrada. Adicione as avarias encontradas ou marque “Veículo sem avarias”.</p>';
       return;

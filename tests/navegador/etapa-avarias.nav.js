@@ -65,6 +65,24 @@ teste("etapa 3: ligar 'sem avarias' remove as avarias e as fotos delas", async (
   }
 });
 
+teste("etapa 3: com 'sem avarias' ligado o botão Adicionar avaria some e volta ao desligar", async () => {
+  const t = await montarEtapa(etapa);
+  try {
+    const adicionar = () => t.el.querySelector('[data-acao="adicionar"]');
+    await esperar(50);
+    igual(adicionar().hidden, false);
+    t.el.querySelector("#sem-avarias").click();
+    await esperar(50);
+    igual(adicionar().hidden, true);
+    igual(getComputedStyle(adicionar()).display, "none");
+    t.el.querySelector("#sem-avarias").click();
+    await esperar(50);
+    igual(adicionar().hidden, false);
+  } finally {
+    await t.fim();
+  }
+});
+
 teste("etapa 3: cancelar avaria nova apaga a foto tirada", async () => {
   const restaurar = simularCamera();
   const t = await montarEtapa(etapa);
