@@ -198,7 +198,9 @@ function marcarNavTopo(nome) {
 function tituloComoLinkDoMenu(ligar) {
   const titulo = $(".topo-titulo");
   titulo.innerHTML = ligar
-    ? `<a class="topo-link" href="#/inicio" aria-label="CD Vistoria — voltar ao menu">${icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`
+    // Computador: sem a seta (os links Vistorias/Dashboard já ficam no topo); o nome
+    // continua levando à lista de vistorias. Celular e app: seta de voltar ao menu.
+    ? `<a class="topo-link" href="#/inicio" aria-label="${desktop ? "CD Vistoria — ir para Vistorias" : "CD Vistoria — voltar ao menu"}">${desktop ? "" : icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`
     : "CD Vistoria";
 }
 
