@@ -68,3 +68,13 @@ test("conta de loja: só Recebimentos; telas do CD voltam para #/inicio em qualq
   assert.equal(redirecionamento("#/recebimentos", false), "#/inicio");
   assert.equal(redirecionamento("#/recebimento/1", true), "#/inicio");
 });
+
+test("ao abrir o app, antes de saber o papel da conta, as telas de recebimento não são desviadas", () => {
+  for (const hash of ["#/recebimentos", "#/recebimento/123"]) {
+    assert.equal(redirecionamento(hash, false, null), null, hash);
+    assert.equal(redirecionamento(hash, true, null), null, hash);
+  }
+  // o resto continua igual ao vistoriador
+  assert.equal(redirecionamento("#/nova", true, null), "#/inicio");
+  assert.equal(redirecionamento("#/dashboard", false, null), "#/inicio");
+});

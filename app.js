@@ -28,7 +28,7 @@ const desktop = isDesktopBrowser();
 {
   const tipoNavegacao = performance.getEntriesByType?.("navigation")?.[0]?.type ?? "navigate";
   if (viewInicio.deveAbrirNoMenu(location.hash, tipoNavegacao)) history.replaceState(history.state, "", "#/inicio");
-  const bloqueada = viewInicio.redirecionamento(location.hash, desktop);
+  const bloqueada = viewInicio.redirecionamento(location.hash, desktop, null); // conta ainda desconhecida
   if (bloqueada) history.replaceState(history.state, "", bloqueada);
 }
 

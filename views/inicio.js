@@ -26,7 +26,9 @@ export function deveAbrirNoMenu(hash, tipoNavegacao) {
 export function redirecionamento(hash, desktop, papel = "vistoriador") {
   const h = hash || "";
   if (papel === "loja") return /^#\/(nova|vistorias|vistoria|dashboard)([/?]|$)/.test(h) ? "#/inicio" : null;
-  if (/^#\/(recebimentos|recebimento)([/?]|$)/.test(h)) return "#/inicio";
+  // papel null = conta ainda desconhecida (abertura do app): as telas de recebimento
+  // esperam; depois do login a rota é conferida de novo com o papel certo.
+  if (/^#\/(recebimentos|recebimento)([/?]|$)/.test(h)) return papel === null ? null : "#/inicio";
   if (desktop) return /^#\/(nova|vistorias)([/?]|$)/.test(h) ? "#/inicio" : null;
   return /^#\/dashboard([/?]|$)/.test(h) ? "#/inicio" : null;
 }
