@@ -70,6 +70,9 @@ function telaMensagem(titulo, texto) {
 const envConfigurado = () =>
   Boolean(SUPABASE_URL && SUPABASE_ANON_KEY) && !SUPABASE_URL.includes("SEU-PROJETO") && !SUPABASE_ANON_KEY.includes("SUA-ANON-KEY");
 
+// Papel da conta logada (vistoriador | loja); define telas e rotas.
+const papelAtual = () => ctx?.auth.usuarioAtual()?.papel || "vistoriador";
+
 // ---------- Rotas ----------
 function lerRota() {
   const [caminho, qs] = (location.hash.slice(1) || "/inicio").split("?");
@@ -89,7 +92,7 @@ async function renderizar() {
   document.body.classList.remove("com-acoes");
   // Computador: #/nova não existe (digitado, favorito ou voltar/avançar do histórico).
   // replaceState, para a rota bloqueada não ficar no histórico.
-  const bloqueada = viewInicio.redirecionamento(location.hash, desktop);
+  const bloqueada = viewInicio.redirecionamento(location.hash, desktop, papelAtual());
   if (bloqueada) history.replaceState(history.state, "", bloqueada);
   const { nome, params } = lerRota();
   // No menu não aparece a seta de voltar ao menu.
@@ -200,7 +203,11 @@ function tituloComoLinkDoMenu(ligar) {
   titulo.innerHTML = ligar
     // Computador: sem a seta (os links Vistorias/Dashboard já ficam no topo); o nome
     // continua levando à lista de vistorias. Celular e app: seta de voltar ao menu.
-    ? `<a class="topo-link" href="#/inicio" aria-label="${desktop ? "CD Vistoria — ir para Vistorias" : "CD Vistoria — voltar ao menu"}">${desktop ? "" : icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`
+    ? (() => {
+      // Conta de loja não tem os links do topo: fica com a seta mesmo no computador.
+      const semSeta = desktop && papelAtual() !== "loja";
+      return `<a class="topo-link" href="#/inicio" aria-label="${semSeta ? "CD Vistoria — ir para Vistorias" : "CD Vistoria — voltar ao menu"}">${semSeta ? "" : icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`;
+    })()
     : "CD Vistoria";
 }
 
@@ -237,7 +244,8 @@ function entrarNoApp() {
   tituloComoLinkDoMenu(true);
   mostrarUsuarioNoTopo();
   $("#btn-menu").hidden = false;
-  $("#topo-nav").hidden = !desktop;
+  // Links Vistorias/Dashboard só para vistoriadores no computador.
+  $("#topo-nav").hidden = !desktop || papelAtual() === "loja";
   // Computador: sem o selo de conexão (Online/Offline/pendentes) no topo.
   $("#status-rede").hidden = desktop;
   if (!location.hash || location.hash === "#") location.replace("#/inicio");

@@ -26,11 +26,11 @@ function remotoFalso({ sessao = null, erro = null, entrar, sair, obterPerfil } =
     entrar: entrar || (async () => U),
     sair: sair || (async () => { chamadas.push("sair"); }),
     aoMudarSessao: () => () => {},
-    obterPerfil: obterPerfil || (async () => "Ana Lima"),
+    obterPerfil: obterPerfil || (async () => ({ nome: "Ana Lima", papel: "vistoriador", loja: null })),
   };
 }
 
-const UN = { ...U, nome: "Ana Lima" };
+const UN = { ...U, nome: "Ana Lima", papel: "vistoriador", loja: null };
 
 test("com sessão: devolve o usuário e guarda em cache", async () => {
   const st = storageFalso();
@@ -42,16 +42,34 @@ test("com sessão: devolve o usuário e guarda em cache", async () => {
 
 test("nome do vistoriador vem do perfil da conta", async () => {
   const pedidos = [];
-  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async (id) => { pedidos.push(id); return "Carlos Souza"; } });
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async (id) => { pedidos.push(id); return { nome: "Carlos Souza", papel: "vistoriador", loja: null }; } });
   const a = criarAuth({ remoto, storage: storageFalso(), estaOnline: () => true });
   assert.equal((await a.iniciar()).nome, "Carlos Souza");
   assert.deepEqual(pedidos, ["u1"]);
 });
 
-test("sem perfil cadastrado: nome fica null", async () => {
+test("sem perfil cadastrado: nome fica null e o papel é vistoriador", async () => {
   const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => null });
   const a = criarAuth({ remoto, storage: storageFalso({ usuario: UN }), estaOnline: () => true });
-  assert.equal((await a.iniciar()).nome, null);
+  const u = await a.iniciar();
+  assert.equal(u.nome, null);
+  assert.equal(u.papel, "vistoriador");
+  assert.equal(u.loja, null);
+});
+
+test("conta de loja: papel e loja vêm do perfil e ficam no cache", async () => {
+  const st = storageFalso();
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => ({ nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" }) });
+  const a = criarAuth({ remoto, storage: st, estaOnline: () => true });
+  assert.deepEqual(await a.iniciar(), { ...U, nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" });
+  assert.equal(st.m.get("usuario").papel, "loja");
+});
+
+test("perfil inacessível (rede): conta de loja continua loja com os dados guardados", async () => {
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => { throw new TypeError("Failed to fetch"); } });
+  const guardado = { ...U, nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" };
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: guardado }), estaOnline: () => true });
+  assert.deepEqual(await a.iniciar(), guardado);
 });
 
 test("perfil inacessível (rede): mantém o nome guardado do mesmo usuário", async () => {

@@ -1,4 +1,4 @@
-import { teste, igual, ok, esperar } from "./runner.js";
+import { teste, igual, ok, esperar, esperarAte } from "./runner.js";
 import * as storage from "../../storage.js";
 import { novoRascunho } from "../../formatos.js";
 import * as inicio from "../../views/inicio.js";
@@ -98,5 +98,50 @@ teste("lista: no app e no celular continuam o rascunho com Continuar e o link pa
     ok(links.includes("#/nova?novo=1"), `faltou 'Fazer a primeira vistoria'; links: ${links}`);
   } finally {
     t.fim();
+  }
+});
+
+teste("menu da conta de loja: só o cartão Recebimentos, com a contagem, em qualquer aparelho", async () => {
+  const LOJA = { id: "u-loja", email: "loja@teste", nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" };
+  for (const desktop of [false, true]) {
+    const navegacoes = [];
+    const el = document.createElement("div");
+    document.getElementById("palco").append(el);
+    const ctx = {
+      desktop, online: () => true, auth: { usuarioAtual: () => LOJA }, navegar: (h) => navegacoes.push(h),
+      remoto: { listarParaLoja: async () => [
+        { id: "a", realizadaEm: "2026-11-10T10:00:00.000Z", loja: LOJA.loja, recebimento: null },
+        { id: "b", realizadaEm: "2026-11-11T10:00:00.000Z", loja: LOJA.loja, recebimento: null },
+      ] },
+    };
+    try {
+      inicio.montar(el, ctx);
+      await esperarAte(() => el.textContent.includes("2 a receber"));
+      ok(el.querySelector("#btn-recebimentos"), "falta o cartão Recebimentos");
+      igual(el.querySelector("#btn-iniciar"), null);
+      igual(el.querySelector("#btn-vistorias"), null);
+      igual(el.querySelector(".dashboard-desktop"), null, "conta de loja não vê o painel do CD");
+      el.querySelector("#btn-recebimentos").click();
+      igual(navegacoes, ["#/recebimentos"]);
+    } finally {
+      el.remove();
+    }
+  }
+});
+
+teste("menu da conta de loja sem internet continua sendo o de loja", async () => {
+  const LOJA = { id: "u-loja", email: "loja@teste", nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" };
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  let chamou = false;
+  try {
+    inicio.montar(el, { desktop: false, online: () => false, auth: { usuarioAtual: () => LOJA }, navegar: () => {},
+      remoto: { listarParaLoja: async () => { chamou = true; return []; } } });
+    await esperar(50);
+    ok(el.querySelector("#btn-recebimentos"), "o menu de loja sumiu sem internet");
+    igual(el.querySelector("#btn-iniciar"), null);
+    igual(chamou, false, "sem internet não consulta o servidor");
+  } finally {
+    el.remove();
   }
 });

@@ -20,15 +20,16 @@ export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine
 
   // Junta ao usuário o nome do perfil. Sem conexão, usa o nome já guardado
   // deste mesmo usuário; nunca o de outra conta.
+  // Também o papel (vistoriador | loja) e a loja da conta: definem as telas.
   async function comNome(u) {
-    let nome;
+    let perfil;
     try {
-      nome = (await remoto.obterPerfil(u.id)) ?? null;
+      perfil = (await remoto.obterPerfil(u.id)) ?? null;
     } catch {
       const emCache = await storage.obterMeta("usuario");
-      nome = emCache?.id === u.id ? (emCache.nome ?? null) : null;
+      perfil = emCache?.id === u.id ? emCache : null;
     }
-    return { ...u, nome };
+    return { ...u, nome: perfil?.nome ?? null, papel: perfil?.papel ?? "vistoriador", loja: perfil?.loja ?? null };
   }
 
   async function iniciar() {

@@ -54,3 +54,17 @@ test("celular e app instalado: #/nova e #/vistorias nunca são redirecionados", 
   assert.equal(redirecionamento("#/dashboard", true), null);
   assert.equal(redirecionamento("#/dashboards", false), null);
 });
+
+test("conta de loja: só Recebimentos; telas do CD voltam para #/inicio em qualquer aparelho", () => {
+  for (const desktop of [true, false]) {
+    for (const hash of ["#/nova", "#/nova?novo=1", "#/vistorias", "#/dashboard", "#/vistoria/123"]) {
+      assert.equal(redirecionamento(hash, desktop, "loja"), "#/inicio", `${hash} desktop=${desktop}`);
+    }
+    for (const hash of ["", "#/inicio", "#/recebimentos", "#/recebimento/123"]) {
+      assert.equal(redirecionamento(hash, desktop, "loja"), null, `${hash} desktop=${desktop}`);
+    }
+  }
+  // vistoriador não muda
+  assert.equal(redirecionamento("#/recebimentos", false), "#/inicio");
+  assert.equal(redirecionamento("#/recebimento/1", true), "#/inicio");
+});

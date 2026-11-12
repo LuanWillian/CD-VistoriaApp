@@ -4,6 +4,7 @@
 // Os dois ícones (SVG + quadrado preto/cinza de 120 px) vêm da tela de
 // referência em ../vistoria/index.html e NÃO devem ser alterados.
 import { montar as montarPainel } from "./painel.js";
+import { separarRecebimentos } from "../recebimento-dados.js";
 
 // Decide, ao abrir o site, se começa no menu. Abrir pelo link ou pelo
 // ícone (abertura nova, "navigate") sem hash, com "#/" ou com "#/nova" sem
@@ -20,9 +21,14 @@ export function deveAbrirNoMenu(hash, tipoNavegacao) {
 // lista as vistorias), então #/nova e #/vistorias (e subrotas) vão para o menu.
 // Devolve o hash de destino, ou null se a rota pode ficar como está.
 // Fora do computador não existe o dashboard: #/dashboard também vai para o menu.
-export function redirecionamento(hash, desktop) {
-  if (desktop) return /^#\/(nova|vistorias)([/?]|$)/.test(hash || "") ? "#/inicio" : null;
-  return /^#\/dashboard([/?]|$)/.test(hash || "") ? "#/inicio" : null;
+// Conta de loja: só existem o menu e as telas de recebimento (em qualquer aparelho);
+// as telas de recebimento não existem para vistoriadores.
+export function redirecionamento(hash, desktop, papel = "vistoriador") {
+  const h = hash || "";
+  if (papel === "loja") return /^#\/(nova|vistorias|vistoria|dashboard)([/?]|$)/.test(h) ? "#/inicio" : null;
+  if (/^#\/(recebimentos|recebimento)([/?]|$)/.test(h)) return "#/inicio";
+  if (desktop) return /^#\/(nova|vistorias)([/?]|$)/.test(h) ? "#/inicio" : null;
+  return /^#\/dashboard([/?]|$)/.test(h) ? "#/inicio" : null;
 }
 
 // Histórico no app e no celular: o menu é sempre o nível 0 (primeira entrada),
@@ -66,7 +72,32 @@ const ICONE_VISTORIAS = `
       </svg>
     </div>`;
 
+// Conta de loja (qualquer aparelho): um cartão só, "Recebimentos", com a contagem.
+function montarLoja(el, ctx) {
+  el.innerHTML = `
+    <section class="home-app" aria-labelledby="home-titulo">
+      <h1 class="sr-only" id="home-titulo">Menu</h1>
+      <button class="cartao card" id="btn-recebimentos" type="button">${ICONE_VISTORIAS}
+        <div class="card-text">
+          <h2>Recebimentos</h2>
+          <p class="sub-gray" id="receb-contagem">Ver os carros a receber</p>
+        </div>
+      </button>
+    </section>`;
+  el.querySelector("#btn-recebimentos").addEventListener("click", () => ctx.navegar("#/recebimentos"));
+  let ativo = true;
+  if (ctx.online()) {
+    ctx.remoto.listarParaLoja().then((itens) => {
+      if (!ativo) return;
+      const n = separarRecebimentos(itens).aReceber.length;
+      el.querySelector("#receb-contagem").textContent = n ? `${n} a receber` : "Nada a receber";
+    }).catch(console.error);
+  }
+  return { desmontar() { ativo = false; } };
+}
+
 export function montar(el, ctx) {
+  if (ctx.auth?.usuarioAtual()?.papel === "loja") return montarLoja(el, ctx);
   // Navegador do computador: a página principal é o painel de consulta.
   if (ctx.desktop) return montarPainel(el, ctx);
   el.innerHTML = `
