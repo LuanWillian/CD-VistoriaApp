@@ -87,7 +87,10 @@ export async function montar(raiz, ctx) {
   const estado = {
     periodo: "30d", de: hojeCampo(new Date(Date.now() - 29 * 86400000)), ate: hojeCampo(),
     marca: "", loja: "", itens: [], anteriores: [], intervalo: null, carregando: true, erro: "",
+    // Lista de baixo: "" = últimas com avaria; "avaria" ou "graves" = aberta pelos cartões.
+    lista: "",
   };
+  let rolarParaLista = false;
   let ativo = true;
   let geracao = 0;
 
@@ -194,7 +197,15 @@ export async function montar(raiz, ctx) {
     const tipos = rankingTipos(itens);
     const marcas = porMarca(itens);
     const lojas = porLoja(itens);
-    const ultimas = ultimasComAvaria(itens);
+    const ultimas = estado.lista
+      ? ultimasComAvaria(itens, null, { soGraves: estado.lista === "graves" })
+      : ultimasComAvaria(itens);
+    const tituloLista = { "": "Últimas vistorias com avaria", avaria: "Veículos com avaria", graves: "Veículos com avaria grave" }[estado.lista];
+    const vazioLista = estado.lista === "graves" ? "Nenhum veículo com avaria grave no período." : "Nenhuma vistoria com avaria no período.";
+    // Cartão que abre a lista: botão de verdade (teclado e leitor de tela), marcado quando ativo.
+    const cartaoLista = (tipo, classe, conteudoHtml, rotulo) => `<button type="button" class="cartao db-kpi db-kpi-botao ${classe}" data-lista="${tipo}"
+      aria-pressed="${estado.lista === tipo}" aria-controls="db-lista" title="${rotulo}">${conteudoHtml}
+      <span class="db-kpi-ver">${estado.lista === tipo ? "Mostrando a lista abaixo" : "Ver veículos"} ${icone("avancar", "ic db-ic-peq")}</span></button>`;
     const maxArea = areas[0]?.qtd || 1;
     const variacao = r.variacao === null ? ""
       : `<span class="db-variacao ${r.variacao >= 0 ? "db-sobe" : "db-desce"}">${formatarPct(r.variacao, { sinal: true, casas: 0 })}</span>`;
@@ -205,12 +216,12 @@ export async function montar(raiz, ctx) {
         <div class="cartao db-kpi"><p class="db-kpi-rot">Vistorias no período</p>
           <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.total)}</span>${variacao}</p>
           <p class="db-kpi-sub">${num(r.totalAnterior)} no período anterior</p></div>
-        <div class="cartao db-kpi"><p class="db-kpi-rot">Veículos com avaria</p>
-          <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.comAvaria)}</span><span class="db-kpi-extra">(${formatarPct(r.pctComAvaria)})</span></p></div>
+        ${cartaoLista("avaria", "", `<span class="db-kpi-rot">Veículos com avaria</span>
+          <span class="db-kpi-linha"><span class="db-kpi-num">${num(r.comAvaria)}</span><span class="db-kpi-extra">(${formatarPct(r.pctComAvaria)})</span></span>`, "Ver os veículos com avaria")}
         <div class="cartao db-kpi"><p class="db-kpi-rot">Avarias registradas</p>
           <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.avarias)}</span></p></div>
-        <div class="cartao db-kpi db-kpi-grave"><p class="db-kpi-rot">Avarias graves</p>
-          <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.graves)}</span><span class="db-kpi-extra">(${formatarPct(r.pctGraves)} do total)</span></p></div>
+        ${cartaoLista("graves", "db-kpi-grave", `<span class="db-kpi-rot">Avarias graves</span>
+          <span class="db-kpi-linha"><span class="db-kpi-num">${num(r.graves)}</span><span class="db-kpi-extra">(${formatarPct(r.pctGraves)} do total)</span></span>`, "Ver os veículos com avaria grave")}
       </section>
 
       <section class="secao" aria-labelledby="db-h-volume">
@@ -263,8 +274,11 @@ export async function montar(raiz, ctx) {
         </section>
       </div>
 
-      <section class="secao" aria-labelledby="db-h-ultimas">
-        <h2 id="db-h-ultimas">Últimas vistorias com avaria</h2>
+      <section class="secao db-lista${estado.lista ? " db-lista-aberta" : ""}" id="db-lista" aria-labelledby="db-h-ultimas" tabindex="-1">
+        <div class="db-titulo-linha">
+          <h2 id="db-h-ultimas">${tituloLista}${estado.lista ? ` <span class="texto-2">(${num(ultimas.length)})</span>` : ""}</h2>
+          ${estado.lista ? `<button type="button" class="btn btn-texto db-fechar-lista" data-lista="">${icone("x", "ic db-ic-peq")} Voltar às últimas</button>` : ""}
+        </div>
         ${ultimas.length ? `<div class="dash-rolagem"><table class="db-tabela db-clicavel">
           <thead><tr><th scope="col">Nº</th><th scope="col">Data/Hora</th><th scope="col">Marca/Modelo</th><th scope="col">Chassi</th><th scope="col">Loja</th><th scope="col">Gravidade</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
           <tbody>${ultimas.map((v) => `<tr data-id="${esc(v.id)}">
@@ -272,10 +286,16 @@ export async function montar(raiz, ctx) {
             <td>${esc([v.marca, v.modelo].filter(Boolean).join(" ") || "—")}</td><td class="dash-chassi">${esc(v.chassi || "—")}</td>
             <td class="texto-2">${esc(v.loja || "—")}</td><td>${seloGravidade(v.gravidadeMaxima)}</td>
             <td class="db-acoes"><a class="db-ver" href="#/vistoria/${encodeURIComponent(v.id)}">Ver ${icone("avancar", "ic db-ic-peq")}</a></td></tr>`).join("")}</tbody>
-        </table></div>` : `<p class="texto-2">Nenhuma vistoria com avaria no período.</p>`}
+        </table></div>` : `<p class="texto-2">${vazioLista}</p>`}
       </section>
       </div>`;
     aplicarLarguras(conteudo);
+    if (rolarParaLista) {
+      rolarParaLista = false;
+      const lista = $("#db-lista", conteudo);
+      lista.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      lista.focus({ preventScroll: true });
+    }
   }
 
   // ---------- Eventos ----------
@@ -297,6 +317,18 @@ export async function montar(raiz, ctx) {
   $("#db-loja", raiz).addEventListener("change", (e) => { estado.loja = e.target.value; desenhar(); });
   conteudo.addEventListener("click", (e) => {
     if (e.target.closest('[data-acao="tentar"]')) return carregar();
+    // Cartões "Veículos com avaria" / "Avarias graves": abrem (ou fecham) a lista de baixo.
+    const alvoLista = e.target.closest("[data-lista]");
+    if (alvoLista) {
+      const tipo = alvoLista.dataset.lista;
+      const anterior = estado.lista;
+      estado.lista = tipo && estado.lista === tipo ? "" : tipo;
+      rolarParaLista = Boolean(estado.lista);
+      desenhar();
+      // Fechou a lista: o foco volta para o cartão que a tinha aberto.
+      if (!estado.lista && anterior) $(`.db-kpi-botao[data-lista="${anterior}"]`, conteudo)?.focus();
+      return;
+    }
     if (e.target.closest("a, button")) return;
     if (globalThis.getSelection?.().toString()) return;
     const tr = e.target.closest("tr[data-id]");

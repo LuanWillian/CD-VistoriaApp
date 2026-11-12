@@ -714,3 +714,17 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
   .com-loja .det-assin { grid-row: 4; }
   .com-loja .det-dir { grid-row: 1 / span 4; }
 }
+
+/* Dashboard: cartões "Veículos com avaria" e "Avarias graves" abrem a lista de baixo. */
+.db .db-kpi-botao { font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color 0.12s, background-color 0.12s; }
+.db .db-kpi-botao.db-kpi-grave { border-left: 4px solid var(--grave); }
+@media (hover: hover) { .db .db-kpi-botao:hover { border-color: var(--linha-forte); background: #FAFBFB; } }
+.db .db-kpi-botao.db-kpi-grave:hover { border-left-color: var(--grave); }
+.db .db-kpi-botao[aria-pressed="true"] { border-color: var(--principal); box-shadow: 0 0 0 1px var(--principal), var(--sombra); }
+.db .db-kpi-botao.db-kpi-grave[aria-pressed="true"] { border-left-color: var(--grave); }
+.db .db-kpi-ver { display: inline-flex; align-items: center; gap: 2px; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--texto-2); }
+.db .db-kpi-botao[aria-pressed="true"] .db-kpi-ver { color: var(--texto); }
+.db .db-lista { scroll-margin-top: calc(var(--topo-h) + 16px); }
+.db .db-lista:focus { outline: none; }
+.db .db-lista-aberta { border-color: var(--principal); }
+.db .db-fechar-lista { min-height: 36px; padding: 6px 10px; font-size: 14px; }

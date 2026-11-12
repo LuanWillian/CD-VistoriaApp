@@ -167,10 +167,12 @@ export function gravidadeMaxima(v) {
   }, "");
 }
 
-export function ultimasComAvaria(itens, limite = 8) {
-  return itens.filter(temAvaria)
-    .sort((x, y) => y.realizadaEm.localeCompare(x.realizadaEm))
-    .slice(0, limite)
+// Vistorias com avaria, mais recentes primeiro. soGraves: só as que têm ao menos
+// uma avaria Grave. limite null = todas (lista aberta pelos cartões do topo).
+export function ultimasComAvaria(itens, limite = 8, { soGraves = false } = {}) {
+  const lista = itens.filter((v) => (soGraves ? graves(v) > 0 : temAvaria(v)))
+    .sort((x, y) => y.realizadaEm.localeCompare(x.realizadaEm));
+  return (limite == null ? lista : lista.slice(0, limite))
     .map((v) => ({ ...v, gravidadeMaxima: gravidadeMaxima(v) }));
 }
 

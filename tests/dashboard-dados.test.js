@@ -113,6 +113,15 @@ test("últimas com avaria: mais recentes primeiro, com a gravidade mais alta", (
   assert.equal(gravidadeMaxima(v("x")), "");
 });
 
+test("lista dos cartões: todas com avaria (sem limite) ou só as com avaria grave", () => {
+  const itens = Array.from({ length: 10 }, (_, i) => v(String(i), { realizadaEm: em(1 + i), avarias: [av(i % 3 === 0 ? "Grave" : "Leve")] }));
+  itens.push(v("sem", { realizadaEm: em(11) }));
+  assert.equal(ultimasComAvaria(itens).length, 8, "padrão continua com 8");
+  assert.equal(ultimasComAvaria(itens, null).length, 10);
+  assert.deepEqual(ultimasComAvaria(itens, null, { soGraves: true }).map((x) => x.id), ["9", "6", "3", "0"]);
+  assert.ok(ultimasComAvaria(itens, null, { soGraves: true }).every((x) => x.gravidadeMaxima === "Grave"));
+});
+
 test("eixo do gráfico e porcentagem no formato brasileiro", () => {
   assert.equal(topoDoEixo(0), 4);
   assert.equal(topoDoEixo(7), 10);
