@@ -757,3 +757,13 @@ body:has(.topo-nav:not([hidden])) .topo-titulo { flex: 0 1 auto; }
 .receb-abas [role="tab"] { min-height: var(--alvo); border: 0; background: transparent; font-weight: 700; }
 .receb-abas [role="tab"] + [role="tab"] { border-left: 1px solid var(--linha); }
 .receb-abas [role="tab"][aria-selected="true"] { background: var(--principal); color: #fff; }
+
+/* Formulário Registrar recebimento. */
+.receb-opcoes { display: grid; gap: 8px; }
+.receb-opcoes [role="radio"] {
+  display: flex; align-items: center; gap: 10px; min-height: var(--alvo); padding: 10px 14px; text-align: left;
+  border: 2px solid var(--linha-forte); border-radius: var(--raio-sm); background: var(--papel); font-weight: 650;
+}
+.receb-opcoes [data-status="conforme"][aria-checked="true"] { border-color: var(--ok); background: var(--ok-fundo); color: var(--ok); }
+.receb-opcoes [data-status="divergencia"][aria-checked="true"] { border-color: var(--pendente); background: var(--pendente-fundo); color: var(--pendente); }
+.receb-form .campo[hidden] { display: none; }

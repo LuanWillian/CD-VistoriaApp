@@ -6,6 +6,7 @@ import {
   formatarMarca, nomeVistoria,
 } from "../formatos.js";
 import { htmlCardRecebimento } from "./card-recebimento.js";
+import { abrirFormRecebimento } from "./form-recebimento.js";
 import { situacaoRecebimento } from "../recebimento-dados.js";
 import { $, esc, icone, carregandoHtml } from "../ui.js";
 import { gerarPdf } from "../pdf.js";
@@ -333,7 +334,20 @@ export async function montar(el, ctx, params) {
     }
     if (alvo.id === "btn-tentar") ctx.sincronizar ? ctx.sincronizar() : ctx.sync.sincronizar();
     if (alvo.id === "btn-excluir") await excluir();
+    if (alvo.id === "btn-receber") await receber();
   });
+
+  // Conta de loja: registra o recebimento e mostra o card já preenchido.
+  async function receber() {
+    const r = await abrirFormRecebimento({ vistoria: v, ctx, deps: ctx.depsRecebimento });
+    if (!r || !ativo) return;
+    v = { ...v, recebimento: r };
+    await ctx.storage.salvarVistoria(v);
+    await carregarFontes();
+    if (!ativo) return;
+    desenhar();
+    atualizarStatus();
+  }
 
   async function excluir() {
     if (!podeExcluir()) return; // só no computador

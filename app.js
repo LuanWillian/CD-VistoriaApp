@@ -16,7 +16,10 @@ import * as viewInicio from "./views/inicio.js";
 import * as viewDashboard from "./views/dashboard.js";
 import * as viewRecebimentos from "./views/recebimentos.js";
 
-const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, dashboard: viewDashboard, recebimentos: viewRecebimentos };
+const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, dashboard: viewDashboard, recebimentos: viewRecebimentos,
+  // Conta de loja: a mesma tela de detalhe, em modo de conferência (Registrar recebimento).
+  recebimento: { montar: (el, c, params) => viewDetalhe.montar(el, c, { ...params, modo: "loja" }) },
+};
 
 // O menu #/inicio é a página principal em todos os ambientes. A escolha acontece
 // aqui, antes de qualquer tela ser desenhada (sem piscar).
@@ -82,6 +85,8 @@ function lerRota() {
   if (m) return { nome: "detalhe", params: { id: m[1], busca } };
   if (caminho === "/vistorias") return { nome: "vistorias", params: { busca } };
   if (papelAtual() === "loja" && caminho === "/recebimentos") return { nome: "recebimentos", params: { busca } };
+  const mr = caminho.match(/^\/recebimento\/([\w-]+)$/);
+  if (papelAtual() === "loja" && mr) return { nome: "recebimento", params: { id: mr[1], busca } };
   if (desktop && caminho === "/dashboard") return { nome: "dashboard", params: { busca } };
   if (!desktop && /^\/nova(\/|$)/.test(caminho)) return { nome: "nova", params: { busca } };
   return { nome: "inicio", params: { busca } }; // #/inicio e qualquer rota desconhecida
