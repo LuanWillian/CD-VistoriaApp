@@ -84,6 +84,8 @@ A cada deploy, troque `const CACHE_VERSION = "v1";` no `sw.js` (por exemplo, par
 
 **Dashboard do gerente (`#/dashboard`):** só no navegador do computador, pelo link "Dashboard" no topo. Mostra, no período escolhido, o volume de vistorias (com comparação ao período anterior), as avarias por gravidade, área e tipo, e as tabelas por marca e por loja de destino. Precisa de internet. Vistorias feitas antes do campo Loja aparecem como "Sem loja informada".
 
+**Recebimento na loja (contas de loja, migration `0006`):** quem entra com uma conta de loja vê só o cartão **Recebimentos**: abas "A receber" e "Recebidos" com os carros enviados para a sua loja e busca pelo chassi. Ao abrir um carro, a pessoa confere a vistoria do CD e toca em **Registrar recebimento**: escolhe "Recebido conforme a vistoria" ou "Recebido com divergência" (aí descreve o que está diferente e pode tirar fotos), assina e confirma. Nome, loja e data/hora vêm do servidor, e o recebimento não pode ser alterado nem apagado pelo app (só pelo Supabase). Precisa de internet; se a conexão cair na hora de confirmar, nada do que foi preenchido se perde. O CD vê o recebimento no detalhe, na coluna e no filtro do painel, no bloco "Recebimento nas lojas" do dashboard e no PDF.
+
 As listas ficam em `config.js`:
 - itens do checklist (`CHECKLIST_ITENS`);
 - áreas e tipos de avaria (`AREAS_AVARIA`, `TIPOS_AVARIA`);
