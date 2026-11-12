@@ -5,38 +5,62 @@ import { juntarComServidor } from "../painel-dados.js";
 import { ARQUIVO, caminhoRemoto, chaveLocal, formatarDataHora, formatarMarca, nomeVistoria, periodo, periodoPersonalizado } from "../formatos.js";
 import { $, $$, esc, icone, carregandoHtml } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
+import { situacaoRecebimento } from "../recebimento-dados.js";
+
+// Um selo só por vistoria no celular: ainda não enviada mostra o envio (Pendente/Erro);
+// enviada mostra o recebimento na loja; sem loja, Sincronizada.
+export function seloDaLista(v) {
+  if (v.status !== "sincronizada") return seloStatus(v.status);
+  return seloRecebimento(v, { curto: true }) || seloStatus(v.status);
+}
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["todos", "Todos"], ["personalizado", "Personalizado"]];
+const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Aguardando"], ["conforme", "Conforme"], ["divergencia", "Com divergência"]];
 
 export async function montar(el, ctx) {
   const usuario = ctx.auth.usuarioAtual();
   const urls = [];
-  const estado = { busca: "", periodo: "todos", de: "", ate: "", pagina: 0, temMais: false, remotos: [], falhaRemota: false };
+  const estado = { busca: "", recebimento: "", periodo: "todos", de: "", ate: "", pagina: 0, temMais: false, remotos: [], falhaRemota: false };
   let ativo = true;
   let geracao = 0;
 
   el.innerHTML = `
-    <div class="pilha">
-      <div class="entre">
-        <h1 class="titulo">Vistorias</h1>
-        <button type="button" class="btn btn-secundario" id="btn-atualizar">${icone("atualizar")} Atualizar</button>
+    <div class="pilha cm-vistorias">
+      ${ctx.desktop ? "" : `<a class="cm-voltar" href="#/inicio">${icone("voltar")} Início</a>`}
+      <div class="cm-pagina-cabeca">
+        <div>
+          <h1 class="cm-h1">Vistorias</h1>
+          <p class="cm-sub">Vistorias de envio para as lojas</p>
+        </div>
+        <button type="button" class="btn btn-secundario cm-btn" id="btn-atualizar">${icone("atualizar")} Atualizar</button>
       </div>
-      <section id="rascunhos" aria-label="Rascunhos" hidden></section>
-      <div class="busca">
-        <div class="busca-campo">
-          ${icone("busca")}
-          <input class="entrada" id="busca" type="search" placeholder="Buscar por chassi, marca, modelo ou número" aria-label="Buscar vistorias" autocomplete="off">
+      <section id="rascunhos" class="cm-rascunhos" aria-label="Rascunhos" hidden></section>
+      <div class="cm-cartao cm-lista-cartao">
+        <div class="busca cm-ferramentas">
+          <div class="busca-campo">
+            ${icone("busca")}
+            <input class="entrada" id="busca" type="search" placeholder="Buscar por chassi, marca, modelo ou número" aria-label="Buscar vistorias" autocomplete="off">
+          </div>
+          <div class="cm-pilulas">
+            <div class="chips" role="radiogroup" aria-label="Período" id="periodos">
+              ${PERIODOS.map(([valor, rotulo]) => `<button type="button" class="chip" role="radio" aria-checked="${valor === "todos"}" data-periodo="${valor}">${valor === "personalizado" ? icone("calendario") : ""}${rotulo}</button>`).join("")}
+            </div>
+            <label class="chip cm-pilula-select" id="filtro-recebimento-pilula">
+              ${icone("fachada")}<span id="filtro-recebimento-rotulo">Recebimento</span>${icone("setaBaixo")}
+              <select id="filtro-recebimento" aria-label="Filtrar pelo recebimento na loja">
+                ${RECEBIMENTOS.map(([valor, rotulo]) => `<option value="${valor}">${valor ? rotulo : "Todos os recebimentos"}</option>`).join("")}
+              </select>
+            </label>
+          </div>
+          <div class="periodo-personalizado" id="personalizado" hidden>
+            <div class="campo"><label class="rotulo" for="periodo-de">De</label><input class="entrada" id="periodo-de" type="date"></div>
+            <div class="campo"><label class="rotulo" for="periodo-ate">Até</label><input class="entrada" id="periodo-ate" type="date"></div>
+          </div>
         </div>
-        <div class="chips" role="radiogroup" aria-label="Período" id="periodos">
-          ${PERIODOS.map(([valor, rotulo]) => `<button type="button" class="chip" role="radio" aria-checked="${valor === "todos"}" data-periodo="${valor}">${rotulo}</button>`).join("")}
-        </div>
-        <div class="periodo-personalizado" id="personalizado" hidden>
-          <div class="campo"><label class="rotulo" for="periodo-de">De</label><input class="entrada" id="periodo-de" type="date"></div>
-          <div class="campo"><label class="rotulo" for="periodo-ate">Até</label><input class="entrada" id="periodo-ate" type="date"></div>
-        </div>
+        <p class="pequeno texto-2 cm-lista-status" id="lista-status" role="status"></p>
+        <div class="lista cm-linhas" id="lista">${carregandoHtml()}</div>
+        <p class="cm-rodape" id="lista-contador" hidden></p>
       </div>
-      <p class="pequeno texto-2" id="lista-status" role="status"></p>
-      <div class="lista" id="lista">${carregandoHtml()}</div>
       <button type="button" class="btn btn-secundario btn-bloco" id="btn-mais" hidden>Carregar mais</button>
     </div>`;
 
@@ -105,16 +129,18 @@ export async function montar(el, ctx) {
 
   const cartao = (v, src) => {
     const qtd = v.avariasQtd ?? v.avarias?.length ?? 0;
+    const veiculo = [formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ") || "Veículo";
     return `
       <article class="cartao cartao-vistoria">
         <a class="cartao-vistoria-link" href="#/vistoria/${esc(v.id)}">
           <div class="thumb">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : icone("imagem", "ic ic-lg")}</div>
           <div class="cartao-info">
-            <div class="entre"><span class="chassi">${esc(v.chassi)}</span>${seloStatus(v.status)}</div>
-            <span class="linha"><span>${formatarDataHora(v.realizadaEm)}</span></span>
-            <span>${esc([formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" "))}</span>
-            <span class="linha"><span>${qtd ? `${qtd} ${qtd === 1 ? "avaria" : "avarias"}` : "Sem avarias"}</span></span>
-            ${seloRecebimento(v) ? `<span class="linha">${seloRecebimento(v)}</span>` : ""}
+            <span class="cm-item-topo"><span class="cm-item-titulo">${esc(veiculo)}</span>${seloDaLista(v)}</span>
+            <span class="cm-item-linha"><span class="chassi">${esc(v.chassi)}</span> · ${esc(nomeVistoria(v))} · ${formatarDataHora(v.realizadaEm)}</span>
+            <span class="cm-item-pe">
+              <span class="cm-item-avarias">${qtd ? `<span class="cm-ponto" aria-hidden="true"></span>${qtd} ${qtd === 1 ? "avaria" : "avarias"}` : "Sem avarias"}</span>
+              <span class="cm-item-loja${v.loja ? "" : " cm-apagado"}">${esc(v.loja || "Sem loja")}</span>
+            </span>
           </div>
         </a>
         ${v.status === "erro" ? `
@@ -170,11 +196,12 @@ export async function montar(el, ctx) {
       for (const v of await ctx.storage.listarSincronizadas()) if (!doAparelho.has(v.id)) doAparelho.set(v.id, v);
       itens = [...doAparelho.values()].filter((v) => v.status !== "excluindo" && filtrarLocal(v));
     }
+    if (estado.recebimento) itens = itens.filter((v) => situacaoRecebimento(v) === estado.recebimento);
     itens.sort((a, b) => b.realizadaEm.localeCompare(a.realizadaEm));
     const fontes = await miniaturas(itens);
     if (!ativo || minha !== geracao) return;
 
-    const filtrando = estado.busca.trim() || estado.periodo !== "todos";
+    const filtrando = estado.busca.trim() || estado.periodo !== "todos" || estado.recebimento;
     if (!itens.length) {
       if (filtrando) lista.innerHTML = '<div class="vazio">Nenhuma vistoria encontrada para essa busca.</div>';
       else if (!ctx.online() && !locais.length) lista.innerHTML = '<div class="vazio">Sem internet. As vistorias aparecem aqui quando você se conectar.</div>';
@@ -190,6 +217,9 @@ export async function montar(el, ctx) {
       lista.innerHTML = itens.map((v) => cartao(v, fontes.get(v.id))).join("");
     }
     $("#btn-mais", el).hidden = !(ctx.online() && estado.temMais && !estado.falhaRemota);
+    const contador = $("#lista-contador", el);
+    contador.hidden = !itens.length;
+    contador.textContent = `Mostrando ${itens.length} ${itens.length === 1 ? "vistoria" : "vistorias"}`;
     status.textContent = !ctx.online()
       ? "Offline: mostrando as vistorias guardadas neste aparelho."
       : estado.falhaRemota ? "Não foi possível atualizar a lista agora. Mostrando as vistorias deste aparelho." : "";
@@ -217,6 +247,13 @@ export async function montar(el, ctx) {
     $$("[data-periodo]", el).forEach((c) => c.setAttribute("aria-checked", String(c === chip)));
     $("#personalizado", el).hidden = estado.periodo !== "personalizado";
     recarregar();
+  });
+  $("#filtro-recebimento", el).addEventListener("change", (e) => {
+    estado.recebimento = e.target.value;
+    const rotulo = RECEBIMENTOS.find(([valor]) => valor === estado.recebimento)?.[1] || "Recebimento";
+    $("#filtro-recebimento-rotulo", el).textContent = rotulo;
+    $("#filtro-recebimento-pilula", el).toggleAttribute("data-ativa", Boolean(estado.recebimento));
+    desenharLista();
   });
   for (const [id, campo] of [["#periodo-de", "de"], ["#periodo-ate", "ate"]]) {
     $(id, el).addEventListener("change", (e) => {

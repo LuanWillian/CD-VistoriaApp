@@ -239,3 +239,61 @@ teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção
     el.remove();
   }
 });
+
+teste("menu do celular: saudação, números (Hoje, A enviar, Na loja) e últimas vistorias", async () => {
+  await storage.apagarBanco();
+  const agora = Date.now();
+  const quando = (min) => new Date(agora - min * 60000).toISOString();
+  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, quando(1)), id, userId: EU.id, realizadaEm: quando(1), status: "sincronizada", numero: `VIS-0000${id}`, chassi: `AB12${id}`, marca: "Jeep", modelo: "Compass", loja: "PG Prime Jeep Natal", recebimento: null, ...extra });
+  const conforme = { id: "r", userId: "u", status: "conforme", recebedorNome: "Ana", loja: "PG Prime Jeep Natal", recebidoEm: quando(0), descricao: "", assinatura: "p", fotos: [] };
+  await storage.salvarVistoria(v("11"));
+  await storage.salvarVistoria(v("12", { status: "pendente", numero: null, loja: "", realizadaEm: quando(2) }));
+  await storage.salvarVistoria(v("13", { realizadaEm: "2026-01-05T10:00:00.000Z", recebimento: conforme }));
+  await storage.salvarVistoria(v("14", { realizadaEm: "2026-01-04T10:00:00.000Z" }));
+  const navegacoes = [];
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const tela = await inicio.montar(el, {
+    desktop: false, storage, auth: { usuarioAtual: () => ({ ...EU, nome: "Luan Willian" }) }, online: () => false,
+    navegar: (h) => navegacoes.push(h), remoto: {},
+  });
+  try {
+    await esperarAte(() => el.querySelector("#inicio-ultimas a"));
+    igual(el.querySelector("h1").textContent.trim(), "Olá, Luan");
+    const num = (id) => el.querySelector(`#resumo-${id}`).textContent.trim();
+    igual([num("hoje"), num("enviar"), num("loja")], ["2", "1", "2"]);
+    const links = [...el.querySelectorAll("#inicio-ultimas a")].map((a) => a.getAttribute("href"));
+    igual(links, ["#/vistoria/11", "#/vistoria/12", "#/vistoria/13"], "as 3 mais recentes");
+    ok(el.querySelector('#inicio-ultimas a[href="#/vistoria/12"] .selo-pendente'), "a não enviada mostra Pendente");
+    ok(el.querySelector('#inicio-ultimas a[href="#/vistoria/13"] .selo-receb-conforme'), "a recebida mostra Conforme");
+    el.querySelector("#btn-iniciar").click();
+    igual(navegacoes, ["#/nova"]);
+  } finally {
+    tela?.desmontar?.();
+    el.remove();
+  }
+});
+
+teste("lista do celular: um selo só por vistoria e filtro de recebimento", async () => {
+  const base = { userId: "u-outro", realizadaEm: "2026-11-10T10:00:00.000Z", status: "sincronizada", origem: "remota", completa: false, chassi: "AB123C", marca: "BMW", modelo: "X1", avariasQtd: 0 };
+  const div = { id: "r", userId: "u", status: "divergencia", recebedorNome: "Davi", loja: "PG Prime BMW Natal", recebidoEm: "2026-11-11T10:00:00.000Z", descricao: "x", assinatura: "p", fotos: [] };
+  const t = await montarLista(false, [
+    { ...base, id: "a", numero: "VIS-1", loja: "PG Prime BMW Natal", recebimento: null },
+    { ...base, id: "b", numero: "VIS-2", loja: "PG Prime BMW Natal", recebimento: div },
+    { ...base, id: "c", numero: "VIS-3", loja: "", recebimento: null },
+  ]);
+  try {
+    const cartao = (id) => t.el.querySelector(`a[href="#/vistoria/${id}"]`)?.closest("article");
+    igual(cartao("a").querySelectorAll(".selo").length, 1, "um selo só");
+    ok(cartao("a").querySelector(".selo-receb-aguardando"));
+    ok(cartao("c").querySelector(".selo-sincronizada"), "sem loja fica o Sincronizada");
+    ok(cartao("a").textContent.includes("PG Prime BMW Natal"), "falta a loja");
+    const sel = t.el.querySelector("#filtro-recebimento");
+    sel.value = "divergencia";
+    sel.dispatchEvent(new Event("change"));
+    await esperar(150);
+    igual([...t.el.querySelectorAll('#lista a[href^="#/vistoria/"]')].map((a) => a.getAttribute("href")), ["#/vistoria/b"]);
+  } finally {
+    t.fim();
+  }
+});

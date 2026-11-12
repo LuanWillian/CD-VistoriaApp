@@ -67,6 +67,8 @@ teste("finalizar: lista o que falta e leva até o campo", async () => {
   const view = await nova.montar(el, ctx, { busca: new URLSearchParams(`rascunho=${r.id}`) });
   try {
     await esperar(100);
+    igual(el.querySelector("h1").textContent.trim(), "Nova vistoria");
+    ok(el.querySelector("#nova-sub").textContent.includes("Etapa 4 de 4"), "falta a etapa no subtítulo");
     el.querySelector("#btn-avancar").click();
     await esperar(150);
     const d = document.querySelector("dialog[open]");

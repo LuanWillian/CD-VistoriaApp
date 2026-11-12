@@ -257,3 +257,32 @@ teste("detalhe modo loja: sem PDF, Compartilhar e Excluir; Registrar recebimento
     t2.fim();
   }
 });
+
+teste("detalhe (celular): veículo no título, abas e Baixar PDF e Compartilhar fixos embaixo", async () => {
+  const t = await abrir(vistoria("cel", EU.id, { loja: "PG Prime BMW Natal", recebimento: null }), { desktop: false });
+  try {
+    igual(t.el.querySelector("h1").textContent.trim(), "Jeep Compass");
+    igual(t.el.querySelector("#detalhe-numero").textContent.trim(), "VIS-000010");
+    ok(t.el.querySelector(".cm-cabecalho").textContent.includes("PG Prime BMW Natal"), "a loja fica no cabeçalho");
+    ok(t.el.querySelector(".cm-acoes #btn-baixar") && t.el.querySelector(".cm-acoes #btn-compartilhar"), "faltam as ações fixas");
+    igual([...t.el.querySelectorAll("[data-ir]")].map((b) => b.textContent.trim()),
+      ["Resumo", "Fotos (3)", "Checklist", "Avarias (0)", "Assinaturas"], "as abas seguem a ordem da página");
+    igual([...t.el.querySelectorAll("section.secao")].map((s) => s.getAttribute("aria-labelledby")),
+      ["h-dados", "h-receb", "h-fotos", "h-checklist", "h-avarias", "h-assinaturas"]);
+  } finally {
+    t.fim();
+  }
+});
+
+teste("detalhe (celular) da loja: aviso para conferir e Registrar recebimento fixo embaixo, sem PDF", async () => {
+  const LOJA = { id: "u-loja", email: "loja@teste", nome: "Davi", papel: "loja", loja: "PG Prime BMW Natal" };
+  const t = await abrir(vistoria("lj", "u-v", { loja: "PG Prime BMW Natal", recebimento: null }), { desktop: false, usuario: LOJA, modo: "loja" });
+  try {
+    ok(t.el.textContent.includes("Confira o carro com esta vistoria"), "falta o aviso");
+    ok(t.el.querySelector(".cm-acoes #btn-receber"), "o botão fica na barra de baixo");
+    igual(t.el.querySelector("#btn-baixar"), null);
+    igual(t.el.querySelector(".cm-migalhas a").getAttribute("href"), "#/recebimentos");
+  } finally {
+    t.fim();
+  }
+});

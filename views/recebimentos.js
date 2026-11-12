@@ -28,33 +28,38 @@ export async function montar(el, ctx) {
   el.innerHTML = `
     <div class="pilha receb-tela">
       <div>
-        <h1 class="titulo">Recebimentos</h1>
-        <p class="texto-2">${esc(usuario.loja)}</p>
+        <h1 class="cm-h1">Recebimentos</h1>
+        <p class="cm-sub">${icone("fachada")} ${esc(usuario.loja)}</p>
       </div>
-      <div class="receb-abas" role="tablist" aria-label="Recebimentos">
-        <button type="button" role="tab" id="aba-receber" data-aba="receber" aria-selected="true" aria-controls="receb-lista">A receber</button>
-        <button type="button" role="tab" id="aba-recebidos" data-aba="recebidos" aria-selected="false" aria-controls="receb-lista">Recebidos</button>
+      <div class="cm-cartao cm-lista-cartao">
+        <div class="cm-ferramentas">
+          <div class="receb-abas" role="tablist" aria-label="Recebimentos">
+            <button type="button" role="tab" id="aba-receber" data-aba="receber" aria-selected="true" aria-controls="receb-lista">A receber</button>
+            <button type="button" role="tab" id="aba-recebidos" data-aba="recebidos" aria-selected="false" aria-controls="receb-lista">Recebidos</button>
+          </div>
+          <div class="busca-campo">
+            ${icone("busca")}
+            <input class="entrada" id="receb-busca" type="search" placeholder="Buscar pelo chassi..." aria-label="Buscar pelo chassi" autocomplete="off">
+          </div>
+        </div>
+        <div class="lista cm-linhas" id="receb-lista" role="tabpanel" aria-busy="true"><div class="vazio">Carregando…</div></div>
+        <p class="cm-rodape" id="receb-rodape" hidden></p>
       </div>
-      <div class="busca-campo">
-        ${icone("busca")}
-        <input class="entrada" id="receb-busca" type="search" placeholder="Buscar pelo chassi..." aria-label="Buscar pelo chassi" autocomplete="off">
-      </div>
-      <div class="lista" id="receb-lista" role="tabpanel" aria-busy="true"><div class="vazio">Carregando…</div></div>
     </div>`;
   const lista = $("#receb-lista", el);
 
   const cartao = (v) => {
     const src = estado.fotos.get(v.id);
     const r = v.recebimento;
+    const veiculo = [formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ") || "Veículo";
     return `
       <article class="cartao cartao-vistoria">
         <a class="cartao-vistoria-link" href="#/recebimento/${esc(v.id)}">
           <div class="thumb">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : icone("imagem", "ic ic-lg")}</div>
           <div class="cartao-info">
-            <div class="entre"><span class="chassi">${esc(v.chassi)}</span>${seloRecebimento(v)}</div>
-            <span>${esc([formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" "))}</span>
-            <span class="pequeno texto-2">${esc(nomeVistoria(v))} · enviada em ${formatarDataHora(v.realizadaEm)}</span>
-            ${r ? `<span class="pequeno texto-2">Recebido por ${esc(r.recebedorNome)} · ${formatarDataHora(r.recebidoEm)}</span>` : ""}
+            <span class="cm-item-topo"><span class="cm-item-titulo">${esc(veiculo)}</span>${seloRecebimento(v, { curto: true })}</span>
+            <span class="cm-item-linha"><span class="chassi">${esc(v.chassi)}</span> · ${esc(nomeVistoria(v))}</span>
+            <span class="cm-item-linha">${r ? `Recebido por ${esc(r.recebedorNome)} · ${formatarDataHora(r.recebidoEm)}` : `Enviada em ${formatarDataHora(v.realizadaEm)}`}</span>
           </div>
         </a>
       </article>`;
@@ -75,6 +80,9 @@ export async function montar(el, ctx) {
     } else {
       lista.innerHTML = filtrados.map(cartao).join("");
     }
+    const rodape = $("#receb-rodape", el);
+    rodape.hidden = !filtrados.length || estado.aba !== "receber";
+    rodape.textContent = "Os mais antigos aparecem primeiro.";
   }
 
   async function carregarFotos() {

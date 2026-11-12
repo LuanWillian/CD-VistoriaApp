@@ -108,11 +108,17 @@ export async function montar(el, ctx, params) {
   aplicarNomeDaConta(editor, ctx);
   document.body.classList.add("com-acoes");
   el.innerHTML = `
-    <h1 class="sr-only">Nova vistoria</h1>
+    <a class="cm-voltar" href="#/inicio">${icone("voltar")} Início</a>
+    <div class="cm-pagina-cabeca">
+      <div>
+        <h1 class="cm-h1">Nova vistoria</h1>
+        <p class="cm-sub" id="nova-sub">Etapa 1 de 4 · Rascunho salvo no aparelho</p>
+      </div>
+    </div>
     <nav class="etapas" aria-label="Etapas da vistoria">
       ${ETAPAS.map((e) => `
         <button type="button" class="etapa-btn" data-etapa="${e.n}">
-          <span class="etapa-num" aria-hidden="true">${e.n}</span>${e.nome}
+          <span class="etapa-num" aria-hidden="true">${e.n}</span><span class="etapa-nome">${e.nome}</span>
         </button>`).join("")}
     </nav>
     <div id="etapa-conteudo"></div>
@@ -128,6 +134,7 @@ export async function montar(el, ctx, params) {
   let n = Math.min(Math.max(rascunho.etapa || 1, 1), 4);
 
   function atualizarIndicador() {
+    $("#nova-sub", el).textContent = `Etapa ${n} de 4 · Rascunho salvo no aparelho`;
     $$(".etapa-btn", el).forEach((b) => {
       const e = Number(b.dataset.etapa);
       const sit = situacaoEtapa(editor.rascunho, e);

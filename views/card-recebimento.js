@@ -19,25 +19,28 @@ export function seloRecebimento(v, { curto = false } = {}) {
 }
 
 // fontes: Map nome do arquivo → URL (blob local ou assinada), como no detalhe.
+// Visual do celular: cabeçalho com o selo à direita; quem recebeu e quando; o que
+// está diferente num bloco vermelho; fotos e a assinatura numa linha.
 export function htmlCardRecebimento(v, fontes = new Map()) {
   const s = situacaoRecebimento(v);
   if (!s) return "";
   const r = v.recebimento;
   const corpo = !r
-    ? `<p>${seloRecebimento(v)}</p><p class="texto-2">Loja de destino: ${esc(v.loja)}</p>`
-    : `<p>${seloRecebimento(v)}</p>
-      <p class="receb-quem">Recebido por ${esc(r.recebedorNome)} — ${esc(r.loja)}</p>
-      <p class="pequeno texto-2">${formatarDataHora(r.recebidoEm)}</p>
-      ${r.status === "divergencia" && r.descricao ? `<p class="receb-descricao"><strong>O que está diferente:</strong> ${esc(r.descricao)}</p>` : ""}
-      ${r.fotos.length ? `<div class="miniaturas">${r.fotos.map((f, i) => {
-        const src = fontes.get(arquivoReceb(f));
-        return src ? miniaturaHtml(src, `Divergência, foto ${i + 1}`) : "";
-      }).join("")}</div>` : ""}
-      <div class="assinatura-ver receb-assinatura">${fontes.get(ARQUIVO.recebAssinatura)
-        ? `<img src="${fontes.get(ARQUIVO.recebAssinatura)}" alt="Assinatura: ${esc(r.recebedorNome)}">` : ""}</div>`;
-  return `<section class="secao det-receb" aria-labelledby="h-receb">
-      <h2 id="h-receb">Recebimento na loja</h2>
-      ${corpo}
+    ? `<p class="cm-receb-texto">Aguardando recebimento na <strong>${esc(v.loja)}</strong>.</p>`
+    : `<p class="cm-receb-texto receb-quem">Recebido por <strong>${esc(r.recebedorNome)}</strong> — ${esc(r.loja)}</p>
+      <p class="cm-receb-quando">${formatarDataHora(r.recebidoEm)}</p>
+      ${r.status === "divergencia" && r.descricao ? `<p class="cm-receb-divergencia"><strong>O que está diferente:</strong> ${esc(r.descricao)}</p>` : ""}
+      <div class="cm-receb-arquivos">
+        ${r.fotos.map((f, i) => {
+          const src = fontes.get(arquivoReceb(f));
+          return src ? miniaturaHtml(src, `Divergência, foto ${i + 1}`) : "";
+        }).join("")}
+        <div class="cm-receb-assinatura">${fontes.get(ARQUIVO.recebAssinatura)
+          ? `<img src="${fontes.get(ARQUIVO.recebAssinatura)}" alt="Assinatura: ${esc(r.recebedorNome)}">` : ""}</div>
+      </div>`;
+  return `<section class="secao cm-cartao det-receb" aria-labelledby="h-receb">
+      <div class="cm-cartao-cabeca"><h2 id="h-receb">Recebimento na loja</h2>${seloRecebimento(v)}</div>
+      <div class="cm-cartao-corpo">${corpo}</div>
     </section>`;
 }
 

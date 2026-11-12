@@ -1,10 +1,14 @@
 // Tela "Menu" (#/inicio): página principal em todos os ambientes. No app instalado
 // e no navegador de celular/tablet tem os dois cartões; no navegador do computador
 // (ctx.desktop) é o painel de consulta (views/painel.js), sem "Iniciar vistoria".
-// Os dois ícones (SVG + quadrado preto/cinza de 120 px) vêm da tela de
-// referência em ../vistoria/index.html e NÃO devem ser alterados.
+// Visual do celular (Estilo B, igual ao do computador): saudação, números do dia,
+// os atalhos Iniciar vistoria e Vistorias e as últimas vistorias.
 import { montar as montarPainel } from "./painel.js";
-import { separarRecebimentos } from "../recebimento-dados.js";
+import { seloDaLista } from "./vistorias.js";
+import { situacaoRecebimento, separarRecebimentos } from "../recebimento-dados.js";
+import { juntarComServidor, maisRecentesPrimeiro, primeiroNome } from "../painel-dados.js";
+import { formatarDataHora, formatarMarca, periodo } from "../formatos.js";
+import { esc, icone } from "../ui.js";
 
 // Decide, ao abrir o site, se começa no menu. Abrir pelo link ou pelo
 // ícone (abertura nova, "navigate") sem hash, com "#/" ou com "#/nova" sem
@@ -42,48 +46,20 @@ export function nivelDaTela(estado, nome, nivelAnterior) {
   return nome === "inicio" ? 0 : nivelAnterior + 1;
 }
 
-const ICONE_INICIAR = `
-    <div class="card-icon icon-black" aria-hidden="true">
-      <svg viewBox="0 0 64 64">
-        <!-- carro sólido + selo "nova" -->
-        <g transform="translate(-4 4)">
-        <path d="M14 28l4.2-9.5A5 5 0 0 1 22.8 15.5h18.4a5 5 0 0 1 4.6 3L50 28a5 5 0 0 1 4 4.9V44a2 2 0 0 1-2 2h-2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H24v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4h-2a2 2 0 0 1-2-2V32.9A5 5 0 0 1 14 28z" fill="#fff"/>
-        <path d="M19 28l3.2-7.3a2 2 0 0 1 1.8-1.2h16a2 2 0 0 1 1.8 1.2L45 28z" fill="#111"/>
-        <circle cx="20" cy="36" r="3" fill="#111"/>
-        <circle cx="44" cy="36" r="3" fill="#111"/>
-        <rect x="27" y="35" width="10" height="2.5" rx="1.25" fill="#111"/>
-        </g>
-        <circle cx="50" cy="16" r="11" fill="#9A9A9A" stroke="#111" stroke-width="3"/>
-        <path d="M50 10.5v11M44.5 16h11" stroke="#111" stroke-width="3" stroke-linecap="round"/>
-      </svg>
-    </div>`;
-
-const ICONE_VISTORIAS = `
-    <div class="card-icon icon-gray" aria-hidden="true">
-      <svg viewBox="0 0 64 64">
-        <!-- carro sólido + selo "histórico" -->
-        <g transform="translate(-4 4)">
-        <path d="M14 28l4.2-9.5A5 5 0 0 1 22.8 15.5h18.4a5 5 0 0 1 4.6 3L50 28a5 5 0 0 1 4 4.9V44a2 2 0 0 1-2 2h-2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H24v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4h-2a2 2 0 0 1-2-2V32.9A5 5 0 0 1 14 28z" fill="#fff"/>
-        <path d="M19 28l3.2-7.3a2 2 0 0 1 1.8-1.2h16a2 2 0 0 1 1.8 1.2L45 28z" fill="#555"/>
-        <circle cx="20" cy="36" r="3" fill="#555"/>
-        <circle cx="44" cy="36" r="3" fill="#555"/>
-        <rect x="27" y="35" width="10" height="2.5" rx="1.25" fill="#555"/>
-        </g>
-        <circle cx="50" cy="16" r="11" fill="#D0D0D0" stroke="#555" stroke-width="3"/>
-        <path d="M50 10.5V16l3.5 3" fill="none" stroke="#555" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>`;
-
 // Conta de loja (qualquer aparelho): um cartão só, "Recebimentos", com a contagem.
 function montarLoja(el, ctx) {
+  const usuario = ctx.auth?.usuarioAtual?.();
+  const nome = primeiroNome(usuario?.nome);
   el.innerHTML = `
-    <section class="home-app" aria-labelledby="home-titulo">
-      <h1 class="sr-only" id="home-titulo">Menu</h1>
-      <button class="cartao card" id="btn-recebimentos" type="button">${ICONE_VISTORIAS}
-        <div class="card-text">
-          <h2>Recebimentos</h2>
-          <p class="sub-gray" id="receb-contagem">Ver os carros a receber</p>
-        </div>
+    <section class="cm-inicio" aria-labelledby="home-titulo">
+      <div>
+        <h1 class="cm-h1" id="home-titulo">${nome ? `Olá, ${esc(nome)}` : "Olá!"}</h1>
+        <p class="cm-sub">${usuario?.loja ? `${icone("fachada")} ${esc(usuario.loja)}` : "Carros enviados pelo CD para a sua loja."}</p>
+      </div>
+      <button class="cm-cartao cm-acao" id="btn-recebimentos" type="button">
+        <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("fachada")}</span>
+        <span class="cm-acao-texto"><span class="cm-acao-titulo">Recebimentos</span><span class="cm-acao-sub" id="receb-contagem">Ver os carros a receber</span></span>
+        ${icone("avancar", "ic cm-acao-seta")}
       </button>
     </section>`;
   el.querySelector("#btn-recebimentos").addEventListener("click", () => ctx.navegar("#/recebimentos"));
@@ -98,28 +74,101 @@ function montarLoja(el, ctx) {
   return { desmontar() { ativo = false; } };
 }
 
+// Faixa colorida à esquerda das últimas vistorias: a mesma situação do selo.
+function corDaLinha(v) {
+  if (v.status === "erro") return "erro";
+  if (v.status !== "sincronizada") return "pendente";
+  return { aguardando: "pendente", divergencia: "erro" }[situacaoRecebimento(v)] || "ok";
+}
+
+// Mesma regra das telas Vistorias e do painel: o servidor manda; do aparelho só
+// entram as ainda não enviadas. Sem internet: as do aparelho + as já enviadas guardadas.
+async function lerVistorias(ctx, usuario) {
+  const locais = (await ctx.storage.listarVistorias(usuario.id)).filter((v) => v.status !== "excluindo");
+  if (ctx.online?.() && ctx.remoto?.listarTodasVistorias) {
+    try {
+      const remotos = await ctx.remoto.listarTodasVistorias();
+      const porId = new Map(remotos.map((v) => [v.id, v]));
+      for (const v of locais) {
+        if (porId.has(v.id)) porId.set(v.id, juntarComServidor(porId.get(v.id), v));
+        else if (v.status !== "sincronizada") porId.set(v.id, v);
+      }
+      return [...porId.values()].filter((v) => v.status !== "excluindo");
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  const doAparelho = new Map(locais.map((v) => [v.id, v]));
+  for (const v of await ctx.storage.listarSincronizadas()) if (!doAparelho.has(v.id)) doAparelho.set(v.id, v);
+  return [...doAparelho.values()].filter((v) => v.status !== "excluindo");
+}
+
+// Celular e app instalado (vistoriador): saudação, números, os dois atalhos e as últimas vistorias.
+function montarCelular(el, ctx) {
+  const usuario = ctx.auth?.usuarioAtual?.();
+  const nome = primeiroNome(usuario?.nome);
+  el.innerHTML = `
+    <section class="cm-inicio" aria-labelledby="home-titulo">
+      <div>
+        <h1 class="cm-h1" id="home-titulo">${nome ? `Olá, ${esc(nome)}` : "Olá!"}</h1>
+        <p class="cm-sub">O que você quer fazer agora?</p>
+      </div>
+      <div class="cm-cartao cm-resumo" id="inicio-resumo" hidden>
+        <div class="cm-resumo-item"><span class="cm-resumo-rot">${icone("prancheta", "ic cm-ic-escuro")}Hoje</span><strong id="resumo-hoje">0</strong></div>
+        <div class="cm-resumo-item"><span class="cm-resumo-rot">${icone("nuvemEnviar", "ic cm-ic-pendente")}A enviar</span><strong id="resumo-enviar">0</strong></div>
+        <div class="cm-resumo-item"><span class="cm-resumo-rot">${icone("fachada", "ic cm-ic-pendente")}Na loja</span><strong><span id="resumo-loja">0</span> <span class="cm-resumo-extra">aguardando</span></strong></div>
+      </div>
+      <button class="cm-cartao cm-acao" id="btn-iniciar" type="button">
+        <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("carro")}</span>
+        <span class="cm-acao-texto"><span class="cm-acao-titulo">Iniciar vistoria</span><span class="cm-acao-sub">Registrar vistoria de saída</span></span>
+        <span class="cm-acao-botao" aria-hidden="true">${icone("mais")}Nova</span>
+      </button>
+      <button class="cm-cartao cm-acao" id="btn-vistorias" type="button">
+        <span class="cm-acao-ic" aria-hidden="true">${icone("lista")}</span>
+        <span class="cm-acao-texto"><span class="cm-acao-titulo">Vistorias</span><span class="cm-acao-sub">Ver todas as vistorias feitas</span></span>
+        ${icone("avancar", "ic cm-acao-seta")}
+      </button>
+      <div id="inicio-ultimas-bloco" hidden>
+        <div class="cm-linha-titulo"><h2>Últimas vistorias</h2><a class="cm-link" href="#/vistorias">Ver todas</a></div>
+        <div class="cm-cartao cm-ultimas" id="inicio-ultimas"></div>
+      </div>
+    </section>`;
+
+  el.querySelector("#btn-iniciar").addEventListener("click", () => ctx.navegar("#/nova"));
+  el.querySelector("#btn-vistorias").addEventListener("click", () => ctx.navegar("#/vistorias"));
+
+  let ativo = true;
+  async function carregar() {
+    if (!ctx.storage || !usuario) return;
+    const itens = await lerVistorias(ctx, usuario);
+    if (!ativo) return;
+    const { de } = periodo("hoje", new Date());
+    const hoje = itens.filter((v) => v.realizadaEm >= de).length;
+    const enviar = itens.filter((v) => v.status !== "sincronizada").length;
+    const naLoja = itens.filter((v) => situacaoRecebimento(v) === "aguardando").length;
+    el.querySelector("#resumo-hoje").textContent = String(hoje);
+    el.querySelector("#resumo-enviar").textContent = String(enviar);
+    el.querySelector("#resumo-loja").textContent = String(naLoja);
+    el.querySelector("#inicio-resumo").hidden = false;
+    const ultimas = maisRecentesPrimeiro(itens).slice(0, 3);
+    el.querySelector("#inicio-ultimas-bloco").hidden = !ultimas.length;
+    el.querySelector("#inicio-ultimas").innerHTML = ultimas.map((v) => `
+      <a class="cm-ultima" href="#/vistoria/${esc(v.id)}">
+        <span class="cm-faixa cm-faixa-${corDaLinha(v)}" aria-hidden="true"></span>
+        <span class="cm-ultima-texto">
+          <span class="cm-ultima-titulo">${esc([formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ") || "Veículo")}</span>
+          <span class="cm-ultima-sub"><span class="cm-mono">${esc(v.chassi || "—")}</span> · ${formatarDataHora(v.realizadaEm)}</span>
+        </span>
+        ${seloDaLista(v)}
+      </a>`).join("");
+  }
+  carregar().catch(console.error);
+  return { desmontar() { ativo = false; } };
+}
+
 export function montar(el, ctx) {
   if (ctx.auth?.usuarioAtual()?.papel === "loja") return montarLoja(el, ctx);
   // Navegador do computador: a página principal é o painel de consulta.
   if (ctx.desktop) return montarPainel(el, ctx);
-  el.innerHTML = `
-    <section class="home-app" aria-labelledby="home-titulo">
-      <h1 class="sr-only" id="home-titulo">Menu</h1>${ctx.desktop ? "" : `
-      <button class="cartao card" id="btn-iniciar" type="button">
-        <div class="card-text">
-          <h2>Iniciar vistoria</h2>
-          <p class="sub-dark">Registrar vistoria de saída</p>
-        </div>${ICONE_INICIAR}
-      </button>`}
-      <button class="cartao card" id="btn-vistorias" type="button">${ICONE_VISTORIAS}
-        <div class="card-text">
-          <h2>Vistorias</h2>
-          <p class="sub-gray">Ver todas vistorias feitas</p>
-        </div>
-      </button>
-    </section>`;
-
-  el.querySelector("#btn-iniciar")?.addEventListener("click", () => ctx.navegar("#/nova"));
-  el.querySelector("#btn-vistorias").addEventListener("click", () => ctx.navegar("#/vistorias"));
-  return {};
+  return montarCelular(el, ctx);
 }

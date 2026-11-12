@@ -236,9 +236,9 @@ if (!desktop) {
   });
 }
 
-// Botão da conta no topo: nome do vistoriador (do perfil) + ícone de pessoa.
-// O nome aparece só no navegador do computador; no celular e no app instalado
-// fica só o ícone. Sem nome no perfil, também fica só o ícone.
+// Botão da conta no topo: iniciais do vistoriador (do perfil) num círculo.
+// O primeiro nome aparece só no navegador do computador. Sem nome no perfil,
+// fica o ícone de pessoa.
 function mostrarUsuarioNoTopo() {
   const u = ctx.auth.usuarioAtual();
   const nome = String(u?.nome ?? "").trim();
@@ -247,7 +247,8 @@ function mostrarUsuarioNoTopo() {
   const curto = desktop ? (partes[0] || "") : "";
   $("#topo-nome").textContent = curto;
   $("#topo-nome").hidden = !curto;
-  const iniciais = desktop ? `${partes[0]?.[0] ?? ""}${partes.length > 1 ? partes.at(-1)[0] : ""}`.toUpperCase() : "";
+  // Iniciais num círculo em todos os ambientes (celular e app: sem o nome ao lado).
+  const iniciais = `${partes[0]?.[0] ?? ""}${partes.length > 1 ? partes.at(-1)[0] : ""}`.toUpperCase();
   $("#topo-avatar").textContent = iniciais;
   $("#topo-avatar").hidden = !iniciais;
   $("#btn-menu").setAttribute("aria-label", nome ? `Conta de ${nome}: abrir menu` : "Conta: abrir menu");

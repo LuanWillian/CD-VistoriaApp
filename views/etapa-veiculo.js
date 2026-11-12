@@ -69,11 +69,12 @@ export function montar(el, editor, ctx) {
         <p class="erro-campo" id="combustivel-erro" aria-live="polite"></p>
       </fieldset>
 
+    </section>
+
+    <section class="pilha etapa-fotos" aria-labelledby="titulo-fotos">
+      <h2 class="titulo" id="titulo-fotos">Fotos do veículo</h2>
       <div class="pilha">
-        <div>
-          <h3 class="subtitulo">Fotos do veículo</h3>
-          <p class="ajuda">As 3 fotos são obrigatórias. Toque no quadro para abrir a câmera.</p>
-        </div>
+        <p class="ajuda">As 3 fotos são obrigatórias. Toque no quadro para abrir a câmera.</p>
         <div class="fotos-slots">
           ${FOTOS_VEICULO.map((f) => `
             <div class="foto-slot" data-chave="${f.chave}">

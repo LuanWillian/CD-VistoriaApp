@@ -144,90 +144,96 @@ export async function montar(el, ctx, params) {
   const situacao = (item) => ({ presente: '<span class="presente">Ok</span>', ausente: '<span class="ausente">Ausente</span>' })[v.checklist?.[item]] || "—";
   const itens = [...CHECKLIST_ITENS, ...Object.keys(v.checklist || {}).filter((i) => !CHECKLIST_ITENS.includes(i))];
 
+  // ---------- Celular e app instalado (visual do celular, Estilo B) ----------
+  // Uma coluna: caminho, cabeçalho com o veículo e as abas, cartões na ordem
+  // dados, recebimento, fotos, checklist, avarias, assinaturas, e as ações fixas embaixo.
+  const cartaoCelular = (classe, idTitulo, titulo, corpo, extra = "") => `
+        <section class="secao cm-cartao ${classe}" aria-labelledby="${idTitulo}">
+          <div class="cm-cartao-cabeca"><h2 id="${idTitulo}">${titulo}</h2>${extra}</div>
+          ${corpo}
+        </section>`;
+
   function htmlAvarias() {
-    if (v.semAvarias || !v.avarias.length) return '<p class="texto-2">Veículo sem avarias registradas.</p>';
-    return `<div class="lista">${v.avarias.map((a, i) => `
-      <article class="cartao avaria-cartao">
-        <div class="avaria-faixa ${a.gravidade.toLowerCase()}" aria-hidden="true"></div>
+    if (v.semAvarias || !v.avarias.length) return '<p class="cm-cartao-corpo cm-sem-avarias">Veículo sem avarias registradas.</p>';
+    return `<ul class="cm-avarias">${v.avarias.map((a, i) => `
+      <li class="avaria-cartao">
+        <span class="cm-faixa avaria-faixa ${a.gravidade.toLowerCase()}" aria-hidden="true"></span>
         <div class="avaria-corpo">
-          <p class="pequeno texto-2">Avaria ${i + 1}</p>
-          <p class="avaria-titulo">${esc(a.area)} — ${esc(a.tipo)}</p>
-          <p><span class="selo selo-${a.gravidade.toLowerCase()}">${esc(a.gravidade)}</span></p>
-          ${a.descricao ? `<p>${esc(a.descricao)}</p>` : ""}
-          ${a.fotos.length ? `<div class="miniaturas">${a.fotos.map((f, j) => img(arquivoAvaria(f), `Avaria ${i + 1}, foto ${j + 1}`)).join("")}</div>` : '<p class="pequeno texto-2">Sem foto.</p>'}
+          <div class="cm-avaria-topo"><p class="avaria-titulo">${esc(a.area)} — ${esc(a.tipo)}</p><span class="selo selo-${a.gravidade.toLowerCase()}">${esc(a.gravidade)}</span></div>
+          <p class="cm-avaria-num">Avaria ${i + 1}</p>
+          ${a.descricao ? `<p class="cm-avaria-desc">${esc(a.descricao)}</p>` : ""}
+          ${a.fotos.length ? `<div class="miniaturas">${a.fotos.map((f, j) => img(arquivoAvaria(f), `Avaria ${i + 1}, foto ${j + 1}`)).join("")}</div>` : '<p class="cm-avaria-desc cm-apagado">Sem foto.</p>'}
         </div>
-      </article>`).join("")}</div>`;
+      </li>`).join("")}</ul>`;
   }
 
   function desenhar() {
     if (ctx.desktop) return desenharComputador();
-    const cardReceb = htmlCardRecebimento(v, fontes);
     const podeReceber = modoLoja && situacaoRecebimento(v) === "aguardando";
+    // Loja com o carro ainda a receber: no lugar do card, o aviso para conferir.
+    const cardReceb = podeReceber ? "" : htmlCardRecebimento(v, fontes);
+    const veiculo = [formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ") || "Veículo";
+    const temKm = v.km !== null && v.km !== undefined && v.km !== "";
+    const nAvarias = v.semAvarias ? 0 : (v.avarias || []).length;
+    const okQtd = itens.filter((i) => v.checklist?.[i] === "presente").length;
+    const estadoItem = (i) => ({ presente: '<span class="presente">Ok</span>', ausente: '<span class="ausente">Ausente</span>' })[v.checklist?.[i]] || '<span class="cm-apagado">—</span>';
+    const abas = [["", "Resumo"], ["h-fotos", `Fotos (${FOTOS_VEICULO.length})`], ["h-checklist", "Checklist"], ["h-avarias", `Avarias (${nAvarias})`], ["h-assinaturas", "Assinaturas"]];
+    const acoes = modoLoja
+      ? (podeReceber ? `<button type="button" class="btn btn-primario" id="btn-receber">${icone("check")} Registrar recebimento</button>` : "")
+      : `<button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>
+         <button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>`;
     el.innerHTML = `
-      <div class="pilha detalhe-pagina">
-        ${modoLoja
-    ? `<a class="btn btn-texto" href="#/recebimentos">${icone("voltar")} Recebimentos</a>`
-    : `<a class="btn btn-texto" href="${ctx.desktop ? "#/inicio" : "#/vistorias"}">${icone("voltar")} ${ctx.desktop ? "Início" : "Vistorias"}</a>`}
+      <div class="cm-detalhe${acoes ? " cm-com-acoes" : ""}">
+        <nav class="cm-migalhas" aria-label="Caminho">
+          <a href="${modoLoja ? "#/recebimentos" : "#/vistorias"}">${icone("voltar")} ${modoLoja ? "Recebimentos" : "Vistorias"}</a>
+          <span aria-hidden="true">/</span>
+          <span id="detalhe-numero">${esc(nomeVistoria(v))}</span>
+        </nav>
         <div id="faixa-nova" role="status" aria-live="polite"></div>
-        <div class="pilha detalhe-cabeca">
-        <header class="cartao detalhe-topo">
-          <div class="entre">
-            <h1 class="titulo" id="detalhe-numero">${esc(nomeVistoria(v))}</h1>
-            <span id="detalhe-selo">${seloStatus(v.status)}</span>
+        <header class="cm-cartao cm-cabecalho">
+          <div class="cm-cabecalho-linha">
+            <span class="cm-carro" aria-hidden="true">${icone("carro")}</span>
+            <div class="cm-cabecalho-info">
+              <div class="cm-titulo-linha">
+                <h1 class="cm-titulo">${esc(veiculo)}</h1>
+                ${modoLoja ? `<span id="detalhe-selo" hidden></span>${seloRecebimento(v)}` : `<span id="detalhe-selo">${seloStatus(v.status)}</span>`}
+              </div>
+              <p class="cm-meta">${[v.chassi ? `<span class="cm-mono cm-escuro">${esc(v.chassi)}</span>` : "", v.cor ? esc(v.cor) : "", temKm ? `${formatarKm(v.km)} km` : "", v.combustivel ? esc(v.combustivel) : ""].filter(Boolean).join(" · ")}</p>
+              <p class="cm-meta">${modoLoja ? "Enviada pelo CD em" : "Realizada em"} ${formatarDataHora(v.realizadaEm)}</p>
+              ${v.loja ? `<p class="cm-meta cm-meta-loja">${icone("fachada")} ${esc(v.loja)}</p>` : ""}
+              <div id="detalhe-erro"></div>
+              ${nova && !modoLoja ? `<a class="btn btn-secundario cm-btn cm-nova" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
+            </div>
           </div>
-          <p class="texto-2">Realizada em ${formatarDataHora(v.realizadaEm)}</p>
-          <div id="detalhe-erro"></div>
+          <nav class="cm-abas" aria-label="Seções da vistoria">
+            ${abas.map(([alvo, rotulo], i) => `<button type="button" data-ir="${alvo}"${i === 0 ? ' aria-current="true"' : ""}>${rotulo}</button>`).join("")}
+          </nav>
         </header>
-        <div class="acoes-detalhe"${modoLoja ? " hidden" : ""}>
-          ${modoLoja ? "" : `<button type="button" class="btn btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>`}
-          ${ctx.desktop || modoLoja ? "" : `<button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>`}
-          ${nova && !ctx.desktop ? `<a class="btn btn-secundario" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
-          ${podeExcluir() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
-        </div>
-        </div>
-        <div class="detalhe-corpo${v.loja ? " com-loja" : ""}${cardReceb ? " com-receb" : ""}">
-        ${v.loja ? `<section class="secao det-loja" aria-labelledby="h-loja">
-          <h2 id="h-loja">Loja de destino</h2>
-          <p class="loja-destino"><span class="loja-icone" aria-hidden="true">${icone("loja")}</span><span>${esc(v.loja)}</span></p>
-        </section>` : ""}
-        <section class="secao det-dados" aria-labelledby="h-dados">
-          <h2 id="h-dados">Dados do veículo</h2>
-          <dl class="dados">
-            ${[["Chassi", v.chassi], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
-              .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
-          </dl>
-        </section>
+        <div class="detalhe-corpo cm-corpo">
+        ${cartaoCelular("det-dados", "h-dados", "Dados do veículo", `<dl class="cm-dados">
+            ${[["Chassi", v.chassi, "cm-mono"], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo], ["Cor", v.cor],
+    ["Km", temKm ? `${formatarKm(v.km)} km` : ""], ["Combustível", v.combustivel], ["Vistoriador", v.vistoriadorNome, "", true]]
+    .map(([k, val, classe, largo]) => `<div${largo ? ' class="cm-largo"' : ""}><dt>${k}</dt><dd${classe ? ` class="${classe}"` : ""}>${esc(val || "—")}</dd></div>`).join("")}
+          </dl>`)}
+        ${podeReceber ? `<div class="cm-aviso-azul" role="note">${icone("prancheta")}<div><p class="cm-aviso-titulo">Confira o carro com esta vistoria</p><p>Compare as fotos, o checklist e as avarias. Depois toque em <strong>Registrar recebimento</strong>.</p></div></div>` : ""}
         ${cardReceb}
-        <div class="det-dir">
-        <section class="secao" aria-labelledby="h-fotos">
-          <h2 id="h-fotos">Fotos do veículo</h2>
-          <div class="fotos-detalhe">
-            ${FOTOS_VEICULO.map((f) => `<figure>${img(ARQUIVO[f.chave], f.rotulo)}<figcaption>${f.rotulo}</figcaption></figure>`).join("")}
-          </div>
-        </section>
-        <section class="secao" aria-labelledby="h-checklist">
-          <h2 id="h-checklist">Checklist</h2>
-          <ul class="lista-checklist">${itens.map((i) => `<li><span>${esc(i)}</span>${situacao(i)}</li>`).join("")}</ul>
-          ${v.checklistObs ? `<p class="pequeno"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}
-        </section>
-        </div>
-        <section class="secao det-avarias" aria-labelledby="h-avarias">
-          <h2 id="h-avarias">Avarias</h2>
-          ${htmlAvarias()}
-        </section>
-        <section class="secao det-assin" aria-labelledby="h-assinaturas">
-          <h2 id="h-assinaturas">Assinaturas</h2>
-          <div class="assinaturas">
+        ${cartaoCelular("det-fotos", "h-fotos", "Fotos do veículo", `<div class="cm-fotos">
+            ${FOTOS_VEICULO.map((f) => `<figure class="cm-foto">${img(ARQUIVO[f.chave], f.rotulo)}<figcaption>${f.rotulo}</figcaption></figure>`).join("")}
+          </div>`, '<span class="cm-nota">Toque para ampliar</span>')}
+        ${cartaoCelular("det-checklist", "h-checklist", "Checklist", `<ul class="cm-checklist">${itens.map((i) => `<li><span>${esc(i)}</span>${estadoItem(i)}</li>`).join("")}</ul>
+          ${v.checklistObs ? `<p class="cm-obs"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}`,
+    `<span class="cm-nota">${okQtd} de ${itens.length} ok</span>`)}
+        ${cartaoCelular("det-avarias", "h-avarias", `Avarias <span class="cm-titulo-extra">· ${nAvarias ? `${nAvarias} ${nAvarias === 1 ? "registrada" : "registradas"}` : "nenhuma"}</span>`, htmlAvarias())}
+        ${cartaoCelular("det-assin", "h-assinaturas", "Assinaturas", `<div class="cm-assinaturas">
             ${[[ARQUIVO.assVistoriador, v.vistoriadorNome, "Vistoriador"], [ARQUIVO.assMotorista, v.motoristaNome, "Motorista do reboque"]].map(([arq, nomePessoa, funcao]) => `
               <div>
-                <div class="assinatura-ver">${fontes.get(arq) ? `<img src="${fontes.get(arq)}" alt="Assinatura: ${esc(nomePessoa)}">` : ""}</div>
-                <p><strong>${esc(nomePessoa)}</strong></p>
-                <p class="pequeno texto-2">${funcao} · ${formatarDataHora(v.realizadaEm)}</p>
+                <div class="cm-assinatura">${fontes.get(arq) ? `<img src="${fontes.get(arq)}" alt="Assinatura: ${esc(nomePessoa)}">` : ""}</div>
+                <p class="cm-assin-nome">${esc(nomePessoa)}</p>
+                <p class="cm-assin-funcao">${funcao} · ${formatarDataHora(v.realizadaEm)}</p>
               </div>`).join("")}
-          </div>
-        </section>
+          </div>`)}
         </div>
-        ${podeReceber ? `<div class="receb-acao"><button type="button" class="btn btn-primario btn-bloco" id="btn-receber">${icone("check")} Registrar recebimento</button></div>` : ""}
+        ${acoes ? `<div class="cm-acoes">${acoes}</div>` : ""}
       </div>`;
   }
 

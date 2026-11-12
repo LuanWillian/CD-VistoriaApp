@@ -66,6 +66,7 @@ teste("etapa 1: três slots de foto rotulados", async () => {
       ok(alvo, `falta #foto-${chave}`);
       ok(alvo.closest(".foto-slot").textContent.includes(rotulo), `rótulo ${rotulo} ausente`);
     }
+    igual(t.el.querySelector("#foto-frente").closest("section").getAttribute("aria-labelledby"), "titulo-fotos", "as fotos ficam num cartão próprio");
   } finally {
     await t.fim();
   }

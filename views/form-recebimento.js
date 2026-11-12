@@ -2,7 +2,7 @@
 // descrição e fotos da divergência, assinatura de quem recebe. Tudo o que é
 // preenchido fica guardado no aparelho até a confirmação dar certo.
 // Resolve com o recebimento gravado no servidor, ou null se fechar sem confirmar.
-import { ARQUIVO, arquivoReceb, chaveLocal } from "../formatos.js";
+import { ARQUIVO, arquivoReceb, chaveLocal, formatarMarca } from "../formatos.js";
 import { JaRecebidoError, chaveRascunhoReceb, enviarRecebimento } from "../recebimento-envio.js";
 import { textoJaRecebido, validarRecebimento } from "../recebimento-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
@@ -25,34 +25,52 @@ export function abrirFormRecebimento({ vistoria, ctx, deps = {} }) {
     const d = document.createElement("dialog");
     d.className = "cheio receb-form";
     d.setAttribute("aria-labelledby", "receb-titulo");
+    const veiculo = [formatarMarca(vistoria.marca ?? ""), vistoria.modelo].filter(Boolean).join(" ");
+    const sub = [veiculo && esc(veiculo), vistoria.chassi && `<span class="cm-mono">${esc(vistoria.chassi)}</span>`, vistoria.numero && esc(vistoria.numero)].filter(Boolean).join(" · ");
     d.innerHTML = `
       <div class="cheio-topo">
-        <h2 id="receb-titulo">Registrar recebimento</h2>
+        <div class="cm-form-titulo">
+          <h2 id="receb-titulo">Registrar recebimento</h2>
+          ${sub ? `<p class="cm-form-sub">${sub}</p>` : ""}
+        </div>
         <button type="button" class="btn-topo" data-acao="cancelar" aria-label="Fechar">${icone("x")}</button>
       </div>
       <div class="cheio-corpo pilha">
-        <fieldset class="campo">
-          <legend class="rotulo" id="receb-status-rotulo">Como o carro chegou?</legend>
-          <div class="receb-opcoes" role="radiogroup" aria-labelledby="receb-status-rotulo">
-            <button type="button" role="radio" aria-checked="false" data-status="conforme">${icone("check")} Recebido conforme a vistoria</button>
-            <button type="button" role="radio" aria-checked="false" data-status="divergencia">${icone("alerta")} Recebido com divergência</button>
+        <div class="cm-cartao">
+          <div class="cm-cartao-cabeca"><h3 id="receb-status-rotulo">Como o carro chegou?</h3></div>
+          <div class="cm-cartao-corpo">
+            <div class="receb-opcoes" role="radiogroup" aria-labelledby="receb-status-rotulo">
+              <button type="button" role="radio" aria-checked="false" data-status="conforme"><span class="cm-radio" aria-hidden="true"></span>${icone("checkCirculo")} Recebido conforme a vistoria</button>
+              <button type="button" role="radio" aria-checked="false" data-status="divergencia"><span class="cm-radio" aria-hidden="true"></span>${icone("alerta")} Recebido com divergência</button>
+            </div>
+            <p class="erro-campo" id="receb-erro-status" aria-live="polite"></p>
           </div>
-          <p class="erro-campo" id="receb-erro-status" aria-live="polite"></p>
-        </fieldset>
-        <div class="campo" hidden>
-          <label class="rotulo" for="receb-descricao">O que está diferente?</label>
-          <textarea class="entrada" id="receb-descricao" rows="3" placeholder="Ex.: risco novo na porta traseira direita"></textarea>
-          <p class="erro-campo" id="receb-erro-descricao" aria-live="polite"></p>
-          <p class="rotulo">Fotos da divergência <span class="opcional">(opcional, mas ajudam muito)</span></p>
-          <div class="miniaturas" id="receb-fotos"></div>
-          <button type="button" class="btn btn-secundario" data-acao="foto">${icone("camera")} Adicionar foto</button>
         </div>
-        <div class="campo">
-          <p class="rotulo">Recebido por: ${esc(usuario.nome || "")} — ${esc(usuario.loja || "")}</p>
-          <div class="assinatura-ver" id="receb-assinatura-previa"></div>
-          <button type="button" class="btn btn-secundario" data-acao="assinar">${icone("editar")} Assinar</button>
-          <p class="erro-campo" id="receb-erro-assinatura" aria-live="polite"></p>
+        <div class="campo cm-cartao" hidden>
+          <div class="cm-cartao-cabeca"><h3>Divergência</h3></div>
+          <div class="cm-cartao-corpo">
+            <label class="rotulo" for="receb-descricao">O que está diferente?</label>
+            <textarea class="entrada" id="receb-descricao" rows="3" placeholder="Ex.: risco novo na porta traseira direita"></textarea>
+            <p class="erro-campo" id="receb-erro-descricao" aria-live="polite"></p>
+            <p class="rotulo cm-rotulo-fotos">Fotos da divergência <span class="opcional">opcional, mas ajudam muito</span></p>
+            <div class="cm-receb-fotos">
+              <div class="miniaturas" id="receb-fotos"></div>
+              <button type="button" class="cm-foto-add" data-acao="foto">${icone("camera")}<span>Adicionar foto</span></button>
+            </div>
+          </div>
         </div>
+        <div class="cm-cartao">
+          <div class="cm-cartao-cabeca"><h3>Assinatura de quem recebe</h3></div>
+          <div class="cm-cartao-corpo">
+            <div class="assinatura-ver" id="receb-assinatura-previa"></div>
+            <div class="cm-assin-linha">
+              <p class="cm-nota">Recebido por: ${esc(usuario.nome || "")} — ${esc(usuario.loja || "")}</p>
+              <button type="button" class="btn btn-secundario cm-btn" data-acao="assinar">${icone("editar")} Assinar</button>
+            </div>
+            <p class="erro-campo" id="receb-erro-assinatura" aria-live="polite"></p>
+          </div>
+        </div>
+        <p class="cm-nota cm-nota-trava">Depois de confirmar não dá para alterar. O CD vê o recebimento na hora.</p>
         <p class="erro-form" id="receb-falha" role="alert" hidden></p>
       </div>
       <div class="cheio-rodape">
