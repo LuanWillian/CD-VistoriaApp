@@ -11,12 +11,14 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 
 1. Crie um projeto em [supabase.com](https://supabase.com) (região mais próxima, por exemplo São Paulo).
 2. Rode a migration:
-   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, cada uma numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql`, `supabase/migrations/0003_leitura_para_todos.sql`, `supabase/migrations/0004_exclusao_para_todos.sql` e `supabase/migrations/0005_loja_destino.sql`.
+   - **Pelo painel:** SQL Editor → New query → cole todo o conteúdo de `supabase/migrations/0001_init.sql` → Run. Depois, cada uma numa nova query, faça o mesmo com `supabase/migrations/0002_perfis.sql`, `supabase/migrations/0003_leitura_para_todos.sql`, `supabase/migrations/0004_exclusao_para_todos.sql`, `supabase/migrations/0005_loja_destino.sql` e `supabase/migrations/0006_recebimento_loja.sql`.
    - **Projeto que já está no ar:** rode a `0005_loja_destino.sql` **antes** de publicar a versão com o campo Loja e o dashboard. Sem a coluna `loja`, o servidor recusa o envio das vistorias novas.
+   - **Recebimento na loja:** rode a `0006_recebimento_loja.sql` **antes** de publicar a versão com "Recebimentos". Depois, confira com `supabase/tests/rls.sql` (passo 1.6).
    - **Pela CLI:** `npx --yes supabase@2.122.0 link --project-ref <ref-do-projeto>` e depois `npx supabase@2.122.0 db push`.
 3. Crie o primeiro usuário: Authentication → Users → Add user → Create new user. Informe e-mail e senha e marque **Auto Confirm User**. Não há cadastro público: todo vistoriador é criado aqui.
    - **Cadastre o nome do vistoriador** (obrigatório): copie o **UID** do usuário em Authentication → Users. Em Table Editor → `perfis` → Insert row, cole o UID em `id` e escreva o nome completo em `nome`. Esse é o nome que aparece na etapa de assinaturas e no laudo; o vistoriador não consegue mudá-lo. Sem esse cadastro, o app avisa "Seu nome de vistoriador não está cadastrado" e não deixa finalizar. Se o nome for cadastrado ou corrigido depois, ele vale a partir da próxima vez que o vistoriador abrir o app com internet.
    - Pelo SQL Editor também funciona: `insert into public.perfis (id, nome) values ('<UID>', 'Nome Completo');`
+   - **Conta de loja** (pessoa da loja que confirma o recebimento): crie o usuário do mesmo jeito e cadastre o perfil com `papel = 'loja'` e a loja escrita exatamente como na lista `LOJAS` do `config.js`: `insert into public.perfis (id, nome, papel, loja) values ('<UID>', 'Nome Completo', 'loja', 'PG Prime BMW Natal');`. Uma conta por pessoa. Ela só vê as vistorias enviadas para a sua loja e não cria nem exclui vistorias.
 4. Copie Project Settings → API → **Project URL** e a **anon key** (nos projetos novos, a **Publishable key** `sb_publishable_…` também funciona) para o `env.js`:
    ```js
    export const SUPABASE_URL = "https://xxxxxxxx.supabase.co";
@@ -26,7 +28,7 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 5. Em Authentication → URL Configuration, preencha **Site URL** com a URL do Netlify (ex.: `https://nome-do-site.netlify.app`). Em **Redirect URLs**, adicione essa URL e `http://localhost:3000`.
 6. (Opcional) Confira a segurança: cole `supabase/tests/rls.sql` no SQL Editor e rode. Ele simula dois usuários dentro de uma transação desfeita no fim; o esperado é a mensagem `RLS OK`.
 
-**Quem vê o quê:** todo usuário cadastrado (logado) **vê todas** as vistorias, avarias, fotos e assinaturas (migration `0003`). Só o **dono** cria e edita as suas; **qualquer usuário cadastrado pode excluir** qualquer vistoria (migration `0004`), pelo botão Excluir do navegador do computador. Para voltar a "cada um vê só as suas", recrie as policies "dono lê" da `0001` no lugar das "todos leem" da `0003`; para voltar a "só o dono exclui", recrie as "dono exclui" da `0001` no lugar das "todos excluem" da `0004`.
+**Quem vê o quê:** contas de **loja** (migration `0006`) veem só as vistorias, avarias e arquivos da própria loja, registram o recebimento delas e não criam, alteram nem excluem nada. Para os vistoriadores: todo vistoriador **vê todas** as vistorias, avarias, fotos e assinaturas (migration `0003`). Só o **dono** cria e edita as suas; **qualquer usuário cadastrado pode excluir** qualquer vistoria (migration `0004`), pelo botão Excluir do navegador do computador. Para voltar a "cada um vê só as suas", recrie as policies "dono lê" da `0001` no lugar das "todos leem" da `0003`; para voltar a "só o dono exclui", recrie as "dono exclui" da `0001` no lugar das "todos excluem" da `0004`.
 
 ## 2. Rodar localmente
 

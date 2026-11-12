@@ -1,4 +1,4 @@
--- Conferência de RLS (leitura e exclusão para todos os logados, criar/editar só do dono), numeração e checks. Rode num banco com as migrations aplicadas:
+-- Conferência de RLS (leitura e exclusão para todos os vistoriadores; contas de loja só a própria loja; criar/editar só do dono; recebimentos na loja), numeração e checks. Rode num banco com as migrations aplicadas:
 --   docker exec -i supabase_db_cd-vistoriaapp psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/rls.sql
 -- No projeto hospedado: cole no SQL Editor. Tudo roda dentro de uma transação
 -- desfeita no fim (rollback); só a sequence de números avança.
@@ -200,6 +200,169 @@ begin
   if depois.updated_at < '2001-01-01' then raise exception 'updated_at não foi atualizado'; end if;
   if depois.vistoriador_nome <> 'Ana Perfil' then raise exception 'vistoriador_nome mudou no update'; end if;
   if depois.marca <> 'Fiat 2' then raise exception 'o update normal não foi aplicado'; end if;
+end $$;
+
+-- ---------- Recebimento na loja (migration 0006) ----------
+-- D e E são contas de loja (D: PG Prime BMW Natal; E: PG Prime Audi Natal).
+-- A (vistoriador) cria uma vistoria para cada loja e uma sem loja.
+reset role;
+insert into auth.users (id, email, aud, role) values
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'rls.d@teste.local', 'authenticated', 'authenticated'),
+  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'rls.e@teste.local', 'authenticated', 'authenticated');
+insert into public.perfis (id, nome, papel, loja) values
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Davi Loja', 'loja', 'PG Prime BMW Natal'),
+  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Eva Loja', 'loja', 'PG Prime Audi Natal');
+do $$
+begin
+  begin
+    insert into public.perfis (id, nome, papel) values ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'Sem Loja', 'loja');
+    raise exception 'perfil de loja sem loja foi aceito';
+  exception when check_violation then null;
+  end;
+end $$;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}';
+insert into public.inspections (id, loja, chassi, marca, modelo, cor, km, combustivel, checklist, vistoriador_nome,
+  motorista_nome, foto_frente, foto_traseira, foto_chassi, assinatura_vistoriador, assinatura_motorista, realizada_em)
+values
+  ('66666666-6666-4666-8666-666666666666', 'PG Prime BMW Natal', 'BM0001', 'BMW', 'X1', 'Preto', 1, 'Flex', '{}', 'Ana',
+   'Beto', 'p', 'p', 'p', 'p', 'p', now()),
+  ('77777777-7777-4777-8777-777777777777', 'PG Prime Audi Natal', 'AU0001', 'Audi', 'Q5', 'Preto', 1, 'Flex', '{}', 'Ana',
+   'Beto', 'p', 'p', 'p', 'p', 'p', now());
+insert into public.damages (id, inspection_id, area, tipo, gravidade)
+values ('88888888-8888-4888-8888-888888888888', '77777777-7777-4777-8777-777777777777', 'Capô', 'Risco', 'Leve');
+insert into storage.objects (bucket_id, name) values
+  ('vistorias', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/66666666-6666-4666-8666-666666666666/frente.jpg'),
+  ('vistorias', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/77777777-7777-4777-8777-777777777777/frente.jpg');
+
+do $$
+begin
+  -- vistoriador não registra recebimento
+  begin
+    insert into public.recebimentos (id, inspection_id, status, assinatura)
+    values (gen_random_uuid(), '66666666-6666-4666-8666-666666666666', 'conforme', 'p');
+    raise exception 'vistoriador registrou recebimento';
+  exception
+    when insufficient_privilege then null;
+    when raise_exception then null;
+  end;
+end $$;
+
+-- ---------- D (loja PG Prime BMW Natal) ----------
+set local request.jwt.claims = '{"sub":"dddddddd-dddd-4ddd-8ddd-dddddddddddd","role":"authenticated"}';
+
+do $$
+declare
+  c int;
+  r record;
+begin
+  -- só lê o que é da própria loja
+  select count(*) into c from public.inspections;
+  if c <> 1 then raise exception 'D deveria ver só 1 vistoria (a da sua loja), viu %', c; end if;
+  if not exists (select 1 from public.inspections where id = '66666666-6666-4666-8666-666666666666') then
+    raise exception 'D não vê a vistoria da sua loja';
+  end if;
+  select count(*) into c from public.damages where id = '88888888-8888-4888-8888-888888888888';
+  if c <> 0 then raise exception 'D vê avaria de outra loja'; end if;
+  select count(*) into c from storage.objects where bucket_id = 'vistorias' and name like '%77777777-7777-4777-8777-777777777777%';
+  if c <> 0 then raise exception 'D vê arquivo de outra loja'; end if;
+  select count(*) into c from storage.objects where bucket_id = 'vistorias' and name like '%66666666-6666-4666-8666-666666666666%';
+  if c <> 1 then raise exception 'D não vê o arquivo da vistoria da sua loja'; end if;
+
+  -- não cria nem exclui vistoria, avaria ou arquivo
+  begin
+    insert into public.inspections (id, loja, chassi, marca, modelo, cor, km, combustivel, checklist, vistoriador_nome,
+      motorista_nome, foto_frente, foto_traseira, foto_chassi, assinatura_vistoriador, assinatura_motorista, realizada_em)
+    values (gen_random_uuid(), 'PG Prime BMW Natal', 'AB123C', 'Fiat', 'Uno', 'Prata', 1, 'Flex', '{}', 'x', 'Beto',
+      'p', 'p', 'p', 'p', 'p', now());
+    raise exception 'D criou uma vistoria';
+  exception when insufficient_privilege then null;
+  end;
+  delete from public.inspections where id = '66666666-6666-4666-8666-666666666666';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'D excluiu uma vistoria'; end if;
+  delete from storage.objects where bucket_id = 'vistorias' and name like '%66666666-6666-4666-8666-666666666666%';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'D excluiu um arquivo'; end if;
+
+  -- divergência sem descrição é recusada
+  begin
+    insert into public.recebimentos (id, inspection_id, status, descricao, assinatura)
+    values (gen_random_uuid(), '66666666-6666-4666-8666-666666666666', 'divergencia', '  ', 'p');
+    raise exception 'divergência sem descrição foi aceita';
+  exception when check_violation then null;
+  end;
+
+  -- recebe a vistoria da sua loja; nome, loja, conta e data vêm do servidor
+  insert into public.recebimentos (id, inspection_id, user_id, recebedor_nome, loja, status, assinatura, recebido_em)
+  values ('99999999-9999-4999-8999-999999999999', '66666666-6666-4666-8666-666666666666',
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Nome Falso', 'Outra Loja', 'conforme',
+    'dddddddd-dddd-4ddd-8ddd-dddddddddddd/66666666-6666-4666-8666-666666666666/receb_assinatura.png', '2000-01-01');
+  select * into r from public.recebimentos where id = '99999999-9999-4999-8999-999999999999';
+  if r.recebedor_nome <> 'Davi Loja' then raise exception 'recebedor_nome não veio do perfil (veio %)', r.recebedor_nome; end if;
+  if r.loja <> 'PG Prime BMW Natal' then raise exception 'loja do recebimento não veio do perfil (veio %)', r.loja; end if;
+  if r.user_id <> 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' then raise exception 'user_id do recebimento não é o de D'; end if;
+  if r.recebido_em < now() - interval '1 minute' then raise exception 'recebido_em não veio do servidor'; end if;
+
+  -- uma vez só, sem alterar nem apagar
+  begin
+    insert into public.recebimentos (id, inspection_id, status, assinatura)
+    values (gen_random_uuid(), '66666666-6666-4666-8666-666666666666', 'conforme', 'p');
+    raise exception 'segundo recebimento da mesma vistoria foi aceito';
+  exception when unique_violation then null;
+  end;
+  update public.recebimentos set status = 'divergencia', descricao = 'x' where id = '99999999-9999-4999-8999-999999999999';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'D alterou o recebimento'; end if;
+  delete from public.recebimentos where id = '99999999-9999-4999-8999-999999999999';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'D apagou o recebimento'; end if;
+
+  -- foto do próprio recebimento
+  insert into public.recebimento_fotos (id, recebimento_id, path)
+  values (gen_random_uuid(), '99999999-9999-4999-8999-999999999999', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd/x/receb_1.jpg');
+end $$;
+
+-- ---------- E (loja PG Prime Audi Natal) ----------
+set local request.jwt.claims = '{"sub":"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee","role":"authenticated"}';
+
+do $$
+declare
+  c int;
+begin
+  begin
+    insert into public.recebimentos (id, inspection_id, status, assinatura)
+    values (gen_random_uuid(), '66666666-6666-4666-8666-666666666666', 'conforme', 'p');
+    raise exception 'E recebeu vistoria de outra loja';
+  exception
+    when raise_exception then null;
+    when unique_violation then null; -- já recebida: também não pode
+  end;
+  select count(*) into c from public.recebimentos;
+  if c <> 0 then raise exception 'E vê recebimento de outra loja'; end if;
+  begin
+    insert into public.recebimento_fotos (id, recebimento_id, path)
+    values (gen_random_uuid(), '99999999-9999-4999-8999-999999999999', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee/x/receb_2.jpg');
+    raise exception 'E pôs foto no recebimento de D';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- ---------- A vê todos os recebimentos; C (sem perfil) continua vendo tudo ----------
+set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}';
+do $$
+begin
+  if not exists (select 1 from public.recebimentos where id = '99999999-9999-4999-8999-999999999999') then
+    raise exception 'vistoriador não vê o recebimento';
+  end if;
+end $$;
+set local request.jwt.claims = '{"sub":"cccccccc-cccc-4ccc-8ccc-cccccccccccc","role":"authenticated"}';
+do $$
+begin
+  if (select count(*) from public.inspections where id in ('66666666-6666-4666-8666-666666666666', '77777777-7777-4777-8777-777777777777')) <> 2 then
+    raise exception 'conta sem perfil deixou de ver as vistorias';
+  end if;
 end $$;
 
 -- ---------- Excluir é de todos (migration 0004) ----------
