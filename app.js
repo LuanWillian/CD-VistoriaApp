@@ -25,6 +25,8 @@ const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, 
 // aqui, antes de qualquer tela ser desenhada (sem piscar).
 // Navegador do computador: não existe iniciar vistoria, então #/nova não existe.
 const desktop = isDesktopBrowser();
+// Visual do computador (barra branca, tabelas densas): tudo em styles.css sob html.computador.
+document.documentElement.classList.toggle("computador", desktop);
 {
   const tipoNavegacao = performance.getEntriesByType?.("navigation")?.[0]?.type ?? "navigate";
   if (viewInicio.deveAbrirNoMenu(location.hash, tipoNavegacao)) history.replaceState(history.state, "", "#/inicio");

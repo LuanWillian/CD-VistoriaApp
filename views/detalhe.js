@@ -183,6 +183,73 @@ export async function montar(el, ctx, params) {
   function desenhar() {
     const cardReceb = htmlCardRecebimento(v, fontes);
     const podeReceber = modoLoja && situacaoRecebimento(v) === "aguardando";
+    const veiculo = [formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ");
+    const temKm = v.km !== null && v.km !== undefined && v.km !== "";
+    // Computador: nome do veículo em destaque e uma linha com chassi, cor, km, combustível e loja.
+    const heroi = !ctx.desktop ? "" : `
+          <p class="det-veiculo">${esc(veiculo || "Veículo")}</p>
+          <p class="det-meta">${[
+    v.chassi ? `<span class="det-meta-chassi">${esc(v.chassi)}</span>` : "",
+    v.cor ? `<span>${esc(v.cor)}</span>` : "",
+    temKm ? `<span>${formatarKm(v.km)} km</span>` : "",
+    v.combustivel ? `<span>${esc(v.combustivel)}</span>` : "",
+    v.loja ? `<span class="det-meta-loja">${icone("loja", "ic det-meta-ic")}${esc(v.loja)}</span>` : "",
+  ].join("")}</p>`;
+
+    const secLoja = v.loja ? `<section class="secao det-loja" aria-labelledby="h-loja">
+          <h2 id="h-loja">Loja de destino</h2>
+          <p class="loja-destino"><span class="loja-icone" aria-hidden="true">${icone("loja")}</span><span>${esc(v.loja)}</span></p>
+        </section>` : "";
+    const secDados = `<section class="secao det-dados" aria-labelledby="h-dados">
+          <h2 id="h-dados">Dados do veículo</h2>
+          <dl class="dados">
+            ${[["Chassi", v.chassi], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
+              .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
+          </dl>
+        </section>`;
+    const secFotos = `<section class="secao det-fotos" aria-labelledby="h-fotos">
+          <h2 id="h-fotos">Fotos do veículo</h2>
+          <div class="fotos-detalhe">
+            ${FOTOS_VEICULO.map((f) => `<figure>${img(ARQUIVO[f.chave], f.rotulo)}<figcaption>${f.rotulo}</figcaption></figure>`).join("")}
+          </div>
+        </section>`;
+    const ausentes = itens.filter((i) => v.checklist?.[i] === "ausente").length;
+    const secChecklist = `<section class="secao det-checklist" aria-labelledby="h-checklist">
+          <h2 id="h-checklist">Checklist${ctx.desktop ? ` <span class="det-contagem">${ausentes ? `${ausentes} ${ausentes === 1 ? "ausente" : "ausentes"}` : "tudo ok"}</span>` : ""}</h2>
+          <ul class="lista-checklist">${itens.map((i) => `<li><span>${esc(i)}</span>${situacao(i)}</li>`).join("")}</ul>
+          ${v.checklistObs ? `<p class="pequeno"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}
+        </section>`;
+    const secAvarias = `<section class="secao det-avarias" aria-labelledby="h-avarias">
+          <h2 id="h-avarias">Avarias${ctx.desktop && !v.semAvarias && v.avarias.length ? ` <span class="det-contagem">${v.avarias.length}</span>` : ""}</h2>
+          ${htmlAvarias()}
+        </section>`;
+    const secAssin = `<section class="secao det-assin" aria-labelledby="h-assinaturas">
+          <h2 id="h-assinaturas">Assinaturas</h2>
+          <div class="assinaturas">
+            ${[[ARQUIVO.assVistoriador, v.vistoriadorNome, "Vistoriador"], [ARQUIVO.assMotorista, v.motoristaNome, "Motorista do reboque"]].map(([arq, nomePessoa, funcao]) => `
+              <div>
+                <div class="assinatura-ver">${fontes.get(arq) ? `<img src="${fontes.get(arq)}" alt="Assinatura: ${esc(nomePessoa)}">` : ""}</div>
+                <p><strong>${esc(nomePessoa)}</strong></p>
+                <p class="pequeno texto-2">${funcao} · ${formatarDataHora(v.realizadaEm)}</p>
+              </div>`).join("")}
+          </div>
+        </section>`;
+
+    // A ordem dos blocos no HTML é a mesma em todo lugar (ordem de leitura).
+    // Computador: os blocos vão em dois invólucros; o CSS põe a lateral (loja,
+    // dados, recebimento) à direita e a principal (fotos, checklist, avarias,
+    // assinaturas) à esquerda, sem buracos entre os blocos.
+    const corpo = ctx.desktop
+      ? `<div class="detalhe-corpo det-colunas">
+        <div class="det-lateral">${secLoja}${secDados}${cardReceb}</div>
+        <div class="det-principal">${secFotos}${secChecklist}${secAvarias}${secAssin}</div>
+      </div>`
+      : `<div class="detalhe-corpo${v.loja ? " com-loja" : ""}${cardReceb ? " com-receb" : ""}">
+        ${secLoja}${secDados}${cardReceb}
+        <div class="det-dir">${secFotos}${secChecklist}</div>
+        ${secAvarias}${secAssin}
+      </div>`;
+
     el.innerHTML = `
       <div class="pilha detalhe-pagina">
         ${modoLoja
@@ -194,7 +261,7 @@ export async function montar(el, ctx, params) {
           <div class="entre">
             <h1 class="titulo" id="detalhe-numero">${esc(nomeVistoria(v))}</h1>
             <span id="detalhe-selo">${seloStatus(v.status)}</span>
-          </div>
+          </div>${heroi}
           <p class="texto-2">Realizada em ${formatarDataHora(v.realizadaEm)}</p>
           <div id="detalhe-erro"></div>
         </header>
@@ -205,48 +272,7 @@ export async function montar(el, ctx, params) {
           ${podeExcluir() ? `<button type="button" class="btn btn-perigo" id="btn-excluir">${icone("lixeira")} Excluir</button>` : ""}
         </div>
         </div>
-        <div class="detalhe-corpo${v.loja ? " com-loja" : ""}${cardReceb ? " com-receb" : ""}">
-        ${v.loja ? `<section class="secao det-loja" aria-labelledby="h-loja">
-          <h2 id="h-loja">Loja de destino</h2>
-          <p class="loja-destino"><span class="loja-icone" aria-hidden="true">${icone("loja")}</span><span>${esc(v.loja)}</span></p>
-        </section>` : ""}
-        <section class="secao det-dados" aria-labelledby="h-dados">
-          <h2 id="h-dados">Dados do veículo</h2>
-          <dl class="dados">
-            ${[["Chassi", v.chassi], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
-              .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
-          </dl>
-        </section>
-        ${cardReceb}
-        <div class="det-dir">
-        <section class="secao" aria-labelledby="h-fotos">
-          <h2 id="h-fotos">Fotos do veículo</h2>
-          <div class="fotos-detalhe">
-            ${FOTOS_VEICULO.map((f) => `<figure>${img(ARQUIVO[f.chave], f.rotulo)}<figcaption>${f.rotulo}</figcaption></figure>`).join("")}
-          </div>
-        </section>
-        <section class="secao" aria-labelledby="h-checklist">
-          <h2 id="h-checklist">Checklist</h2>
-          <ul class="lista-checklist">${itens.map((i) => `<li><span>${esc(i)}</span>${situacao(i)}</li>`).join("")}</ul>
-          ${v.checklistObs ? `<p class="pequeno"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}
-        </section>
-        </div>
-        <section class="secao det-avarias" aria-labelledby="h-avarias">
-          <h2 id="h-avarias">Avarias</h2>
-          ${htmlAvarias()}
-        </section>
-        <section class="secao det-assin" aria-labelledby="h-assinaturas">
-          <h2 id="h-assinaturas">Assinaturas</h2>
-          <div class="assinaturas">
-            ${[[ARQUIVO.assVistoriador, v.vistoriadorNome, "Vistoriador"], [ARQUIVO.assMotorista, v.motoristaNome, "Motorista do reboque"]].map(([arq, nomePessoa, funcao]) => `
-              <div>
-                <div class="assinatura-ver">${fontes.get(arq) ? `<img src="${fontes.get(arq)}" alt="Assinatura: ${esc(nomePessoa)}">` : ""}</div>
-                <p><strong>${esc(nomePessoa)}</strong></p>
-                <p class="pequeno texto-2">${funcao} · ${formatarDataHora(v.realizadaEm)}</p>
-              </div>`).join("")}
-          </div>
-        </section>
-        </div>
+        ${corpo}
         ${podeReceber ? `<div class="receb-acao"><button type="button" class="btn btn-primario btn-bloco" id="btn-receber">${icone("check")} Registrar recebimento</button></div>` : ""}
       </div>`;
   }

@@ -5,7 +5,8 @@
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
-import { filtrarVistorias, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
+import { calcularMetricas, filtrarVistorias, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
+import { contarRecebimentos } from "../recebimento-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
 import { seloRecebimento } from "./card-recebimento.js";
@@ -33,6 +34,13 @@ export async function montar(raiz, ctx) {
   raiz.innerHTML = `
     <div class="dashboard-desktop pilha">
       <h1 class="titulo" id="dash-saudacao"></h1>
+      <section class="dash-resumo" aria-label="Resumo das vistorias">
+        <p class="dash-resumo-item">${icone("calendario", "ic dash-resumo-ic")}<span class="dash-resumo-rot">Vistorias hoje</span><strong id="dash-r-hoje">—</strong></p>
+        <button type="button" class="dash-resumo-item dash-r-aguardando" data-receb="aguardando" title="Filtrar: aguardando recebimento">${icone("nuvem", "ic dash-resumo-ic")}<span class="dash-resumo-rot">Aguardando recebimento</span><strong id="dash-r-aguardando">—</strong></button>
+        <button type="button" class="dash-resumo-item dash-r-divergencia" data-receb="divergencia" title="Filtrar: recebidos com divergência">${icone("alerta", "ic dash-resumo-ic")}<span class="dash-resumo-rot">Com divergência</span><strong id="dash-r-divergencia">—</strong></button>
+        <p class="dash-resumo-item dash-r-pendentes">${icone("atualizar", "ic dash-resumo-ic")}<span class="dash-resumo-rot">Pendentes de envio</span><strong id="dash-r-pendentes">—</strong></p>
+        <p class="dash-resumo-item">${icone("prancheta", "ic dash-resumo-ic")}<span class="dash-resumo-rot">Total</span><strong id="dash-r-total">—</strong></p>
+      </section>
       <section class="secao dash-tabela-bloco" aria-labelledby="dash-titulo-tabela">
         <h2 class="sr-only" id="dash-titulo-tabela">Vistorias</h2>
         <div class="dash-ferramentas">
@@ -192,8 +200,25 @@ export async function montar(raiz, ctx) {
     estado.itens = itens;
     estado.carregando = false;
     atualizarMarcas();
+    atualizarResumo();
     desenharTabela();
   }
+
+  // Faixa de resumo acima da tabela: conta todas as vistorias carregadas (sem os filtros).
+  function atualizarResumo() {
+    const m = calcularMetricas(estado.itens);
+    const r = contarRecebimentos(estado.itens);
+    const n = (x) => Number(x).toLocaleString("pt-BR");
+    $("#dash-r-hoje", raiz).textContent = n(m.hoje);
+    $("#dash-r-aguardando", raiz).textContent = n(r.aguardando);
+    $("#dash-r-divergencia", raiz).textContent = n(r.divergencia);
+    $("#dash-r-pendentes", raiz).textContent = n(m.pendentes);
+    $("#dash-r-total", raiz).textContent = n(m.total);
+    $(".dash-r-pendentes", raiz).classList.toggle("dash-r-alerta", m.pendentes > 0);
+  }
+
+  // Aguardando / Com divergência no resumo ligam (ou desligam) o filtro de recebimento.
+  const marcarResumo = () => $$("[data-receb]", raiz).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.receb === estado.recebimento)));
 
   async function recarregar() {
     $("#dash-atualizar", raiz).disabled = true;
@@ -231,9 +256,20 @@ export async function montar(raiz, ctx) {
     $(`#${id}`, raiz).addEventListener("change", (e) => {
       estado[campo] = e.target.value;
       estado.pagina = 0;
+      if (campo === "recebimento") marcarResumo();
       desenharTabela();
     });
   }
+  $(".dash-resumo", raiz).addEventListener("click", (e) => {
+    const b = e.target.closest("[data-receb]");
+    if (!b) return;
+    estado.recebimento = estado.recebimento === b.dataset.receb ? "" : b.dataset.receb;
+    $("#dash-recebimento", raiz).value = estado.recebimento;
+    estado.pagina = 0;
+    marcarResumo();
+    desenharTabela();
+  });
+  marcarResumo();
   $("#dash-periodos", raiz).addEventListener("click", (e) => {
     const chip = e.target.closest("[data-periodo]");
     if (!chip) return;
@@ -258,6 +294,7 @@ export async function montar(raiz, ctx) {
     $("#dash-loja", raiz).value = "";
     estado.recebimento = "";
     $("#dash-recebimento", raiz).value = "";
+    marcarResumo();
     definirPeriodo("todos");
     desenharTabela();
   });

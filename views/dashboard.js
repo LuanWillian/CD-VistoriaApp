@@ -224,6 +224,7 @@ export async function montar(raiz, ctx) {
 
     conteudo.innerHTML = `
       <div class="pilha${estado.carregando ? " db-atualizando" : ""}" aria-busy="${estado.carregando}">
+      <div class="db-indicadores">
       <section class="db-kpis" aria-label="Resumo do período">
         <div class="cartao db-kpi"><p class="db-kpi-rot">Vistorias no período</p>
           <p class="db-kpi-periodo" id="db-kpi-periodo"><span class="db-kpi-periodo-nome">${esc(periodoTxt.nome)}</span> · ${esc(periodoTxt.datas)}</p>
@@ -248,8 +249,10 @@ export async function montar(raiz, ctx) {
             <span class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.divergencia)}</span></span>`, "Ver os veículos recebidos com divergência")}
         </div>
       </section>
+      </div>
 
-      <section class="secao" aria-labelledby="db-h-volume">
+      <div class="db-graficos">
+      <section class="secao db-volume" aria-labelledby="db-h-volume">
         <div class="db-titulo-linha">
           <h2 id="db-h-volume">Vistorias por ${estado.intervalo.porHora ? "hora" : "dia"}</h2>
           <p class="db-legenda"><span class="db-leg-atual"></span>Período atual <span class="db-leg-anterior"></span>Período anterior</p>
@@ -277,6 +280,7 @@ export async function montar(raiz, ctx) {
           <p class="db-tipos"><span class="texto-2">Tipos mais comuns:</span> ${tipos.map((t) => `<span class="db-chip">${esc(t.nome)} · ${num(t.qtd)}</span>`).join("")}</p>`
           : `<p class="texto-2">Nenhuma avaria no período.</p>`}
         </section>
+      </div>
       </div>
 
       <div class="db-duas">
