@@ -133,8 +133,9 @@ export function abrirFormRecebimento({ vistoria, ctx, deps = {} }) {
       if (radio) {
         rascunho.status = radio.dataset.status;
         $("#receb-erro-status", d).textContent = "";
+        // A tela muda na hora (a parte síncrona de desenhar); depois grava.
+        desenhar();
         await guardar();
-        await desenhar();
         return;
       }
       const acao = e.target.closest("[data-acao]")?.dataset.acao;
@@ -175,10 +176,12 @@ export function abrirFormRecebimento({ vistoria, ctx, deps = {} }) {
       resolver(resultado);
     });
 
-    document.body.append(d);
-    d.showModal();
-    ctx.storage.obterRascunhoRecebimento(vistoria.id).then((salvo) => {
+    // Lê o que já foi preenchido ANTES de abrir: a tela nunca aparece vazia e um
+    // toque rápido não é sobrescrito pelo rascunho guardado.
+    ctx.storage.obterRascunhoRecebimento(vistoria.id).catch(() => null).then((salvo) => {
       if (salvo) rascunho = { ...rascunho, ...salvo };
+      document.body.append(d);
+      d.showModal();
       return desenhar();
     }).catch(console.error);
   });
