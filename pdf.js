@@ -6,7 +6,7 @@
 // assinaturas; rodapé com empresa, número, chassi e página.
 import { CHECKLIST_ITENS, EMPRESA, FOTOS_VEICULO, GRAVIDADES, PDF_FOTO } from "./config.js";
 import {
-  ARQUIVO, arquivoAvaria, formatarDataHora, formatarKm, nomeArquivoPdf, nomeVistoria, textoPdf,
+  ARQUIVO, arquivoAvaria, formatarDataHora, formatarKm, formatarMarca, nomeArquivoPdf, nomeVistoria, textoPdf,
 } from "./formatos.js";
 import { carregarScript } from "./ui.js";
 
@@ -243,7 +243,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   // Ordem pedida: Chassi, Marca, Modelo / Cor, Quilometragem (km), Combustível.
   secao("Dados do veículo", v.loja ? 47 : 32);
   const dados = [
-    ["Chassi", v.chassi, true], ["Marca", v.marca], ["Modelo", v.modelo],
+    ["Chassi", v.chassi, true], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo],
     ["Cor", v.cor], ["Quilometragem (km)", formatarKm(v.km)], ["Combustível", v.combustivel],
   ];
   // Loja de destino numa 3ª linha, na largura toda (nomes longos não cortam).

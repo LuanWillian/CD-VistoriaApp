@@ -44,6 +44,13 @@ test("dentro: início incluído, fim excluído", () => {
   assert.equal(dentro(i.ate, i), false);
 });
 
+test("marca digitada de jeitos diferentes conta como uma só (Bmw = BMW)", () => {
+  const itens = [v("1", { marca: "Bmw" }), v("2", { marca: "BMW" }), v("3", { marca: "jeep" })];
+  assert.deepEqual(marcasDisponiveis(itens), ["BMW", "Jeep"]);
+  assert.deepEqual(porMarca(itens).map((m) => [m.nome, m.vistorias]), [["BMW", 2], ["Jeep", 1]]);
+  assert.deepEqual(filtrarDashboard(itens, { marca: "BMW" }).map((x) => x.id), ["1", "2"]);
+});
+
 test("filtros por marca e loja; vistoria sem loja cai em 'Sem loja informada'", () => {
   const itens = [v("1"), v("2", { marca: "BMW", loja: "PG Prime BMW Natal" }), v("3", { loja: "" }), v("4", { loja: null })];
   assert.deepEqual(filtrarDashboard(itens, { marca: "Jeep" }).map((x) => x.id), ["1", "3", "4"]);

@@ -2,7 +2,7 @@
 // assinaturas e as ações Baixar PDF, Compartilhar (não existe no computador) e Excluir.
 import { CHECKLIST_ITENS, FOTOS_VEICULO } from "../config.js";
 import {
-  ARQUIVO, arquivoAvaria, arquivosDaVistoria, caminhoRemoto, chaveLocal, formatarDataHora, formatarKm, nomeVistoria,
+  ARQUIVO, arquivoAvaria, arquivosDaVistoria, caminhoRemoto, chaveLocal, formatarDataHora, formatarKm, formatarMarca, nomeVistoria,
 } from "../formatos.js";
 import { $, esc, icone, carregandoHtml } from "../ui.js";
 import { gerarPdf } from "../pdf.js";
@@ -198,7 +198,7 @@ export async function montar(el, ctx, params) {
         <section class="secao det-dados" aria-labelledby="h-dados">
           <h2 id="h-dados">Dados do veículo</h2>
           <dl class="dados">
-            ${[["Chassi", v.chassi], ["Marca", v.marca], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
+            ${[["Chassi", v.chassi], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo], ["Cor", v.cor], ["Km", `${formatarKm(v.km)} km`], ["Combustível", v.combustivel]]
               .map(([k, val]) => `<div><dt>${k}</dt><dd>${esc(val ?? "—")}</dd></div>`).join("")}
           </dl>
         </section>

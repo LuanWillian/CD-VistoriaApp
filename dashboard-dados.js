@@ -5,7 +5,7 @@
 // Cada item tem o formato de supabase.js → itemDoDashboard():
 // { id, numero, realizadaEm (ISO), chassi, marca, modelo, loja ("" se não tem),
 //   avarias: [{ area, tipo, gravidade }] }
-import { periodoPersonalizado } from "./formatos.js";
+import { formatarMarca, periodoPersonalizado } from "./formatos.js";
 
 export const SEM_LOJA = "Sem loja informada";
 const ORDEM_GRAVIDADE = ["Leve", "Moderada", "Grave"];
@@ -48,7 +48,9 @@ export const dentro = (iso, { de, ate }) => iso >= de && iso < ate;
 
 // ---------- Filtros ----------
 export const lojaDe = (v) => (String(v.loja ?? "").trim() || SEM_LOJA);
-export const marcaDe = (v) => String(v.marca ?? "").trim() || "—";
+// Marca padronizada (mesma regra do formulário): vistorias antigas digitadas como
+// "Bmw" ou "jeep" entram junto com "BMW" e "Jeep" nos filtros e nas tabelas.
+export const marcaDe = (v) => formatarMarca(String(v.marca ?? "").trim()) || "—";
 
 export function filtrarDashboard(itens, { marca = "", loja = "" } = {}) {
   return itens.filter((v) => (!marca || marcaDe(v) === marca) && (!loja || lojaDe(v) === loja));

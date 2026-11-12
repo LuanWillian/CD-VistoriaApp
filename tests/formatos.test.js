@@ -97,6 +97,14 @@ test("capitalizar: primeira letra de cada palavra em maiúscula, resto como digi
   assert.equal(capitalizar(""), "");
 });
 
+test("formatarMarca: BMW, BRP e BAIC também ficam em maiúsculas", () => {
+  assert.equal(formatarMarca("bmw"), "BMW");
+  assert.equal(formatarMarca("Bmw x1"), "BMW X1");
+  assert.equal(formatarMarca("brp"), "BRP");
+  assert.equal(formatarMarca("baic"), "BAIC");
+  assert.equal(formatarMarca("land rover"), "Land Rover");
+});
+
 test("formatarMarca: capitaliza e deixa GWM em maiúsculas", () => {
   assert.equal(formatarMarca("jeep"), "Jeep");
   assert.equal(formatarMarca("gwm"), "GWM");

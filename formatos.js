@@ -55,7 +55,7 @@ export function capitalizar(texto) {
 }
 
 // Marcas que se escrevem em siglas, sempre em maiúsculas.
-const MARCAS_SIGLA = ["GWM"];
+const MARCAS_SIGLA = ["GWM", "BMW", "BRP", "BAIC"];
 
 export function formatarMarca(texto) {
   return capitalizar(texto).replace(/\p{L}+/gu, (palavra) =>

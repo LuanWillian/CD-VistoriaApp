@@ -4,7 +4,7 @@
 // conexão, senão o que está guardado no aparelho).
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
-import { formatarDataHora, nomeVistoria } from "../formatos.js";
+import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
 import { filtrarVistorias, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
 import { seloStatus } from "./detalhe.js";
@@ -126,7 +126,7 @@ export async function montar(raiz, ctx) {
     tr.dataset.id = v.id;
     const id = el("td", "dash-id", nomeVistoria(v));
     const data = el("td", "dash-num", formatarDataHora(v.realizadaEm));
-    const veiculo = el("td", "dash-corta", [v.marca, v.modelo].filter(Boolean).join(" ") || "—");
+    const veiculo = el("td", "dash-corta", [formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ") || "—");
     veiculo.title = veiculo.textContent;
     const chassi = el("td", "dash-chassi", v.chassi || "—");
     const status = el("td");

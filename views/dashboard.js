@@ -4,7 +4,7 @@
 import { GRAVIDADES, LOJAS } from "../config.js";
 import { formatarDataHora, nomeVistoria } from "../formatos.js";
 import {
-  SEM_LOJA, dentro, filtrarDashboard, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
+  SEM_LOJA, dentro, filtrarDashboard, marcaDe, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
   porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
 } from "../dashboard-dados.js";
 import { $, $$, esc, icone } from "../ui.js";
@@ -283,7 +283,7 @@ export async function montar(raiz, ctx) {
           <thead><tr><th scope="col">Nº</th><th scope="col">Data/Hora</th><th scope="col">Marca/Modelo</th><th scope="col">Chassi</th><th scope="col">Loja</th><th scope="col">Gravidade</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
           <tbody>${ultimas.map((v) => `<tr data-id="${esc(v.id)}">
             <td class="db-forte">${esc(nomeVistoria(v))}</td><td class="dash-num">${formatarDataHora(v.realizadaEm)}</td>
-            <td>${esc([v.marca, v.modelo].filter(Boolean).join(" ") || "—")}</td><td class="dash-chassi">${esc(v.chassi || "—")}</td>
+            <td>${esc([v.marca && marcaDe(v), v.modelo].filter(Boolean).join(" ") || "—")}</td><td class="dash-chassi">${esc(v.chassi || "—")}</td>
             <td class="texto-2">${esc(v.loja || "—")}</td><td>${seloGravidade(v.gravidadeMaxima)}</td>
             <td class="db-acoes"><a class="db-ver" href="#/vistoria/${encodeURIComponent(v.id)}">Ver ${icone("avancar", "ic db-ic-peq")}</a></td></tr>`).join("")}</tbody>
         </table></div>` : `<p class="texto-2">${vazioLista}</p>`}
