@@ -234,3 +234,19 @@ test("excluirVistoriaRemota também apaga os arquivos do recebimento na pasta da
     "list vistorias uL/v1", "remove vistorias uL/v1/frente.jpg",
   ]);
 });
+
+test("lista do celular (listarVistorias) traz o recebimento de cada vistoria", async () => {
+  let campos = "";
+  const consulta = {
+    select(c) { campos = c; return this; },
+    order() { return this; }, or() { return this; }, gte() { return this; }, lt() { return this; },
+    async range() {
+      return { data: [{ id: "v1", user_id: "u1", numero: "VIS-45", realizada_em: "2026-11-12T10:31:00Z", chassi: "AB123C", marca: "BMW", modelo: "X7",
+        loja: "PG Prime BMW Natal", foto_frente: "x", damages: [{ count: 0 }], recebimentos: linhaReceb }], error: null };
+    },
+  };
+  const remoto = criarRemoto({ url: "u", chave: "k", criarCliente: () => ({ auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) }, from: () => consulta, storage: { from: () => ({}) } }) });
+  const { itens } = await remoto.listarVistorias({});
+  assert.match(campos, /recebimentos\(/);
+  assert.equal(itens[0].recebimento.status, "divergencia");
+});

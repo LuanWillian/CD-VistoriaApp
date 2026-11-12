@@ -244,7 +244,7 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
 
     async listarVistorias({ pagina = 0, busca = "", de = null, ate = null } = {}) {
       let q = sb.from("inspections")
-        .select("id, user_id, numero, realizada_em, chassi, marca, modelo, loja, foto_frente, damages(count)")
+        .select(CAMPOS_LISTA)
         .order("realizada_em", { ascending: false });
       const t = escaparBusca(busca);
       if (t) q = q.or(`chassi.ilike.*${t}*,marca.ilike.*${t}*,modelo.ilike.*${t}*,numero.ilike.*${t}*`);
