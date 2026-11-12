@@ -19,19 +19,21 @@ export const GRAVIDADES = [
 ];
 
 // Lojas de destino (para onde o veículo vendido é enviado). Aparecem, nesta
-// ordem, na etapa "Dados do veículo" e nos filtros do dashboard.
+// ordem, na etapa "Dados do veículo" e nos filtros do painel e do dashboard.
+// Ordem alfabética pela marca (sem o "PG Prime"); na mesma marca, pela cidade.
 export const LOJAS = [
-  "PG Prime GWM Natal",
+  "PG Prime Audi Natal",
+  "PG Prime BMW João Pessoa",
+  "PG Prime BMW Natal",
+  "Funilaria Natal",
   "PG Prime GWM João Pessoa",
   "PG Prime GWM Mossoró",
+  "PG Prime GWM Natal",
   "PG Prime Jeep Natal",
-  "PG Prime BMW Natal",
-  "PG Prime BMW João Pessoa",
-  "PG Prime Audi Natal",
-  "PG Prime Selection Natal",
   "PG Prime Selection João Pessoa",
-  "PG Prime Volvo Natal",
+  "PG Prime Selection Natal",
   "PG Prime Volvo João Pessoa",
+  "PG Prime Volvo Natal",
 ];
 
 export const COMBUSTIVEIS = ["Gasolina", "Flex", "Diesel", "Elétrico", "Híbrido"];
