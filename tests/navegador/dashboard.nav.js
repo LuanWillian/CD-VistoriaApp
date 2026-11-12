@@ -41,15 +41,15 @@ teste("dashboard: indicadores, tabelas e sem HTML vindo dos dados", async () => 
     igual(t.chamadas.length, 1, "uma consulta só (período anterior + atual)");
     const kpis = [...t.el.querySelectorAll(".db-kpis .db-kpi-num")].map((n) => n.textContent);
     igual(kpis, ["2", "1", "2", "1"]); // 2 vistorias, 1 com avaria, 2 avarias, 1 grave
-    ok(t.el.textContent.includes("1 no período anterior"), "falta a comparação com o período anterior");
+    ok(t.el.textContent.includes("vs. 1 anterior"), "falta a comparação com o período anterior");
     const colunas = t.el.querySelectorAll(".db-coluna");
     igual(colunas.length, 30);
-    const lojas = [...t.el.querySelectorAll("#db-h-loja ~ * tbody tr td:first-child")].map((td) => td.textContent);
-    igual(lojas, ["PG Prime Jeep Natal", "Sem loja informada"]);
-    ok(!t.el.querySelector(".db b"), "modelo com HTML não pode virar tag");
+    const lojas = [...t.el.querySelectorAll('[aria-labelledby="db-h-loja"] tbody tr td:first-child')].map((td) => td.textContent);
+    igual(lojas, ["Jeep Natal", "Sem loja informada"]);
+    ok(!t.el.querySelector("b"), "modelo com HTML não pode virar tag");
     const barras = [...t.el.querySelectorAll("[data-largura]")];
     ok(barras.length && barras.every((b) => b.style.width.endsWith("%") && parseFloat(b.style.width) === Number(b.dataset.largura)), "larguras das barras não aplicadas");
-    igual(t.el.querySelector(".db-gravidade").textContent, "Grave");
+    igual(t.el.querySelector(".cb-rosca-num").textContent, "2", "a rosca soma as 2 avarias");
     t.el.querySelector(".db-clicavel tbody tr td").click();
     igual(t.navegacoes, ["#/vistoria/a1"]);
   } finally {
@@ -112,7 +112,7 @@ teste("dashboard: cartões de avaria abrem a lista de veículos e clicar de novo
   try {
     const titulo = () => t.el.querySelector("#db-h-ultimas").textContent.trim();
     const linhas = () => t.el.querySelectorAll("#db-lista tbody tr").length;
-    igual(titulo(), "Últimas vistorias com avaria");
+    igual(titulo(), "Últimas vistorias");
     t.el.querySelector('.db-kpi-botao[data-lista="graves"]').click();
     igual(titulo(), "Veículos com avaria grave (1)");
     igual(linhas(), 1);
@@ -120,10 +120,10 @@ teste("dashboard: cartões de avaria abrem a lista de veículos e clicar de novo
     t.el.querySelector('.db-kpi-botao[data-lista="avaria"]').click();
     igual(titulo(), "Veículos com avaria (1)");
     t.el.querySelector('.db-kpi-botao[data-lista="avaria"]').click();
-    igual(titulo(), "Últimas vistorias com avaria");
+    igual(titulo(), "Últimas vistorias");
     t.el.querySelector('.db-kpi-botao[data-lista="graves"]').click();
     t.el.querySelector(".db-fechar-lista").click();
-    igual(titulo(), "Últimas vistorias com avaria");
+    igual(titulo(), "Últimas vistorias");
     igual(t.navegacoes.length, 0, "clicar no cartão não abre vistoria");
   } finally {
     t.fim();
@@ -154,9 +154,9 @@ teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna
     igual(titulo(), "Veículos recebidos com divergência (1)");
     ok(t.el.querySelector("#db-lista .selo-receb-divergencia"));
     bloco().querySelector('[data-lista="divergencia"]').click();
-    igual(titulo(), "Últimas vistorias com avaria");
-    const cab = [...t.el.querySelectorAll("#db-h-loja ~ * thead th")].map((th) => th.textContent.trim());
-    ok(cab.includes("Divergências"), "falta a coluna Divergências");
+    igual(titulo(), "Últimas vistorias");
+    const cab = [...t.el.querySelectorAll('[aria-labelledby="db-h-loja"] thead th')].map((th) => th.textContent.trim());
+    igual(cab, ["Loja", "Enviados", "Aguardando", "Conforme", "Divergência"]);
   } finally {
     t.fim();
   }

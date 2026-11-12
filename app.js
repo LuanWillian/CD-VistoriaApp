@@ -242,9 +242,14 @@ if (!desktop) {
 function mostrarUsuarioNoTopo() {
   const u = ctx.auth.usuarioAtual();
   const nome = String(u?.nome ?? "").trim();
-  const curto = desktop ? nome : "";
+  // Computador: iniciais num círculo + primeiro nome (o nome completo fica no menu).
+  const partes = nome.split(/\s+/).filter(Boolean);
+  const curto = desktop ? (partes[0] || "") : "";
   $("#topo-nome").textContent = curto;
   $("#topo-nome").hidden = !curto;
+  const iniciais = desktop ? `${partes[0]?.[0] ?? ""}${partes.length > 1 ? partes.at(-1)[0] : ""}`.toUpperCase() : "";
+  $("#topo-avatar").textContent = iniciais;
+  $("#topo-avatar").hidden = !iniciais;
   $("#btn-menu").setAttribute("aria-label", nome ? `Conta de ${nome}: abrir menu` : "Conta: abrir menu");
 }
 
@@ -255,8 +260,8 @@ function entrarNoApp() {
   $("#btn-menu").hidden = false;
   // Links Vistorias/Dashboard só para vistoriadores no computador.
   $("#topo-nav").hidden = !desktop || papelAtual() === "loja";
-  // Computador: sem o selo de conexão (Online/Offline/pendentes) no topo.
-  $("#status-rede").hidden = desktop;
+  // Selo de conexão (Online/Offline/pendentes) no topo em todos os ambientes.
+  $("#status-rede").hidden = false;
   if (!location.hash || location.hash === "#") location.replace("#/inicio");
   renderizar();
   storage.limparFotosAntigas(DIAS_CACHE_FOTOS).catch(console.error);

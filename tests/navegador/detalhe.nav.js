@@ -95,12 +95,53 @@ teste("detalhe: 'Nova vistoria' (depois de finalizar) só existe fora do computa
 });
 
 teste("detalhe: a ordem dos blocos no HTML (celular) continua dados, fotos, checklist, avarias, assinaturas", async () => {
-  const t = await abrir(vistoria("ordem", EU.id));
+  const t = await abrir(vistoria("ordem", EU.id), { desktop: false });
   try {
     const ids = [...t.el.querySelectorAll("section.secao")].map((s) => s.getAttribute("aria-labelledby"));
     igual(ids, ["h-dados", "h-fotos", "h-checklist", "h-avarias", "h-assinaturas"]);
+    igual(t.el.querySelector(".cb-detalhe"), null, "o celular não usa o visual do computador");
+  } finally {
+    t.fim();
+  }
+});
+
+teste("detalhe (computador): coluna principal fotos, avarias, assinaturas; lateral dados, recebimento, checklist", async () => {
+  const t = await abrir(vistoria("ordem-pc", EU.id, { loja: "PG Prime BMW Natal", recebimento: null }));
+  try {
+    const coluna = (sel) => [...t.el.querySelectorAll(`${sel} section.secao`)].map((s) => s.getAttribute("aria-labelledby"));
+    igual(coluna(".cb-principal"), ["h-fotos", "h-avarias", "h-assinaturas"]);
+    igual(coluna(".cb-lateral"), ["h-dados", "h-receb", "h-checklist"]);
+    igual(t.el.querySelector("h1").textContent.trim(), "Jeep Compass", "o título é o veículo");
+    igual(t.el.querySelector("#detalhe-numero").textContent.trim(), "VIS-000010", "o número fica no caminho");
     igual(t.el.querySelectorAll('a[href^="#/nova"]').length, 0, "o computador não tem link para nova vistoria");
     igual(t.el.querySelector("#btn-compartilhar"), null, "o computador não tem Compartilhar");
+    ok(t.el.querySelector("#btn-baixar") && t.el.querySelector("#btn-excluir"), "faltam Baixar PDF e Excluir");
+    const abas = [...t.el.querySelectorAll("[data-ir]")].map((b) => b.textContent.trim());
+    igual(abas, ["Resumo", "Fotos (3)", "Avarias (0)", "Checklist", "Recebimento", "Assinaturas"]);
+    igual(t.el.querySelectorAll(".cb-abas a").length, 0, "abas são botões: um # mudaria a rota");
+    t.el.querySelector('[data-ir="h-checklist"]').click();
+    igual(t.el.querySelector('[data-ir="h-checklist"]').hasAttribute("aria-current"), true);
+    igual(t.el.querySelector('[data-ir=""]').hasAttribute("aria-current"), false);
+    ok(t.el.querySelector(".cb-checklist").textContent.includes("Ok"), "checklist sem os Ok");
+    ok(t.el.textContent.includes("13/13 ok"), "falta a contagem do checklist");
+  } finally {
+    t.fim();
+  }
+});
+
+teste("detalhe (computador): avarias em tabela com gravidade, sem HTML vindo dos dados", async () => {
+  const avarias = [
+    { id: "a1", area: "Capô", tipo: "Risco", gravidade: "Grave", descricao: "<b>fundo</b>", fotos: [] },
+    { id: "a2", area: "Teto", tipo: "Amassado", gravidade: "Leve", descricao: "", fotos: [] },
+  ];
+  const t = await abrir(vistoria("avarias-pc", EU.id, { semAvarias: false, avarias }));
+  try {
+    const linhas = [...t.el.querySelectorAll(".cb-avarias tbody tr")];
+    igual(linhas.length, 2);
+    ok(linhas[0].textContent.includes("Capô") && linhas[0].querySelector(".selo-grave"), "falta a avaria grave");
+    igual(t.el.querySelector(".cb-avarias b"), null, "descrição com HTML não pode virar tag");
+    ok(t.el.querySelector("#h-avarias").textContent.includes("2 registradas"));
+    igual(t.el.querySelector('[data-ir="h-avarias"]').textContent.trim(), "Avarias (2)");
   } finally {
     t.fim();
   }

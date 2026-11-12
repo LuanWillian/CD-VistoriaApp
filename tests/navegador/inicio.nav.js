@@ -51,7 +51,7 @@ teste("painel (computador): tabela com as vistorias, linha e botão abrem os det
     ok(linhas[0].textContent.includes("VIS-000002"), "a mais recente vem primeiro");
     igual(el.querySelector("#dash-corpo i"), null, "texto digitado não vira HTML");
     igual(el.querySelector(".dash-metrica"), null, "os cartões de resumo foram removidos");
-    igual(el.querySelector("#dash-contador").textContent, "Mostrando 1–2 de 2");
+    igual(el.querySelector("#dash-contador").textContent, "1–2 de 2 · 25 por página");
     linhas[0].querySelector("td").click();
     linhas[0].querySelector("a").click();
     igual(navegacoes, ["#/vistoria/2"], "a linha navega; o botão é um link e não navega duas vezes");
@@ -177,14 +177,63 @@ teste("painel (computador): coluna Recebimento e filtro de recebimento", async (
   const tela = await inicio.montar(el, ctx);
   await esperar(150);
   try {
-    ok([...el.querySelectorAll(".dash-tabela th")].some((th) => th.textContent.trim() === "Recebimento"), "falta a coluna Recebimento");
+    ok([...el.querySelectorAll(".cb-tabela-vistorias th")].some((th) => th.textContent.trim() === "Recebimento"), "falta a coluna Recebimento");
     ok(el.querySelector("#dash-corpo .selo-receb-aguardando"), "falta o selo Aguardando");
     ok(el.querySelector("#dash-corpo .selo-receb-divergencia"), "falta o selo Com divergência");
     const sel = el.querySelector("#dash-recebimento");
-    igual([...sel.options].map((o) => o.text), ["Todos os recebimentos", "Aguardando", "Conforme", "Com divergência"]);
+    igual([...sel.options].map((o) => o.text), ["Recebimento", "Recebimento: Aguardando", "Recebimento: Conforme", "Recebimento: Com divergência"]);
     sel.value = "divergencia";
     sel.dispatchEvent(new Event("change"));
     igual(el.querySelectorAll("#dash-corpo tr").length, 1);
+  } finally {
+    tela?.desmontar?.();
+    el.remove();
+  }
+});
+
+teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção de linhas", async () => {
+  await storage.apagarBanco();
+  const agora = new Date().toISOString();
+  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, agora), id, userId: EU.id, realizadaEm: agora, status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
+  await storage.salvarVistoria(v("1", { recebimento: null }));
+  await storage.salvarVistoria(v("2", { recebimento: { id: "r", userId: "u", status: "divergencia", recebedorNome: "D", loja: "PG Prime BMW Natal", recebidoEm: agora, descricao: "x", assinatura: "p", fotos: [] } }));
+  await storage.salvarVistoria(v("3", { status: "pendente", loja: "" }));
+  const ctx = {
+    desktop: true, storage, auth: { usuarioAtual: () => EU }, online: () => false, navegar: () => {},
+    sync: { eventos: new EventTarget(), sincronizar: async () => ({}) }, remoto: {},
+  };
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const tela = await inicio.montar(el, ctx);
+  await esperar(150);
+  const texto = (id) => el.querySelector(id).textContent;
+  try {
+    igual([texto("#dash-r-hoje"), texto("#dash-r-aguardando"), texto("#dash-r-divergencia"), texto("#dash-r-pendentes"), texto("#dash-r-total")], ["3", "1", "1", "1", "3"]);
+    // Resumo "Com divergência" liga o filtro; a pílula mostra o filtro e fica ativa.
+    el.querySelector('[data-receb="divergencia"]').click();
+    igual(el.querySelector("#dash-recebimento").value, "divergencia");
+    const pilula = el.querySelector("#dash-recebimento").closest("[data-pilula]");
+    ok(pilula.hasAttribute("data-ativa"), "a pílula deveria ficar ativa");
+    igual(pilula.querySelector(".cb-pilula-texto").textContent, "Recebimento: Com divergência");
+    igual(el.querySelectorAll("#dash-corpo tr").length, 1);
+    // O X da pílula limpa o filtro.
+    pilula.querySelector("[data-fechar-pilula]").click();
+    igual(el.querySelector("#dash-recebimento").value, "");
+    igual(pilula.hasAttribute("data-ativa"), false);
+    igual(el.querySelectorAll("#dash-corpo tr").length, 3);
+    // Seleção: barra aparece com a contagem; a caixa do cabeçalho marca a página toda.
+    ok(el.querySelector("#dash-selecao").hidden, "barra de seleção deveria começar escondida");
+    const caixa = el.querySelector("#dash-corpo [data-sel]");
+    caixa.checked = true;
+    caixa.dispatchEvent(new Event("change", { bubbles: true }));
+    igual(el.querySelector("#dash-selecao").hidden, false);
+    igual(texto("#dash-selecionadas"), "1 selecionada");
+    ok(caixa.closest("tr").classList.contains("cb-marcada"));
+    const todas = el.querySelector("#dash-sel-pagina");
+    todas.checked = true;
+    todas.dispatchEvent(new Event("change"));
+    igual(texto("#dash-selecionadas"), "3 selecionadas");
+    igual(texto("#dash-pdf-lote"), "Baixar 3 PDFs");
   } finally {
     tela?.desmontar?.();
     el.remove();

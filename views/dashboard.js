@@ -1,95 +1,87 @@
 // Dashboard do gerente (#/dashboard), só no navegador do computador: volume de
-// vistorias, avarias, marcas e lojas de destino no período escolhido. Lê direto
-// do servidor (precisa de internet); as contas ficam em dashboard-dados.js.
+// vistorias, avarias, recebimento, marcas e lojas de destino no período escolhido.
+// Lê direto do servidor (precisa de internet); as contas ficam em dashboard-dados.js.
 import { GRAVIDADES, LOJAS } from "../config.js";
-import { formatarDataHora, nomeVistoria } from "../formatos.js";
+import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
 import {
-  SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, listaPorRecebimento, marcaDe, formatarPct, intervaloDoDashboard, marcasDisponiveis, porGravidade, porLoja,
-  porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
+  SEM_LOJA, dentro, filtrarDashboard, formatarPct, intervaloDoDashboard, listaPorRecebimento, lojaDe, marcasDisponiveis,
+  porGravidade, porLoja, porMarca, rankingAreas, resumo, serie, ultimasComAvaria,
 } from "../dashboard-dados.js";
+import { maisRecentesPrimeiro } from "../painel-dados.js";
+import { contarRecebimentos, situacaoRecebimento } from "../recebimento-dados.js";
+import { baixarCsv, linhasDeVistorias } from "../exportar.js";
 import { $, $$, esc, icone } from "../ui.js";
-import { contarRecebimentos } from "../recebimento-dados.js";
 import { seloRecebimento } from "./card-recebimento.js";
+import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
 const COR_GRAVIDADE = Object.fromEntries(GRAVIDADES.map((g) => [g.valor, g]));
 const num = (n) => Number(n).toLocaleString("pt-BR");
-const hojeCampo = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const dois = (n) => String(n).padStart(2, "0");
+const hojeCampo = (d = new Date()) => `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`;
+const semPrefixo = (loja) => String(loja ?? "").replace(/^PG Prime /, "");
+const ULTIMAS = 8;
 
-// "Hoje 14:32", "Ontem 16:40" ou "12/10 15:30".
-function quando(iso, agora = new Date()) {
-  if (!iso) return "—";
-  const t = new Date(iso);
-  const hora = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
-  const dia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const diff = Math.round((dia(agora) - dia(t)) / 86400000);
-  if (diff === 0) return `Hoje ${hora}`;
-  if (diff === 1) return `Ontem ${hora}`;
-  return `${String(t.getDate()).padStart(2, "0")}/${String(t.getMonth() + 1).padStart(2, "0")} ${hora}`;
+// Primeiro e último dia do intervalo [de, ate) (ate é exclusivo).
+function diasDoIntervalo({ de, ate }) {
+  const fimEx = new Date(ate);
+  return [new Date(de), new Date(fimEx.getFullYear(), fimEx.getMonth(), fimEx.getDate() - 1)];
+}
+const dataBr = (d) => `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()}`;
+
+// ---------- Gráficos (HTML/SVG desenhado aqui, sem biblioteca) ----------
+// Colunas agrupadas: período anterior (cinza) e atual (azul) lado a lado, por dia
+// ou por hora. A altura vai em data-altura (a CSP bloqueia style="" no HTML).
+function graficoColunas({ rotulos, atual, anterior }, porHora) {
+  const max = Math.max(...atual, ...anterior, 1);
+  const passo = Math.max(1, Math.ceil(rotulos.length / 15));
+  const alt = (v) => ((v / max) * 100).toFixed(1);
+  return `<div class="cb-colunas" role="img" aria-label="Vistorias por ${porHora ? "hora" : "dia"}: período atual e anterior">
+    ${rotulos.map((r, i) => `<div class="cb-coluna-grupo" title="${esc(r)}: ${num(atual[i])} ${atual[i] === 1 ? "vistoria" : "vistorias"} (período anterior: ${num(anterior[i])})">
+      <div class="cb-barras"><span class="cb-barra-anterior" data-altura="${alt(anterior[i])}"></span><span class="db-coluna cb-barra-atual" data-altura="${alt(atual[i])}"></span></div>
+      <span class="cb-coluna-rot">${i % passo === 0 ? esc(r) : "&nbsp;"}</span>
+    </div>`).join("")}
+  </div>`;
 }
 
-function seloGravidade(g) {
-  return COR_GRAVIDADE[g] ? `<span class="db-gravidade db-g-${g.toLowerCase()}">${esc(g)}</span>` : "—";
+// Linha do volume diário (dentro do cartão "Vistorias no período").
+function minigrafico(valores) {
+  const max = Math.max(...valores, 1);
+  const n = valores.length;
+  const pontos = valores.map((v, i) => `${n > 1 ? ((i * 100) / (n - 1)).toFixed(1) : 50},${(28 - (v / max) * 26).toFixed(1)}`).join(" ");
+  return `<svg class="cb-minigrafico" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pontos}"/></svg>`;
 }
 
-// ---------- Gráficos (SVG desenhado aqui, sem biblioteca) ----------
-function graficoColunas({ rotulos, atual, anterior }) {
-  const L = 1000, A = 260, esq = 36, dir = 8, topo = 12, base = 28;
-  const n = atual.length;
-  const max = topoDoEixo(Math.max(...atual, ...anterior, 0));
-  const largura = (L - esq - dir) / n;
-  const x = (i) => esq + i * largura;
-  const y = (v) => topo + (A - topo - base) * (1 - v / max);
-  const linhasGrade = [0, 0.25, 0.5, 0.75, 1].map((f) => {
-    const v = max * f;
-    return `<line x1="${esq}" x2="${L - dir}" y1="${y(v)}" y2="${y(v)}" class="db-grade"/>`
-      + `<text x="${esq - 8}" y="${y(v) + 4}" text-anchor="end" class="db-eixo">${num(Math.round(v))}</text>`;
-  }).join("");
-  const colunas = atual.map((v, i) => {
-    const h = Math.max(0, y(0) - y(v));
-    const w = Math.max(2, largura * 0.62);
-    return `<rect x="${x(i) + (largura - w) / 2}" y="${y(v)}" width="${w}" height="${h}" rx="2" class="db-coluna">`
-      + `<title>${esc(rotulos[i])}: ${num(v)} ${v === 1 ? "vistoria" : "vistorias"} (período anterior: ${num(anterior[i])})</title></rect>`;
-  }).join("");
-  const pontos = anterior.map((v, i) => `${x(i) + largura / 2},${y(v)}`).join(" ");
-  const passo = Math.ceil(n / 10);
-  const legendas = rotulos.map((r, i) => (i % passo === 0 || i === n - 1) && !(i !== n - 1 && n - 1 - i < passo)
-    ? `<text x="${x(i) + largura / 2}" y="${A - 8}" text-anchor="middle" class="db-eixo">${esc(r)}</text>` : "").join("");
-  return `<svg class="db-svg" viewBox="0 0 ${L} ${A}" preserveAspectRatio="none" role="img" aria-label="Vistorias por ${n === 24 ? "hora" : "dia"}">
-    ${linhasGrade}${colunas}
-    <polyline points="${pontos}" class="db-anterior"/>
-    ${legendas}
-  </svg>`;
-}
-
-function graficoRosca(fatias) {
+function rosca(fatias) {
   const total = fatias.reduce((s, f) => s + f.qtd, 0);
-  const R = 15.915; // circunferência = 100
+  const T = 150, E = 18, R = (T - E) / 2, C = 2 * Math.PI * R;
   let acumulado = 0;
   const arcos = total ? fatias.filter((f) => f.qtd).map((f) => {
-    const parte = (f.qtd / total) * 100;
-    const arco = `<circle r="${R}" cx="21" cy="21" fill="none" stroke="${COR_GRAVIDADE[f.gravidade].cor}" stroke-width="6"
-      stroke-dasharray="${parte} ${100 - parte}" stroke-dashoffset="${25 - acumulado}"><title>${esc(f.gravidade)}: ${num(f.qtd)}</title></circle>`;
+    const parte = (f.qtd / total) * C;
+    const arco = `<circle cx="75" cy="75" r="${R}" fill="none" stroke="${COR_GRAVIDADE[f.gravidade].cor}" stroke-width="${E}"
+      stroke-dasharray="${parte.toFixed(2)} ${(C - parte).toFixed(2)}" stroke-dashoffset="${(-acumulado).toFixed(2)}" transform="rotate(-90 75 75)"><title>${esc(f.gravidade)}: ${num(f.qtd)}</title></circle>`;
     acumulado += parte;
     return arco;
-  }).join("") : "";
-  return `<svg class="db-rosca" viewBox="0 0 42 42" role="img" aria-label="Avarias por gravidade">
-    <circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--linha)" stroke-width="6"/>${arcos}
-    <text x="21" y="21" text-anchor="middle" class="db-rosca-num">${num(total)}</text>
-    <text x="21" y="27" text-anchor="middle" class="db-rosca-rot">avarias</text>
-  </svg>`;
+  }).join("") : `<circle cx="75" cy="75" r="${R}" fill="none" stroke="#E4E7EB" stroke-width="${E}"/>`;
+  return `<div class="cb-rosca">
+    <svg width="${T}" height="${T}" viewBox="0 0 ${T} ${T}" role="img" aria-label="Avarias por gravidade">${arcos}</svg>
+    <div class="cb-rosca-centro"><p class="cb-rosca-num">${num(total)}</p><p class="cb-rosca-rot">avarias</p></div>
+  </div>`;
 }
 
-// A CSP do site (style-src 'self') bloqueia style="" no HTML: a largura vai em
-// data-largura e é aplicada pelo DOM depois de desenhar (aplicarLarguras).
-const barra = (p, classe = "") => `<span class="db-barra ${classe}" aria-hidden="true"><span data-largura="${Math.max(0, Math.min(100, p)).toFixed(1)}"></span></span>`;
-const aplicarLarguras = (el) => $$("[data-largura]", el).forEach((b) => { b.style.width = `${b.dataset.largura}%`; });
+// A CSP do site (style-src 'self') bloqueia style="" no HTML: larguras e alturas
+// vão em data-largura / data-altura e são aplicadas pelo DOM depois de desenhar.
+const barra = (p) => `<span class="cb-trilho" aria-hidden="true"><span data-largura="${Math.max(0, Math.min(100, p)).toFixed(1)}"></span></span>`;
+function aplicarMedidas(el) {
+  $$("[data-largura]", el).forEach((b) => { b.style.width = `${b.dataset.largura}%`; });
+  $$("[data-altura]", el).forEach((b) => { b.style.height = `${b.dataset.altura}%`; });
+}
 
 export async function montar(raiz, ctx) {
   const estado = {
     periodo: "30d", de: hojeCampo(new Date(Date.now() - 29 * 86400000)), ate: hojeCampo(),
     marca: "", loja: "", itens: [], anteriores: [], intervalo: null, carregando: true, erro: "",
-    // Lista de baixo: "" = últimas com avaria; "avaria" ou "graves" = aberta pelos cartões.
+    // Lista de baixo: "" = últimas vistorias; "avaria", "graves", "aguardando" ou "divergencia" = aberta pelos cartões.
     lista: "",
   };
   let rolarParaLista = false;
@@ -97,32 +89,30 @@ export async function montar(raiz, ctx) {
   let geracao = 0;
 
   raiz.innerHTML = `
-    <div class="dashboard-desktop db pilha">
-      <div class="db-cabecalho">
+    <div class="cb-dash dashboard-desktop">
+      <div class="cb-pagina-cabeca cb-cabeca-centro">
         <div>
-          <h1 class="titulo">Dashboard</h1>
-          <p class="texto-2">Vistorias de envio para as lojas</p>
+          <h1 class="cb-h1">Dashboard</h1>
+          <p class="cb-sub" id="db-subtitulo">Saídas do CD</p>
         </div>
-        <div class="db-filtros">
-          <div class="db-segmentos" role="radiogroup" aria-label="Período" id="db-periodos">
-            ${PERIODOS.map(([v, r]) => `<button type="button" role="radio" aria-checked="${v === estado.periodo}" data-periodo="${v}">${v === "personalizado" ? `${r} ${icone("calendario", "ic db-ic-peq")}` : r}</button>`).join("")}
+        <div class="cb-acoes">
+          <div class="cb-segmentos" role="radiogroup" aria-label="Período" id="db-periodos">
+            ${PERIODOS.map(([v, r]) => `<button type="button" role="radio" aria-checked="${v === estado.periodo}" data-periodo="${v}">${r}</button>`).join("")}
           </div>
-          <select class="entrada db-select" id="db-marca" aria-label="Marca"><option value="">Todas as marcas</option></select>
-          <select class="entrada db-select" id="db-loja" aria-label="Loja de destino">
-            <option value="">Todas as lojas</option>
-            ${LOJAS.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join("")}
-            <option value="${esc(SEM_LOJA)}">${esc(SEM_LOJA)}</option>
-          </select>
+          ${pilulaSelect({ id: "db-marca", rotulo: "Marca", opcoes: [["", "Todas as marcas"]] })}
+          ${pilulaSelect({ id: "db-loja", rotulo: "Loja de destino", opcoes: [["", "Todas as lojas"], ...LOJAS.map((l) => [l, l]), [SEM_LOJA, SEM_LOJA]] })}
+          <button type="button" class="cb-btn" id="db-exportar">${icone("baixar")} Exportar</button>
         </div>
       </div>
-      <div class="db-datas" id="db-datas" hidden>
-        <label>De <input class="entrada" type="date" id="db-de"></label>
-        <label>Até <input class="entrada" type="date" id="db-ate"></label>
+      <div class="cb-datas cb-datas-dir" id="db-datas" hidden>
+        <label>De <input class="cb-data" type="date" id="db-de"></label>
+        <label>Até <input class="cb-data" type="date" id="db-ate"></label>
       </div>
-      <p class="db-aviso" id="db-aviso" role="status" hidden></p>
+      <p class="cb-aviso" id="db-aviso" role="status" hidden></p>
       <div id="db-conteudo"></div>
     </div>`;
 
+  ligarPilulas(raiz);
   const conteudo = $("#db-conteudo", raiz);
   $("#db-de", raiz).value = estado.de;
   $("#db-ate", raiz).value = estado.ate;
@@ -155,7 +145,6 @@ export async function montar(raiz, ctx) {
       const todos = await ctx.remoto.listarParaDashboard({ de: intervalo.anterior.de, ate: intervalo.ate });
       if (!ativo || minha !== geracao) return;
       estado.intervalo = intervalo;
-      estado.periodoCarregado = estado.periodo; // o cartão descreve o período dos dados na tela
       estado.itens = todos.filter((v) => dentro(v.realizadaEm, intervalo));
       estado.anteriores = todos.filter((v) => dentro(v.realizadaEm, intervalo.anterior));
       estado.erro = "";
@@ -175,156 +164,193 @@ export async function montar(raiz, ctx) {
     if (estado.marca && !marcas.includes(estado.marca)) marcas.push(estado.marca);
     sel.replaceChildren(new Option("Todas as marcas", ""), ...marcas.map((m) => new Option(m, m)));
     sel.value = estado.marca;
+    atualizarPilula(sel);
+  }
+
+  const filtros = () => ({ marca: estado.marca, loja: estado.loja });
+
+  function desenharSubtitulo() {
+    const p = $("#db-subtitulo", raiz);
+    if (!estado.intervalo) { p.textContent = "Saídas do CD"; return; }
+    const [ini, fim] = diasDoIntervalo(estado.intervalo);
+    const datas = estado.intervalo.dias === 1 ? dataBr(ini) : `${dataBr(ini)} – ${dataBr(fim)}`;
+    const compara = estado.intervalo.dias === 1 ? "comparado ao dia anterior" : `comparado aos ${num(estado.intervalo.dias)} dias anteriores`;
+    p.textContent = `Saídas do CD · ${datas} · ${compara}`;
   }
 
   // ---------- Desenho ----------
   function desenhar() {
+    desenharSubtitulo();
     if (estado.erro) {
-      conteudo.innerHTML = `<div class="secao db-vazio"><p>${esc(estado.erro)}</p>
-        <button type="button" class="btn btn-secundario" data-acao="tentar">${icone("atualizar")} Tentar de novo</button></div>`;
+      conteudo.innerHTML = `<div class="cb-cartao cb-vazio"><p>${esc(estado.erro)}</p>
+        <button type="button" class="cb-btn" data-acao="tentar">${icone("recarregar")} Tentar de novo</button></div>`;
       return;
     }
     if (estado.carregando && !estado.intervalo) {
-      conteudo.innerHTML = `<div class="secao db-vazio"><p>${icone("carregando", "ic gira")} Carregando…</p></div>`;
+      conteudo.innerHTML = `<div class="cb-cartao cb-vazio"><p>${icone("carregando", "ic gira")} Carregando…</p></div>`;
       return;
     }
     if (!estado.intervalo) { conteudo.replaceChildren(); return; }
 
-    const filtros = { marca: estado.marca, loja: estado.loja };
-    const itens = filtrarDashboard(estado.itens, filtros);
-    const anteriores = filtrarDashboard(estado.anteriores, filtros);
+    const itens = filtrarDashboard(estado.itens, filtros());
+    const anteriores = filtrarDashboard(estado.anteriores, filtros());
     const r = resumo(itens, anteriores);
-    const periodoTxt = descreverPeriodo(estado.periodoCarregado, estado.intervalo);
     const s = serie(itens, anteriores, estado.intervalo);
     const gravidades = porGravidade(itens);
-    const areas = rankingAreas(itens);
-    const tipos = rankingTipos(itens);
+    const areas = rankingAreas(itens, 6);
     const marcas = porMarca(itens);
     const lojas = porLoja(itens);
-    const listaReceb = estado.lista === "aguardando" || estado.lista === "divergencia";
     const contRec = contarRecebimentos(itens);
-    const ultimas = listaReceb ? listaPorRecebimento(itens, estado.lista) : estado.lista
-      ? ultimasComAvaria(itens, null, { soGraves: estado.lista === "graves" })
-      : ultimasComAvaria(itens);
+    const recebidos = contRec.conforme + contRec.divergencia;
+
+    // Aguardando e conforme por loja (a tabela de lojas mostra a situação do recebimento).
+    const recPorLoja = new Map();
+    for (const v of itens) {
+      const sit = situacaoRecebimento(v);
+      const k = lojaDe(v);
+      if (!recPorLoja.has(k)) recPorLoja.set(k, { aguardando: 0, conforme: 0 });
+      if (sit === "aguardando" || sit === "conforme") recPorLoja.get(k)[sit]++;
+    }
+
+    const lista = estado.lista;
+    const listaReceb = lista === "aguardando" || lista === "divergencia";
+    const ultimas = listaReceb ? listaPorRecebimento(itens, lista)
+      : lista ? ultimasComAvaria(itens, null, { soGraves: lista === "graves" })
+        : maisRecentesPrimeiro(itens).slice(0, ULTIMAS);
     const tituloLista = {
-      "": "Últimas vistorias com avaria", avaria: "Veículos com avaria", graves: "Veículos com avaria grave",
+      "": "Últimas vistorias", avaria: "Veículos com avaria", graves: "Veículos com avaria grave",
       aguardando: "Veículos aguardando recebimento", divergencia: "Veículos recebidos com divergência",
-    }[estado.lista];
+    }[lista];
     const vazioLista = {
-      graves: "Nenhum veículo com avaria grave no período.", aguardando: "Nenhum veículo aguardando recebimento no período.",
-      divergencia: "Nenhum veículo recebido com divergência no período.",
-    }[estado.lista] || "Nenhuma vistoria com avaria no período.";
-    // Cartão que abre a lista: botão de verdade (teclado e leitor de tela), marcado quando ativo.
-    const cartaoLista = (tipo, classe, conteudoHtml, rotulo) => `<button type="button" class="cartao db-kpi db-kpi-botao ${classe}" data-lista="${tipo}"
-      aria-pressed="${estado.lista === tipo}" aria-controls="db-lista" title="${rotulo}">${conteudoHtml}
-      <span class="db-kpi-ver">${estado.lista === tipo ? "Mostrando a lista abaixo" : "Ver veículos"} ${icone("avancar", "ic db-ic-peq")}</span></button>`;
-    const maxArea = areas[0]?.qtd || 1;
+      avaria: "Nenhum veículo com avaria no período.", graves: "Nenhum veículo com avaria grave no período.",
+      aguardando: "Nenhum veículo aguardando recebimento no período.", divergencia: "Nenhum veículo recebido com divergência no período.",
+    }[lista] || "Nenhuma vistoria no período.";
+
+    const ponto = (classe) => (classe ? `<span class="cb-kpi-ponto cb-cor-${classe}"></span>` : "");
+    const kpi = (rot, n, sub, classe = "", extra = "") => `<div class="cb-cartao cb-kpi">
+        <div class="cb-kpi-topo"><span class="cb-kpi-rot">${rot}</span>${ponto(classe)}</div>
+        <p class="cb-kpi-num db-kpi-num">${num(n)}</p><p class="cb-kpi-sub">${sub}</p>${extra}</div>`;
+    // Cartão que abre a lista de baixo: botão de verdade (teclado e leitor de tela), marcado quando ativo.
+    const kpiLista = (tipo, rot, n, sub, classe) => `<button type="button" class="cb-cartao cb-kpi db-kpi-botao" data-lista="${tipo}"
+        aria-pressed="${lista === tipo}" aria-controls="db-lista" title="${esc(`Ver: ${rot.toLowerCase()}`)}">
+        <span class="cb-kpi-topo"><span class="cb-kpi-rot">${rot}</span>${ponto(classe)}</span>
+        <span class="cb-kpi-num db-kpi-num">${num(n)}</span><span class="cb-kpi-sub">${sub}</span>
+        <span class="cb-kpi-ver">${lista === tipo ? "Mostrando a lista abaixo" : "Ver veículos →"}</span></button>`;
+
     const variacao = r.variacao === null ? ""
-      : `<span class="db-variacao ${r.variacao >= 0 ? "db-sobe" : "db-desce"}">${formatarPct(r.variacao, { sinal: true, casas: 0 })}</span>`;
+      : r.variacao > 0 ? `<span class="cb-sobe">▲ ${formatarPct(r.variacao, { casas: 0 })}</span> `
+        : r.variacao < 0 ? `<span class="cb-desce">▼ ${formatarPct(-r.variacao, { casas: 0 })}</span> ` : "<span>0%</span> ";
+    const media = r.comAvaria ? (r.avarias / r.comAvaria).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : null;
+    const dosRecebidos = (n) => (recebidos ? `${formatarPct((n / recebidos) * 100)} dos recebidos` : "nenhum recebido");
+
+    const tabela = (cab, linhas) => `<table class="cb-tabela cb-tabela-resumo">
+        <thead><tr>${cab.map((c, i) => `<th scope="col"${i ? ' class="cb-dir"' : ""}>${c}</th>`).join("")}</tr></thead>
+        <tbody>${linhas.map((l) => `<tr>${l.map((c, i) => `<td${i ? ' class="cb-dir cb-tnum"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>`;
 
     conteudo.innerHTML = `
-      <div class="pilha${estado.carregando ? " db-atualizando" : ""}" aria-busy="${estado.carregando}">
-      <div class="db-indicadores">
-      <section class="db-kpis" aria-label="Resumo do período">
-        <div class="cartao db-kpi"><p class="db-kpi-rot">Vistorias no período</p>
-          <p class="db-kpi-periodo" id="db-kpi-periodo"><span class="db-kpi-periodo-nome">${esc(periodoTxt.nome)}</span> · ${esc(periodoTxt.datas)}</p>
-          <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.total)}</span>${variacao}</p>
-          <p class="db-kpi-sub">${num(r.totalAnterior)} no período anterior (${esc(periodoTxt.anterior)})</p></div>
-        ${cartaoLista("avaria", "", `<span class="db-kpi-rot">Veículos com avaria</span>
-          <span class="db-kpi-linha"><span class="db-kpi-num">${num(r.comAvaria)}</span><span class="db-kpi-extra">(${formatarPct(r.pctComAvaria)})</span></span>`, "Ver os veículos com avaria")}
-        <div class="cartao db-kpi"><p class="db-kpi-rot">Avarias registradas</p>
-          <p class="db-kpi-linha"><span class="db-kpi-num">${num(r.avarias)}</span></p></div>
-        ${cartaoLista("graves", "db-kpi-grave", `<span class="db-kpi-rot">Avarias graves</span>
-          <span class="db-kpi-linha"><span class="db-kpi-num">${num(r.graves)}</span><span class="db-kpi-extra">(${formatarPct(r.pctGraves)} do total)</span></span>`, "Ver os veículos com avaria grave")}
-      </section>
-
-      <section class="db-receb" aria-labelledby="db-h-receb">
-        <h2 class="db-bloco-titulo" id="db-h-receb">Recebimento nas lojas</h2>
-        <div class="db-receb-cartoes">
-          ${cartaoLista("aguardando", "db-kpi-aguardando", `<span class="db-kpi-rot">Aguardando recebimento</span>
-            <span class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.aguardando)}</span></span>`, "Ver os veículos aguardando recebimento")}
-          <div class="cartao db-kpi db-kpi-conforme"><p class="db-kpi-rot">Recebidos conforme</p>
-            <p class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.conforme)}</span></p></div>
-          ${cartaoLista("divergencia", "db-kpi-divergencia", `<span class="db-kpi-rot">Recebidos com divergência</span>
-            <span class="db-kpi-linha"><span class="db-kpi-num">${num(contRec.divergencia)}</span></span>`, "Ver os veículos recebidos com divergência")}
+      <div class="cb-dash-corpo${estado.carregando ? " cb-atualizando" : ""}" aria-busy="${estado.carregando}">
+      <section class="cb-indicadores" aria-label="Resumo do período">
+        <div class="db-kpis">
+          ${kpi("Vistorias no período", r.total, `${variacao}vs. ${num(r.totalAnterior)} ${r.totalAnterior === 1 ? "anterior" : "anteriores"}`, "", minigrafico(s.atual))}
+          ${kpiLista("avaria", "Veículos com avaria", r.comAvaria, `${formatarPct(r.pctComAvaria)} das vistorias`, "moderada")}
+          ${kpi("Avarias registradas", r.avarias, media ? `${media} por veículo` : "nenhuma no período")}
+          ${kpiLista("graves", "Avarias graves", r.graves, `${formatarPct(r.pctGraves)} do total`, "grave")}
+        </div>
+        <div class="db-receb" role="group" aria-labelledby="db-h-receb">
+          <h2 class="sr-only" id="db-h-receb">Recebimento nas lojas</h2>
+          ${kpiLista("aguardando", "Aguardando recebimento", contRec.aguardando, "na loja", "pendente")}
+          ${kpi("Recebidos conforme", contRec.conforme, dosRecebidos(contRec.conforme), "ok")}
+          ${kpiLista("divergencia", "Com divergência", contRec.divergencia, dosRecebidos(contRec.divergencia), "erro")}
         </div>
       </section>
-      </div>
 
-      <div class="db-graficos">
-      <section class="secao db-volume" aria-labelledby="db-h-volume">
-        <div class="db-titulo-linha">
-          <h2 id="db-h-volume">Vistorias por ${estado.intervalo.porHora ? "hora" : "dia"}</h2>
-          <p class="db-legenda"><span class="db-leg-atual"></span>Período atual <span class="db-leg-anterior"></span>Período anterior</p>
-        </div>
-        ${graficoColunas(s)}
-      </section>
-
-      <div class="db-duas">
-        <section class="secao" aria-labelledby="db-h-grav">
-          <h2 id="db-h-grav">Avarias por gravidade</h2>
-          <div class="db-grav">
-            ${graficoRosca(gravidades)}
-            <ul class="db-grav-lista">
-              ${gravidades.map((g) => `<li><span class="db-ponto db-g-${g.gravidade.toLowerCase()}"></span>
-                <span class="db-grav-nome">${esc(g.gravidade)}</span><strong>${num(g.qtd)}</strong><span class="texto-2">${formatarPct(g.pct)}</span></li>`).join("")}
-            </ul>
+      <div class="cb-graficos">
+        <section class="cb-cartao cb-p4 cb-volume" aria-labelledby="db-h-volume">
+          <div class="cb-graf-topo">
+            <h2 id="db-h-volume">Vistorias por ${estado.intervalo.porHora ? "hora" : "dia"}</h2>
+            <p class="cb-legenda"><span><span class="cb-quad cb-quad-atual"></span>Atual</span><span><span class="cb-quad cb-quad-anterior"></span>Anterior</span></p>
+          </div>
+          ${graficoColunas(s, estado.intervalo.porHora)}
+        </section>
+        <section class="cb-cartao cb-p4" aria-labelledby="db-h-grav">
+          <h2 id="db-h-grav" class="cb-mb4">Avarias por gravidade</h2>
+          <div class="cb-grav">
+            ${rosca(gravidades)}
+            <table class="cb-grav-tabela"><tbody>
+              ${gravidades.map((g) => `<tr><td><span class="cb-ponto cb-${g.gravidade.toLowerCase()}"></span>${esc(g.gravidade)}</td>
+                <td class="cb-dir cb-forte cb-tnum">${num(g.qtd)}</td><td class="cb-dir cb-cinza cb-tnum cb-pct">${formatarPct(g.pct, { casas: 0 })}</td></tr>`).join("")}
+            </tbody></table>
           </div>
         </section>
-        <section class="secao" aria-labelledby="db-h-areas">
-          <h2 id="db-h-areas">Áreas com mais avarias</h2>
-          ${areas.length ? `<ol class="db-ranking">
-            ${areas.map((a) => `<li><div class="db-rank-linha"><span>${esc(a.nome)}</span><strong>${num(a.qtd)}</strong></div>
-              ${barra((a.qtd / maxArea) * 100, "db-barra-larga")}</li>`).join("")}
-          </ol>
-          <p class="db-tipos"><span class="texto-2">Tipos mais comuns:</span> ${tipos.map((t) => `<span class="db-chip">${esc(t.nome)} · ${num(t.qtd)}</span>`).join("")}</p>`
-          : `<p class="texto-2">Nenhuma avaria no período.</p>`}
-        </section>
-      </div>
-      </div>
-
-      <div class="db-duas">
-        <section class="secao" aria-labelledby="db-h-marca">
-          <h2 id="db-h-marca">Por marca</h2>
-          ${marcas.length ? `<div class="dash-rolagem"><table class="db-tabela">
-            <thead><tr><th scope="col">Marca</th><th scope="col" class="db-n">Vistorias</th><th scope="col" class="db-n">Com avaria</th><th scope="col">%</th><th scope="col" class="db-n">Graves</th></tr></thead>
-            <tbody>${marcas.map((m) => `<tr><td class="db-forte">${esc(m.nome)}</td><td class="db-n">${num(m.vistorias)}</td><td class="db-n">${num(m.comAvaria)}</td>
-              <td><span class="db-pct">${barra(m.pctComAvaria)}${formatarPct(m.pctComAvaria, { casas: 0 })}</span></td>
-              <td class="db-n${m.graves ? " db-grave" : ""}">${num(m.graves)}</td></tr>`).join("")}</tbody>
-          </table></div>` : `<p class="texto-2">Nenhuma vistoria no período.</p>`}
-        </section>
-        <section class="secao" aria-labelledby="db-h-loja">
-          <h2 id="db-h-loja">Por loja de destino</h2>
-          ${lojas.length ? `<div class="dash-rolagem"><table class="db-tabela">
-            <thead><tr><th scope="col">Loja</th><th scope="col" class="db-n">Vist.</th><th scope="col" class="db-n">Avaria</th><th scope="col" class="db-n">%</th><th scope="col" class="db-n">Divergências</th><th scope="col" class="db-n">Última vistoria</th></tr></thead>
-            <tbody>${lojas.map((l) => `<tr><td class="db-forte${l.nome === SEM_LOJA ? " texto-2" : ""}">${esc(l.nome)}</td><td class="db-n">${num(l.vistorias)}</td>
-              <td class="db-n">${num(l.comAvaria)}</td><td class="db-n">${formatarPct(l.pctComAvaria)}</td><td class="db-n${l.divergencias ? " db-divergencia" : ""}">${num(l.divergencias)}</td><td class="db-n texto-2">${quando(l.ultima)}</td></tr>`).join("")}</tbody>
-          </table></div>` : `<p class="texto-2">Nenhuma vistoria no período.</p>`}
+        <section class="cb-cartao cb-p4" aria-labelledby="db-h-areas">
+          <h2 id="db-h-areas" class="cb-mb3">Áreas com mais avarias</h2>
+          ${areas.length ? areas.map((a) => `<div class="cb-area"><span class="cb-trunc" title="${esc(a.nome)}">${esc(a.nome)}</span>${barra((a.qtd / areas[0].qtd) * 100)}<span class="cb-dir cb-forte cb-tnum">${num(a.qtd)}</span></div>`).join("")
+    : '<p class="cb-cinza">Nenhuma avaria no período.</p>'}
         </section>
       </div>
 
-      <section class="secao db-lista${estado.lista ? " db-lista-aberta" : ""}" id="db-lista" aria-labelledby="db-h-ultimas" tabindex="-1">
-        <div class="db-titulo-linha">
-          <h2 id="db-h-ultimas">${tituloLista}${estado.lista ? ` <span class="texto-2">(${num(ultimas.length)})</span>` : ""}</h2>
-          ${estado.lista ? `<button type="button" class="btn btn-texto db-fechar-lista" data-lista="">${icone("x", "ic db-ic-peq")} Voltar às últimas</button>` : ""}
+      <div class="cb-duas">
+        <section class="cb-cartao" aria-labelledby="db-h-marca">
+          <div class="cb-tab-topo"><h2 id="db-h-marca">Por marca</h2><span class="cb-nota">ordenado por volume</span></div>
+          ${marcas.length ? tabela(["Marca", "Vistorias", "Com avaria", "% avaria", "Graves"],
+    marcas.map((m) => [esc(m.nome), num(m.vistorias), num(m.comAvaria), formatarPct(m.pctComAvaria, { casas: 0 }), num(m.graves)]))
+    : '<p class="cb-cartao-corpo cb-cinza">Nenhuma vistoria no período.</p>'}
+        </section>
+        <section class="cb-cartao" aria-labelledby="db-h-loja">
+          <div class="cb-tab-topo"><h2 id="db-h-loja">Por loja de destino</h2><span class="cb-nota">ordenado por volume</span></div>
+          ${lojas.length ? tabela(["Loja", "Enviados", "Aguardando", "Conforme", "Divergência"],
+    lojas.map((l) => {
+      const rec = recPorLoja.get(l.nome) || { aguardando: 0, conforme: 0 };
+      return [esc(semPrefixo(l.nome)), num(l.vistorias), num(rec.aguardando), num(rec.conforme), num(l.divergencias)];
+    }))
+    : '<p class="cb-cartao-corpo cb-cinza">Nenhuma vistoria no período.</p>'}
+        </section>
+      </div>
+
+      <section class="cb-cartao cb-lista${lista ? " cb-lista-aberta" : ""}" id="db-lista" aria-labelledby="db-h-ultimas" tabindex="-1">
+        <div class="cb-tab-topo cb-tab-topo-lista">
+          <h2 id="db-h-ultimas">${tituloLista}${lista ? ` <span class="cb-cinza">(${num(ultimas.length)})</span>` : ""}</h2>
+          ${lista ? `<button type="button" class="cb-link db-fechar-lista" data-lista="">${icone("x")} Voltar às últimas</button>`
+    : '<a class="cb-link" href="#/inicio">Ver todas →</a>'}
         </div>
-        ${ultimas.length ? `<div class="dash-rolagem"><table class="db-tabela db-clicavel">
-          <thead><tr><th scope="col">Nº</th><th scope="col">Data/Hora</th><th scope="col">Marca/Modelo</th><th scope="col">Chassi</th><th scope="col">Loja</th><th scope="col">${listaReceb ? "Recebimento" : "Gravidade"}</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
-          <tbody>${ultimas.map((v) => `<tr data-id="${esc(v.id)}">
-            <td class="db-forte">${esc(nomeVistoria(v))}</td><td class="dash-num">${formatarDataHora(v.realizadaEm)}</td>
-            <td>${esc([v.marca && marcaDe(v), v.modelo].filter(Boolean).join(" ") || "—")}</td><td class="dash-chassi">${esc(v.chassi || "—")}</td>
-            <td class="texto-2">${esc(v.loja || "—")}</td><td>${listaReceb ? seloRecebimento(v) : seloGravidade(v.gravidadeMaxima)}</td>
-            <td class="db-acoes"><a class="db-ver" href="#/vistoria/${encodeURIComponent(v.id)}">Ver ${icone("avancar", "ic db-ic-peq")}</a></td></tr>`).join("")}</tbody>
-        </table></div>` : `<p class="texto-2">${vazioLista}</p>`}
+        ${ultimas.length ? `<table class="cb-tabela cb-tabela-lista db-clicavel">
+          <thead><tr><th scope="col">ID</th><th scope="col">Data/Hora</th><th scope="col">Veículo</th><th scope="col">Chassi</th><th scope="col">Loja</th>
+            <th scope="col" class="cb-centro">Avarias</th><th scope="col">Recebimento</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
+          <tbody>${ultimas.map((v) => {
+    const marca = formatarMarca(v.marca ?? "");
+    return `<tr data-id="${esc(v.id)}">
+            <td class="cb-mono cb-cinza-escuro">${esc(nomeVistoria(v))}</td><td class="cb-tnum">${formatarDataHora(v.realizadaEm)}</td>
+            <td>${marca ? `<strong>${esc(marca)}</strong> ` : ""}${esc(v.modelo || (marca ? "" : "—"))}</td><td class="cb-mono">${esc(v.chassi || "—")}</td>
+            <td>${esc(semPrefixo(v.loja) || "—")}</td><td class="cb-centro cb-tnum">${num(v.avarias?.length ?? 0)}</td>
+            <td>${seloRecebimento(v, { curto: true }) || '<span class="cb-cinza">—</span>'}</td>
+            <td class="cb-dir"><a class="cb-link" href="#/vistoria/${encodeURIComponent(v.id)}">Abrir</a></td></tr>`;
+  }).join("")}</tbody>
+        </table>` : `<p class="cb-cartao-corpo cb-cinza">${vazioLista}</p>`}
       </section>
       </div>`;
-    aplicarLarguras(conteudo);
+    aplicarMedidas(conteudo);
     if (rolarParaLista) {
       rolarParaLista = false;
-      const lista = $("#db-lista", conteudo);
-      lista.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-      lista.focus({ preventScroll: true });
+      const el = $("#db-lista", conteudo);
+      el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      el.focus({ preventScroll: true });
     }
+  }
+
+  // ---------- Exportar ----------
+  function exportar() {
+    if (!estado.intervalo || estado.erro) {
+      ctx.avisar?.("Carregue o dashboard antes de exportar.");
+      return;
+    }
+    const lista = maisRecentesPrimeiro(filtrarDashboard(estado.itens, filtros()));
+    if (!lista.length) {
+      ctx.avisar?.("Nenhuma vistoria no período para exportar.");
+      return;
+    }
+    const [ini, fim] = diasDoIntervalo(estado.intervalo);
+    baixarCsv(linhasDeVistorias(lista, { painel: false }), `dashboard_${hojeCampo(ini)}_${hojeCampo(fim)}.csv`);
   }
 
   // ---------- Eventos ----------
@@ -342,11 +368,12 @@ export async function montar(raiz, ctx) {
       carregar();
     });
   }
-  $("#db-marca", raiz).addEventListener("change", (e) => { estado.marca = e.target.value; desenhar(); });
-  $("#db-loja", raiz).addEventListener("change", (e) => { estado.loja = e.target.value; desenhar(); });
+  $("#db-marca", raiz).addEventListener("change", (e) => { estado.marca = e.target.value; atualizarPilula(e.target); desenhar(); });
+  $("#db-loja", raiz).addEventListener("change", (e) => { estado.loja = e.target.value; atualizarPilula(e.target); desenhar(); });
+  $("#db-exportar", raiz).addEventListener("click", exportar);
   conteudo.addEventListener("click", (e) => {
     if (e.target.closest('[data-acao="tentar"]')) return carregar();
-    // Cartões "Veículos com avaria" / "Avarias graves": abrem (ou fecham) a lista de baixo.
+    // Cartões com "Ver veículos": abrem (ou fecham) a lista de baixo.
     const alvoLista = e.target.closest("[data-lista]");
     if (alvoLista) {
       const tipo = alvoLista.dataset.lista;
