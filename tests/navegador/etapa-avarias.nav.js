@@ -21,6 +21,12 @@ teste("etapa 3: nova avaria valida área, tipo e gravidade", async () => {
     await esperar(20);
     const erros = d.querySelector("#avaria-erros").textContent;
     ok(erros.includes("Escolha a área da avaria") && erros.includes("Escolha o tipo da avaria") && erros.includes("Escolha a gravidade"), erros);
+    escolher(d.querySelector("#avaria-area"), "Capô");
+    ok(!d.querySelector("#avaria-erros").textContent.includes("Escolha a área"), "o erro da área continuou depois de escolher");
+    escolher(d.querySelector("#avaria-tipo"), "Risco");
+    d.querySelector('[data-valor="Grave"]').click();
+    await esperar(20);
+    igual(d.querySelector("#avaria-erros").hidden, true, "com tudo escolhido a mensagem some");
     d.close();
   } finally {
     await t.fim();

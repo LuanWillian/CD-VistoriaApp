@@ -39,7 +39,7 @@ export async function montar(el, ctx) {
         <div class="busca cm-ferramentas">
           <div class="busca-campo">
             ${icone("busca")}
-            <input class="entrada" id="busca" type="search" placeholder="Buscar por chassi, marca, modelo ou número" aria-label="Buscar vistorias" autocomplete="off">
+            <input class="entrada" id="busca" type="search" placeholder="Buscar chassi, marca ou modelo" aria-label="Buscar por chassi, marca, modelo ou número" autocomplete="off">
           </div>
           <div class="cm-pilulas">
             <div class="chips" role="radiogroup" aria-label="Período" id="periodos">

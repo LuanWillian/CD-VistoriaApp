@@ -53,12 +53,14 @@ export function criarPdfPronto({ gerar, atual }) {
   };
 }
 
-function telaSimples(el, titulo, texto, desktop) {
+function telaSimples(el, titulo, texto, desktop, { loja = false } = {}) {
+  // Conta de loja volta para Recebimentos (a lista de vistorias não existe para ela).
+  const [href, destino] = loja ? ["#/recebimentos", "Recebimentos"] : desktop ? ["#/inicio", "o início"] : ["#/vistorias", "Vistorias"];
   el.innerHTML = `
     <div class="vazio">
       <p class="titulo">${esc(titulo)}</p>
       <p>${esc(texto)}</p>
-      <a class="btn btn-secundario" href="${desktop ? "#/inicio" : "#/vistorias"}">${icone("voltar")} Voltar para ${desktop ? "o início" : "Vistorias"}</a>
+      <a class="btn btn-secundario" href="${href}">${icone("voltar")} Voltar para ${destino}</a>
     </div>`;
 }
 
@@ -94,11 +96,13 @@ export async function montar(el, ctx, params) {
   }
   if (!ativo) return {};
   if (!v) {
-    telaSimples(el, "Vistoria não encontrada", ctx.online() ? "Ela pode ter sido excluída." : "Conecte-se à internet para ver esta vistoria.", ctx.desktop);
+    const motivo = !ctx.online() ? "Conecte-se à internet para ver esta vistoria."
+      : modoLoja ? "Ela não foi enviada para a sua loja ou foi excluída pelo CD." : "Ela pode ter sido excluída.";
+    telaSimples(el, "Vistoria não encontrada", motivo, ctx.desktop, { loja: modoLoja });
     return {};
   }
   if (v.origem === "remota" && !v.completa) {
-    telaSimples(el, "Vistoria ainda não baixada", "Conecte-se à internet para ver esta vistoria.", ctx.desktop);
+    telaSimples(el, "Vistoria ainda não baixada", "Conecte-se à internet para ver esta vistoria.", ctx.desktop, { loja: modoLoja });
     return {};
   }
   if (v.status === "excluindo") {

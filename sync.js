@@ -62,7 +62,7 @@ export function criarSincronizador({
   }
 
   async function rodada(u) {
-    const resumo = { enviadas: 0, erros: 0, interrompido: null };
+    const resumo = { enviadas: 0, erros: 0, exclusoesRecusadas: 0, interrompido: null };
     const interromper = (tipo) => {
       resumo.interrompido = tipo;
       if (tipo === "sessao") sessaoExpirada = true;
@@ -77,7 +77,12 @@ export function criarSincronizador({
       } catch (e) {
         const c = remoto.classificarErro(e, estaOnline());
         if (c.tipo !== "servidor") return interromper(c.tipo);
-        // recusa do servidor: a exclusão fica na fila para a próxima tentativa
+        // Recusa do servidor (ex.: sem permissão): tentar de novo não adianta. A
+        // vistoria volta para a lista e o app avisa (resumo.exclusoesRecusadas).
+        await storage.removerExclusao(item.id);
+        const v = await storage.obterVistoria(item.id);
+        if (v?.status === "excluindo") await storage.salvarVistoria({ ...v, status: "sincronizada" });
+        resumo.exclusoesRecusadas++;
       }
     }
 

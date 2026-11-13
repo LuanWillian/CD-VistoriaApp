@@ -127,7 +127,7 @@ export async function montar(el, ctx, params) {
       <button type="button" class="btn btn-primario" id="btn-avancar">Avançar ${icone("avancar")}</button>
     </div>`;
 
-  const conteudo = $("#etapa-conteudo", el);
+  let conteudo = $("#etapa-conteudo", el);
   const btnVoltar = $("#btn-voltar", el);
   const btnAvancar = $("#btn-avancar", el);
   let etapaAtual = null;
@@ -152,7 +152,11 @@ export async function montar(el, ctx, params) {
     etapaAtual?.desmontar?.();
     n = novo;
     editor.irPara(n);
-    conteudo.replaceChildren();
+    // Contêiner novo a cada etapa: os ouvintes de clique da etapa anterior (presos
+    // no contêiner) somem junto com ele, em vez de se acumularem a cada visita.
+    const novoConteudo = conteudo.cloneNode(false);
+    conteudo.replaceWith(novoConteudo);
+    conteudo = novoConteudo;
     etapaAtual = ETAPAS[n - 1].modulo.montar(conteudo, editor, ctx) || {};
     btnVoltar.disabled = n === 1;
     btnAvancar.innerHTML = n === 4 ? `${icone("check")} Finalizar vistoria` : `Avançar ${icone("avancar")}`;
@@ -169,9 +173,23 @@ export async function montar(el, ctx, params) {
     if (b) irPara(Number(b.dataset.etapa));
   });
   btnVoltar.addEventListener("click", () => n > 1 && irPara(n - 1));
+  let finalizando = false;
   btnAvancar.addEventListener("click", async () => {
     if (n < 4) return irPara(n + 1);
-    return finalizar(editor, ctx, { irPara: (etapa) => irPara(etapa, { focar: false }), etapa: () => etapaAtual });
+    // Trava contra toque duplo: uma vistoria, uma navegação.
+    if (finalizando) return null;
+    finalizando = true;
+    btnAvancar.disabled = true;
+    btnAvancar.innerHTML = `${icone("carregando", "ic gira")} Finalizando…`;
+    try {
+      return await finalizar(editor, ctx, { irPara: (etapa) => irPara(etapa, { focar: false }), etapa: () => etapaAtual });
+    } finally {
+      finalizando = false;
+      if (btnAvancar.isConnected) {
+        btnAvancar.disabled = false;
+        btnAvancar.innerHTML = n === 4 ? `${icone("check")} Finalizar vistoria` : `Avançar ${icone("avancar")}`;
+      }
+    }
   });
 
   const pararIndicador = editor.aoMudar(atualizarIndicador);

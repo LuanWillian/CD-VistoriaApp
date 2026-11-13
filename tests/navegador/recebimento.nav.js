@@ -56,6 +56,29 @@ teste("recebimento: divergência sem descrição e sem assinatura mostram os err
   }
 });
 
+teste("recebimento: dois toques rápidos em Confirmar abrem uma confirmação só", async () => {
+  await storage.apagarBanco();
+  let perguntas = 0;
+  const t = abrir({ confirmar: async () => { perguntas++; await esperar(80); return false; } });
+  await esperarAte(() => t.d());
+  const d = t.d();
+  try {
+    escolher(d, "conforme");
+    clicar(d, '[data-acao="assinar"]');
+    await esperar(100);
+    clicar(d, '[data-acao="confirmar"]');
+    clicar(d, '[data-acao="confirmar"]');
+    await esperar(200);
+    igual(perguntas, 1);
+    clicar(d, '[data-acao="confirmar"]');
+    await esperar(150);
+    igual(perguntas, 2, "depois de cancelar, dá para confirmar de novo");
+  } finally {
+    clicar(d, '[data-acao="cancelar"]');
+    await t.resultado;
+  }
+});
+
 teste("recebimento: o preenchido fica guardado e volta ao reabrir", async () => {
   await storage.apagarBanco();
   const t1 = abrir();

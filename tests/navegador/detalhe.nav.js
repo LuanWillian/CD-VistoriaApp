@@ -286,3 +286,23 @@ teste("detalhe (celular) da loja: aviso para conferir e Registrar recebimento fi
     t.fim();
   }
 });
+
+teste("detalhe da loja: vistoria que não é da loja mostra o motivo certo e volta para Recebimentos", async () => {
+  await storage.apagarBanco();
+  const LOJA = { id: "u-loja", email: "loja@teste", nome: "Davi", papel: "loja", loja: "PG Prime BMW Natal" };
+  const ctx = {
+    desktop: false, storage, auth: { usuarioAtual: () => LOJA }, online: () => true, navegar: () => {}, avisar: () => {},
+    confirmar: async () => true, sync: { eventos: new EventTarget(), sincronizar: async () => ({}) },
+    remoto: { obterVistoriaCompleta: async () => { throw { code: "PGRST116" }; }, urlsAssinadas: async () => new Map() },
+  };
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const tela = await detalhe.montar(el, ctx, { id: "de-outra-loja", busca: new URLSearchParams(), modo: "loja" });
+  try {
+    ok(el.textContent.includes("não foi enviada para a sua loja"), el.textContent.trim().slice(0, 120));
+    igual(el.querySelector(".vazio a").getAttribute("href"), "#/recebimentos");
+  } finally {
+    tela?.desmontar?.();
+    el.remove();
+  }
+});

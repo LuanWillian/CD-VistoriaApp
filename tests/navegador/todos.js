@@ -1,5 +1,6 @@
 import { rodar } from "./runner.js";
 import "./storage.nav.js";
+import "./login.nav.js";
 import "./photos.nav.js";
 import "./iphone.nav.js";
 import "./signature.nav.js";

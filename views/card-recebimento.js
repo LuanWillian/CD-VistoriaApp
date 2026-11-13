@@ -5,7 +5,8 @@ import { STATUS_RECEBIMENTO, situacaoRecebimento } from "../recebimento-dados.js
 import { esc, icone } from "../ui.js";
 import { miniaturaHtml } from "../photos.js";
 
-const ICONE = { aguardando: "nuvem", conforme: "check", divergencia: "alerta" };
+// Mesmos ícones em todo lugar (lista, cabeçalho e card): relógio, check e alerta em círculo.
+const ICONE = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "alertaCirculo" };
 // Computador: ícones e textos curtos do visual do computador.
 const ICONE_CURTO = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "alertaCirculo" };
 const TEXTO_CURTO = { aguardando: "Aguardando", conforme: "Conforme", divergencia: "Com divergência" };

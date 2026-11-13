@@ -187,12 +187,24 @@ export function montar(el, editor, ctx) {
       }
     }
 
+    // Mostra o que falta; depois do primeiro Salvar, a mensagem acompanha cada correção.
+    function mostrarProblemas() {
+      const problemas = validarAvaria(trabalho);
+      erros.textContent = problemas.length ? problemas.join(". ") + "." : "";
+      erros.hidden = !problemas.length;
+      return problemas;
+    }
+    const revalidar = () => {
+      if (erros.hidden) return;
+      alterado();
+      mostrarProblemas();
+    };
+    area.addEventListener("change", revalidar);
+    tipo.addEventListener("change", revalidar);
+
     async function salvar() {
       alterado();
-      const problemas = validarAvaria(trabalho);
-      if (problemas.length) {
-        erros.textContent = problemas.join(". ") + ".";
-        erros.hidden = false;
+      if (mostrarProblemas().length) {
         erros.focus?.();
         return;
       }
@@ -214,6 +226,7 @@ export function montar(el, editor, ctx) {
       if (alvo.classList.contains("gravidade")) {
         trabalho.gravidade = alvo.dataset.valor;
         marcarGravidade();
+        revalidar();
         return;
       }
       const acao = alvo.dataset.acao;

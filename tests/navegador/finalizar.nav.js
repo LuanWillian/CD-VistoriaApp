@@ -54,6 +54,31 @@ teste("finalizar: rascunho completo vira vistoria pendente", async () => {
   igual(await storage.obterRascunho(r.id), undefined, "o rascunho voltou depois de finalizar");
 });
 
+teste("finalizar: dois toques rápidos em Finalizar gravam e abrem a vistoria uma vez só", async () => {
+  await storage.apagarBanco();
+  const r = rascunhoCompleto();
+  r.etapa = 4;
+  await storage.salvarRascunho(r);
+  for (const nome of arquivosDaVistoria({ avarias: [] })) await storage.salvarArquivo(`${r.id}/${nome}`, new Blob([nome]));
+  const ctx = ctxFalso();
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const view = await nova.montar(el, ctx, { busca: new URLSearchParams(`rascunho=${r.id}`) });
+  try {
+    await esperar(100);
+    const b = el.querySelector("#btn-avancar");
+    b.click();
+    b.click();
+    igual(b.disabled, true, "o botão fica travado enquanto finaliza");
+    await esperar(400);
+    igual(ctx.navegacoes.length, 1, `navegou ${ctx.navegacoes.length} vezes`);
+  } finally {
+    view.desmontar();
+    el.remove();
+    history.replaceState(null, "", location.pathname);
+  }
+});
+
 teste("finalizar: lista o que falta e leva até o campo", async () => {
   await storage.apagarBanco();
   const r = rascunhoCompleto();
@@ -154,5 +179,44 @@ teste("etapa 4: assinatura gravada e limpa", async () => {
     ok(t.el.querySelector("#motorista-nome") && t.el.querySelector("#motorista-assinatura"), "bloco do motorista ausente");
   } finally {
     await t.fim();
+  }
+});
+
+teste("nova vistoria: ir e voltar entre as etapas não repete os cliques (um editor, uma assinatura, um erro a menos)", async () => {
+  await storage.apagarBanco();
+  const r = rascunhoCompleto();
+  r.dados.semAvarias = false;
+  r.etapa = 1;
+  await storage.salvarRascunho(r);
+  const confirmacoes = [];
+  const ctx = { ...ctxFalso(), confirmar: async (o) => { confirmacoes.push(o.titulo); return false; } };
+  const erros = [];
+  const pegar = (e) => erros.push(String(e.error || e.message));
+  window.addEventListener("error", pegar);
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const view = await nova.montar(el, ctx, { busca: new URLSearchParams(`rascunho=${r.id}`) });
+  const ir = async (n) => { el.querySelector(`.etapas [data-etapa="${n}"]`).click(); await esperar(120); };
+  try {
+    await ir(2); await ir(3); await ir(2); await ir(3); await ir(4); await ir(3);
+    el.querySelector('[data-acao="adicionar"]').click();
+    await esperar(150);
+    igual(document.querySelectorAll("dialog[open]").length, 1, "Adicionar avaria abriu mais de um editor");
+    document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+    await esperar(80);
+    await ir(2);
+    el.querySelector('[data-acao="limpar"]').click();
+    await esperar(150);
+    igual(confirmacoes.length, 1, "Limpar pediu confirmação mais de uma vez");
+    await ir(1);
+    el.querySelector('#combustivel [data-valor="Diesel"]').click();
+    await esperar(80);
+    igual(erros, [], "clique na etapa 1 gerou erro de JavaScript");
+  } finally {
+    window.removeEventListener("error", pegar);
+    document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+    view.desmontar();
+    el.remove();
+    history.replaceState(null, "", location.pathname);
   }
 });

@@ -85,7 +85,7 @@ test("envia na ordem da spec e marca como sincronizada", async () => {
   assert.equal(v.numero, "VIS-000001");
   assert.equal(v.erro, null);
   assert.ok(v.arquivosSalvosEm);
-  assert.deepEqual(r, { enviadas: 1, erros: 0, interrompido: null });
+  assert.deepEqual(r, { enviadas: 1, erros: 0, exclusoesRecusadas: 0, interrompido: null });
 });
 
 test("reenvio não insere de novo", async () => {
@@ -130,7 +130,7 @@ test("erro do servidor marca erro e segue para a próxima", async () => {
   assert.equal(st.vistorias.get("vA").status, "erro");
   assert.equal(st.vistorias.get("vA").erro, "O servidor recusou os dados: x.");
   assert.equal(st.vistorias.get("vB").status, "sincronizada");
-  assert.deepEqual(r, { enviadas: 1, erros: 1, interrompido: null });
+  assert.deepEqual(r, { enviadas: 1, erros: 1, exclusoesRecusadas: 0, interrompido: null });
 });
 
 test("offline não chama o remoto", async () => {
@@ -168,6 +168,16 @@ test("exclusões primeiro e vistorias excluindo puladas", async () => {
   assert.equal(st.vistorias.has("v9"), false);
   assert.equal(st.arquivos.has("v9/frente.jpg"), false);
   assert.equal(st.vistorias.get("v8").status, "excluindo");
+});
+
+test("exclusão recusada pelo servidor: a vistoria volta para a lista e sai da fila", async () => {
+  const st = storageFalso(vistoria("v9", "u1", { status: "excluindo", numero: "VIS-000009" }));
+  st.exclusoes.set("v9", { id: "v9", userId: "u1", criadoEm: "2026-11-07T13:00:00.000Z" });
+  const rm = remotoFalso({ falhar: (m) => (m === "excluirVistoriaRemota" ? { tipo: "servidor", mensagem: "O servidor recusou os dados: permissão negada." } : null) });
+  const r = await criar(st, rm).sincronizar();
+  assert.equal(st.exclusoes.size, 0, "não fica tentando para sempre");
+  assert.equal(st.vistorias.get("v9").status, "sincronizada");
+  assert.equal(r.exclusoesRecusadas, 1);
 });
 
 test("virou excluindo no meio do envio: status não é sobrescrito", async () => {

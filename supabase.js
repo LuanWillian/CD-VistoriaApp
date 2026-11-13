@@ -298,7 +298,12 @@ export function criarRemoto({ url, chave, criarCliente = (u, k, o) => globalThis
     },
     // donoRecebimento: conta da loja que recebeu (os arquivos dela ficam na pasta dela).
     async excluirVistoriaRemota(userId, id, { donoRecebimento } = {}) {
-      checar(await sb.from("inspections").delete().eq("id", id));
+      // O RLS não dá erro quando recusa um DELETE: só apaga 0 linhas. Pede as linhas
+      // apagadas; se nenhuma veio e a vistoria continua lá, foi recusa (permissão).
+      const apagadas = checar(await sb.from("inspections").delete().eq("id", id).select("id"));
+      if (!apagadas?.length && checar(await sb.from("inspections").select("id").eq("id", id).maybeSingle())) {
+        throw Object.assign(new Error("Sem permissão para excluir esta vistoria."), { code: "42501" });
+      }
       for (const dono of [userId, donoRecebimento].filter(Boolean)) {
         const pasta = `${dono}/${id}`;
         const itens = checar(await bucket().list(pasta, { limit: 1000 }));

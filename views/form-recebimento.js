@@ -115,8 +115,12 @@ export function abrirFormRecebimento({ vistoria, ctx, deps = {} }) {
       const erros = validarRecebimento(rascunho);
       mostrarErros(erros);
       if (erros.length) return;
-      if (!(await ctx.confirmar({ titulo: "Confirmar recebimento?", texto: "Depois de confirmar não dá para alterar.", ok: "Confirmar" }))) return;
+      // Trava já aqui: dois toques rápidos não podem abrir duas confirmações.
       enviando = true;
+      if (!(await ctx.confirmar({ titulo: "Confirmar recebimento?", texto: "Depois de confirmar não dá para alterar.", ok: "Confirmar" }))) {
+        enviando = false;
+        return;
+      }
       const botao = $('[data-acao="confirmar"]', d);
       botao.disabled = true;
       botao.innerHTML = `${icone("carregando", "ic gira")} Enviando…`;

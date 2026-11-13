@@ -106,7 +106,8 @@ async function renderizar() {
   const { nome, params } = lerRota();
   // No menu não aparece a seta de voltar ao menu.
   document.body.classList.toggle("na-inicio", nome === "inicio");
-  marcarNavTopo(nome);
+  // O detalhe de uma vistoria faz parte de "Vistorias" (o caminho no topo da página diz isso).
+  marcarNavTopo(nome === "detalhe" ? "inicio" : nome);
   if (!desktop) {
     nivelAtual = viewInicio.nivelDaTela(history.state, nome, nivelAtual);
     if (history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
@@ -170,6 +171,10 @@ async function sincronizar() {
     return null;
   });
   if (r?.interrompido === "rede") registrarSyncEmSegundoPlano();
+  if (r?.exclusoesRecusadas) {
+    avisar("O servidor não permitiu excluir a vistoria. Ela voltou para a lista.", "erro");
+    if (viewAtual) renderizar();
+  }
   return r;
 }
 
@@ -213,9 +218,10 @@ function tituloComoLinkDoMenu(ligar) {
     // Computador: sem a seta (os links Vistorias/Dashboard já ficam no topo); o nome
     // continua levando à lista de vistorias. Celular e app: seta de voltar ao menu.
     ? (() => {
-      // Conta de loja não tem os links do topo: fica com a seta mesmo no computador.
-      const semSeta = desktop && papelAtual() !== "loja";
-      return `<a class="topo-link" href="#/inicio" aria-label="${semSeta ? "CD Vistoria — ir para Vistorias" : "CD Vistoria — voltar ao menu"}">${semSeta ? "" : icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`;
+      // Computador: o logo já é o link (sem seta). Conta de loja vai ao início dela.
+      const loja = papelAtual() === "loja";
+      const rotulo = !desktop ? "CD Vistoria — voltar ao menu" : loja ? "CD Vistoria — ir para o início" : "CD Vistoria — ir para Vistorias";
+      return `<a class="topo-link" href="#/inicio" aria-label="${rotulo}">${desktop ? "" : icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`;
     })()
     : "CD Vistoria";
 }

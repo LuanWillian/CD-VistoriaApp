@@ -90,15 +90,20 @@ test("busca sem caracteres que quebram o filtro or()", () => {
   assert.equal(escaparBusca('a"b\\c'), "a b c");
 });
 
-function clienteFalso(chamadas, arquivos) {
+function clienteFalso(chamadas, arquivos, { apagadas = null } = {}) {
   return {
     auth: {},
     from: (tabela) => ({
       delete: () => ({
-        eq: async (coluna, valor) => {
-          chamadas.push(`delete ${tabela} ${coluna}=${valor}`);
-          return { data: null, error: null };
-        },
+        eq: (coluna, valor) => ({
+          select: async (campos) => {
+            chamadas.push(`delete ${tabela} ${coluna}=${valor}`);
+            return { data: apagadas ?? [{ [campos]: valor }], error: null };
+          },
+        }),
+      }),
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: apagadas && apagadas.length === 0 ? { id: "v1" } : null, error: null }) }),
       }),
     }),
     storage: {
@@ -128,6 +133,15 @@ test("excluirVistoriaRemota sem arquivos não chama remove", async () => {
   const remoto = criarRemoto({ url: "u", chave: "k", criarCliente: () => clienteFalso(chamadas, []) });
   await remoto.excluirVistoriaRemota("u1", "v1");
   assert.deepEqual(chamadas, ["delete inspections id=v1", "list vistorias u1/v1"]);
+});
+
+test("excluirVistoriaRemota: se o banco recusar sem erro (0 linhas e a vistoria continua lá), avisa e não apaga os arquivos", async () => {
+  const chamadas = [];
+  const remoto = criarRemoto({ url: "u", chave: "k", criarCliente: () => clienteFalso(chamadas, [{ name: "frente.jpg" }], { apagadas: [] }) });
+  const e = await remoto.excluirVistoriaRemota("u1", "v1").catch((err) => err);
+  assert.equal(classificarErro(e).tipo, "servidor");
+  assert.match(classificarErro(e).mensagem, /permissão negada/);
+  assert.deepEqual(chamadas, ["delete inspections id=v1"]);
 });
 
 test("sair offline (signOut com erro) apaga a sessão salva e para a renovação", async () => {
