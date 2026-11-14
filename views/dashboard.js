@@ -31,13 +31,14 @@ function diasDoIntervalo({ de, ate }) {
 const dataBr = (d) => `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()}`;
 
 // ---------- Gráficos (HTML/SVG desenhado aqui, sem biblioteca) ----------
-// Colunas agrupadas: período anterior (cinza) e atual (azul) lado a lado, por dia
-// ou por hora. A altura vai em data-altura (a CSP bloqueia style="" no HTML).
-function graficoColunas({ rotulos, atual, anterior }, porHora) {
+// Colunas agrupadas: período anterior (cinza) e atual (azul) lado a lado, por hora,
+// dia, semana ou mês (dashboard-dados.js escolhe pelo tamanho do período). A altura vai em data-altura (a CSP bloqueia style="" no HTML).
+const NOME_UNIDADE = { hora: "hora", dia: "dia", semana: "semana", mes: "mês" };
+function graficoColunas({ rotulos, atual, anterior, unidade }) {
   const max = Math.max(...atual, ...anterior, 1);
   const passo = Math.max(1, Math.ceil(rotulos.length / 15));
   const alt = (v) => ((v / max) * 100).toFixed(1);
-  return `<div class="cb-colunas" role="img" aria-label="Vistorias por ${porHora ? "hora" : "dia"}: período atual e anterior">
+  return `<div class="cb-colunas" role="img" aria-label="Vistorias por ${NOME_UNIDADE[unidade]}: período atual e anterior">
     ${rotulos.map((r, i) => `<div class="cb-coluna-grupo" title="${esc(r)}: ${num(atual[i])} ${atual[i] === 1 ? "vistoria" : "vistorias"} (período anterior: ${num(anterior[i])})">
       <div class="cb-barras"><span class="cb-barra-anterior" data-altura="${alt(anterior[i])}"></span><span class="db-coluna cb-barra-atual" data-altura="${alt(atual[i])}"></span></div>
       <span class="cb-coluna-rot">${i % passo === 0 ? esc(r) : "&nbsp;"}</span>
@@ -282,10 +283,10 @@ export async function montar(raiz, ctx) {
       <div class="cb-graficos">
         <section class="cb-cartao cb-p4 cb-volume" aria-labelledby="db-h-volume">
           <div class="cb-graf-topo">
-            <h2 id="db-h-volume">Vistorias por ${estado.intervalo.porHora ? "hora" : "dia"}</h2>
+            <h2 id="db-h-volume">Vistorias por ${NOME_UNIDADE[s.unidade]}</h2>
             <p class="cb-legenda"><span><span class="cb-quad cb-quad-atual"></span>Atual</span><span><span class="cb-quad cb-quad-anterior"></span>Anterior</span></p>
           </div>
-          ${graficoColunas(s, estado.intervalo.porHora)}
+          ${graficoColunas(s)}
         </section>
         <section class="cb-cartao cb-p4" aria-labelledby="db-h-grav">
           <h2 id="db-h-grav" class="cb-mb4">Avarias por gravidade</h2>

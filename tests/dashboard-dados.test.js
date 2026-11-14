@@ -85,6 +85,29 @@ test("série de hoje tem 24 colunas, uma por hora", () => {
   assert.equal(s.rotulos[9], "09h");
 });
 
+test("série longa agrupa por semana (até 200 dias) e por mês (acima disso); o gráfico continua legível", () => {
+  const agora = new Date(2026, 10, 14, 15, 0);
+  // Tudo desde 01/09: 75 dias → 11 semanas
+  const semanas = intervaloDoDashboard("tudo", agora, { inicio: new Date(2026, 8, 1, 10).toISOString() });
+  const s = serie([v("1", { realizadaEm: new Date(2026, 8, 1, 10).toISOString() }), v("2", { realizadaEm: new Date(2026, 8, 7, 10).toISOString() }),
+    v("3", { realizadaEm: new Date(2026, 8, 8, 10).toISOString() }), v("4", { realizadaEm: new Date(2026, 10, 14, 9).toISOString() })], [], semanas);
+  assert.equal(s.unidade, "semana");
+  assert.equal(s.atual.length, 11);
+  assert.deepEqual([s.atual[0], s.atual[1], s.atual[10]], [2, 1, 1], "01/09 e 07/09 na 1ª semana; 08/09 na 2ª; hoje na última");
+  assert.equal(s.rotulos[0], "01/09");
+  assert.equal(s.rotulos[1], "08/09");
+  // Tudo desde março: mais de 200 dias → meses
+  const meses = intervaloDoDashboard("tudo", agora, { inicio: new Date(2026, 2, 20, 10).toISOString() });
+  const m = serie([v("1", { realizadaEm: new Date(2026, 2, 20, 10).toISOString() }), v("2", { realizadaEm: new Date(2026, 10, 1, 10).toISOString() })], [], meses);
+  assert.equal(m.unidade, "mes");
+  assert.equal(m.atual.length, 9, "março a novembro");
+  assert.deepEqual([m.atual[0], m.atual[8]], [1, 1]);
+  assert.deepEqual([m.rotulos[0], m.rotulos[8]], ["mar/26", "nov/26"]);
+  // 30 dias continua por dia; hoje por hora
+  assert.equal(serie([], [], intervaloDoDashboard("30d", agora)).unidade, "dia");
+  assert.equal(serie([], [], intervaloDoDashboard("hoje", agora)).unidade, "hora");
+});
+
 test("gravidade: contagem e % na ordem Leve, Moderada, Grave", () => {
   const g = porGravidade([v("1", { avarias: [av("Leve"), av("Leve"), av("Grave")] }), v("2", { avarias: [av("Moderada")] })]);
   assert.deepEqual(g.map((x) => [x.gravidade, x.qtd, x.pct]), [["Leve", 2, 50], ["Moderada", 1, 25], ["Grave", 1, 25]]);

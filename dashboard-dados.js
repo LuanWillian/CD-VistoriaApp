@@ -109,14 +109,31 @@ export function resumo(itens, anteriores = []) {
 
 // Série do gráfico: uma coluna por dia (ou por hora, se o período é um dia só),
 // com a contagem do período anterior na mesma posição.
+// Unidade das colunas do gráfico: por hora (um dia), por dia (até 45 dias), por
+// semana (até 200 dias) ou por mês. Com colunas demais, as barras somem.
+export function unidadeDaSerie(intervalo) {
+  if (intervalo.porHora) return "hora";
+  if (intervalo.dias <= 45) return "dia";
+  return intervalo.dias <= 200 ? "semana" : "mes";
+}
+
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
 export function serie(itens, anteriores, intervalo) {
+  const unidade = unidadeDaSerie(intervalo);
   const de = new Date(intervalo.de);
   const deAnterior = new Date(intervalo.anterior.de);
-  const n = intervalo.porHora ? 24 : intervalo.dias;
+  const meses = (inicio, fim) => (fim.getFullYear() - inicio.getFullYear()) * 12 + fim.getMonth() - inicio.getMonth();
+  const n = unidade === "hora" ? 24 : unidade === "dia" ? intervalo.dias
+    : unidade === "semana" ? Math.ceil(intervalo.dias / 7)
+      : meses(de, new Date(new Date(intervalo.ate).getTime() - 1)) + 1;
   const indice = (iso, base) => {
     const t = new Date(iso);
-    if (intervalo.porHora) return t.getHours() + Math.round((meiaNoite(t.getFullYear(), t.getMonth(), t.getDate()) - base) / DIA_MS) * 24;
-    return Math.round((meiaNoite(t.getFullYear(), t.getMonth(), t.getDate()) - base) / DIA_MS);
+    const dia = Math.round((meiaNoite(t.getFullYear(), t.getMonth(), t.getDate()) - base) / DIA_MS);
+    if (unidade === "hora") return t.getHours() + dia * 24;
+    if (unidade === "dia") return dia;
+    if (unidade === "semana") return Math.floor(dia / 7);
+    return meses(base, t);
   };
   const atual = Array(n).fill(0);
   const anterior = Array(n).fill(0);
@@ -128,12 +145,15 @@ export function serie(itens, anteriores, intervalo) {
     const i = indice(v.realizadaEm, deAnterior);
     if (i >= 0 && i < n) anterior[i]++;
   }
+  const ddmm = (d) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
   const rotulos = Array.from({ length: n }, (_, i) => {
-    if (intervalo.porHora) return `${String(i).padStart(2, "0")}h`;
-    const dia = meiaNoite(de.getFullYear(), de.getMonth(), de.getDate() + i);
-    return `${String(dia.getDate()).padStart(2, "0")}/${String(dia.getMonth() + 1).padStart(2, "0")}`;
+    if (unidade === "hora") return `${String(i).padStart(2, "0")}h`;
+    if (unidade === "dia") return ddmm(meiaNoite(de.getFullYear(), de.getMonth(), de.getDate() + i));
+    if (unidade === "semana") return ddmm(meiaNoite(de.getFullYear(), de.getMonth(), de.getDate() + i * 7));
+    const mes = new Date(de.getFullYear(), de.getMonth() + i, 1);
+    return `${MESES[mes.getMonth()]}/${String(mes.getFullYear()).slice(-2)}`;
   });
-  return { rotulos, atual, anterior };
+  return { rotulos, atual, anterior, unidade };
 }
 
 export function porGravidade(itens) {
