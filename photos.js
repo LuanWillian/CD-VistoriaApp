@@ -109,19 +109,33 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
       <button type="button" class="btn-topo" data-acao="fechar" aria-label="Fechar">${icone("x")}</button>
     </div>
     <div class="visualizador-palco">
-      <button type="button" class="btn-topo" data-acao="-1" aria-label="Foto anterior">${icone("voltar", "ic ic-lg")}</button>
-      <img alt="">
-      <button type="button" class="btn-topo" data-acao="1" aria-label="Próxima foto">${icone("avancar", "ic ic-lg")}</button>
+      <img alt="" draggable="false">
+      <button type="button" class="btn-topo visualizador-nav visualizador-ant" data-acao="-1" aria-label="Foto anterior">${icone("voltar", "ic ic-lg")}</button>
+      <button type="button" class="btn-topo visualizador-nav visualizador-prox" data-acao="1" aria-label="Próxima foto">${icone("avancar", "ic ic-lg")}</button>
+    </div>
+    <div class="visualizador-rodape">
+      <p class="visualizador-dica">Toque duas vezes para aproximar</p>
+      <div class="visualizador-pontos" aria-hidden="true"></div>
     </div>`;
   const titulo = d.querySelector("h2");
   const img = d.querySelector("img");
+  const pontos = d.querySelector(".visualizador-pontos");
   const navs = d.querySelectorAll('[data-acao="-1"], [data-acao="1"]');
+  let zoom = false;
+  const tirarZoom = () => {
+    zoom = false;
+    img.classList.remove("ampliada");
+    img.style.transformOrigin = "";
+  };
   const mostrar = () => {
     const f = fotos[atual];
+    tirarZoom();
     img.src = f.src;
     img.alt = f.legenda;
-    titulo.textContent = fotos.length > 1 ? `${f.legenda} (${atual + 1} de ${fotos.length})` : f.legenda;
+    titulo.textContent = fotos.length > 1 ? `${f.legenda} · ${atual + 1} de ${fotos.length}` : f.legenda;
     navs.forEach((b) => { b.hidden = fotos.length < 2; });
+    pontos.hidden = fotos.length < 2;
+    pontos.innerHTML = fotos.map((_, i) => `<span${i === atual ? ' class="atual"' : ""}></span>`).join("");
   };
   const ir = (passo) => {
     if (fotos.length < 2) return;
@@ -134,6 +148,14 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
     else if (acao) ir(Number(acao));
     else if (grande && (e.target === d || e.target.matches(".visualizador-palco, .cheio-topo"))) d.close(); // clicou fora da foto
   });
+  // Toque duplo (ou duplo clique) aproxima no ponto tocado; outro toque duplo volta.
+  img.addEventListener("dblclick", (e) => {
+    if (zoom) return tirarZoom();
+    const r = img.getBoundingClientRect();
+    img.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
+    img.classList.add("ampliada");
+    zoom = true;
+  });
   d.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft") ir(-1);
     if (e.key === "ArrowRight") ir(1);
@@ -141,7 +163,8 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
   let x0 = null;
   d.addEventListener("pointerdown", (e) => { x0 = e.clientX; });
   d.addEventListener("pointerup", (e) => {
-    if (x0 !== null && Math.abs(e.clientX - x0) > 50) ir(e.clientX < x0 ? 1 : -1);
+    // Arrastar para o lado troca de foto (com zoom, não troca).
+    if (!zoom && x0 !== null && Math.abs(e.clientX - x0) > 50) ir(e.clientX < x0 ? 1 : -1);
     x0 = null;
   });
   const rolagemAntes = document.documentElement.style.overflow;
@@ -161,7 +184,10 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
   document.body.append(d);
   mostrar();
   d.showModal();
+  // Foco no próprio diálogo: sem o anel azul em volta do X ao abrir no celular.
+  d.tabIndex = -1;
   if (grande) d.querySelector('[data-acao="fechar"]').focus();
+  else d.focus();
 }
 
 // HTML de uma miniatura que abre o visualizador (as telas ligam o clique).
