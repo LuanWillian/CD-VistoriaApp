@@ -140,6 +140,7 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
   const ir = (passo) => {
     if (fotos.length < 2) return;
     atual = (atual + passo + fotos.length) % fotos.length;
+    globalThis.getSelection?.()?.removeAllRanges(); // nenhuma seleção sobra da troca
     mostrar();
   };
   d.addEventListener("click", (e) => {

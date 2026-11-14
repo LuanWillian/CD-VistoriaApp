@@ -1449,6 +1449,8 @@ html:not(.computador) .assinatura-previa { border: 1px dashed #D1D5DB; border-ra
    setas sobre a foto, pontos embaixo e toque duplo para aproximar. ---------- */
 dialog.visualizador:not(.visualizador-grande) { background: #000; color: #fff; }
 dialog.visualizador:focus { outline: none; }
+/* Passar as fotos com toques e arrastes não seleciona o texto do topo (fundo cinza no iPhone). */
+dialog.visualizador { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 dialog.visualizador .cheio-topo { padding-top: max(8px, env(safe-area-inset-top)); background: #000; border-bottom: 1px solid #1F2937; }
 dialog.visualizador .cheio-topo h2 { color: #fff; font-size: 15px; font-weight: 500; }
 .visualizador .btn-topo { color: #fff; }
