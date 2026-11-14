@@ -178,6 +178,8 @@ teste("painel (computador): coluna Recebimento e filtro de recebimento", async (
   await esperar(150);
   try {
     ok([...el.querySelectorAll(".cb-tabela-vistorias th")].some((th) => th.textContent.trim() === "Recebimento"), "falta a coluna Recebimento");
+    igual([...el.querySelectorAll(".cb-tabela-vistorias th")].some((th) => th.textContent.trim() === "Status"), false, "a coluna Status foi removida");
+    igual(el.querySelector("#dash-corpo .selo-sincronizada"), null);
     ok(el.querySelector("#dash-corpo .selo-receb-aguardando"), "falta o selo Aguardando");
     ok(el.querySelector("#dash-corpo .selo-receb-divergencia"), "falta o selo Com divergência");
     const sel = el.querySelector("#dash-recebimento");

@@ -11,7 +11,6 @@ import { baixarBlob, baixarCsv, dataDoArquivo, linhasDeVistorias, qtdAvarias } f
 import { criarObterImagem, vistoriaParaPdf } from "../vistoria-completa.js";
 import { gerarPdf } from "../pdf.js";
 import { $, $$, esc, icone } from "../ui.js";
-import { seloStatus } from "./detalhe.js";
 import { seloRecebimento } from "./card-recebimento.js";
 import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 
@@ -83,7 +82,7 @@ export async function montar(raiz, ctx) {
             <tr>
               <th scope="col" class="cb-col-sel"><input type="checkbox" id="dash-sel-pagina" aria-label="Selecionar as vistorias desta página"></th>
               <th scope="col">ID</th><th scope="col">Data/Hora ↓</th><th scope="col">Veículo</th><th scope="col">Chassi</th>
-              <th scope="col">Loja de destino</th><th scope="col" class="cb-centro">Avarias</th><th scope="col">Status</th><th scope="col">Recebimento</th>
+              <th scope="col">Loja de destino</th><th scope="col" class="cb-centro">Avarias</th><th scope="col">Recebimento</th>
               <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
           </thead>
@@ -165,8 +164,6 @@ export async function montar(raiz, ctx) {
     const loja = el("td", "", semPrefixo(v.loja) || "—");
     const n = qtdAvarias(v);
     const avarias = el("td", `cb-centro cb-tnum${n ? "" : " cb-apagado"}`, String(n));
-    const status = el("td");
-    status.insertAdjacentHTML("beforeend", seloStatus(v.status, { curto: true })); // texto fixo do app
     const receb = el("td");
     receb.insertAdjacentHTML("beforeend", seloRecebimento(v, { curto: true }) || '<span class="cb-cinza">—</span>'); // texto fixo do app
     const acoes = el("td", "cb-col-acao");
@@ -176,7 +173,7 @@ export async function montar(raiz, ctx) {
     ver.setAttribute("aria-label", `Abrir a vistoria ${nomeVistoria(v)}`);
     ver.insertAdjacentHTML("beforeend", icone("avancar"));
     acoes.append(ver);
-    tr.append(sel, id, data, veiculo, chassi, loja, avarias, status, receb, acoes);
+    tr.append(sel, id, data, veiculo, chassi, loja, avarias, receb, acoes);
     return tr;
   }
 
