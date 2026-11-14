@@ -1488,3 +1488,8 @@ html.computador .entrada:focus { border-color: #1D4ED8; box-shadow: 0 0 0 3px #E
 html.computador .entrada[aria-invalid="true"] { border-color: #B3261E; }
 
 html.computador .cb-kpi-periodo { color: #111827; font-weight: 500; }
+
+/* Painel: Avarias e Recebimento só com a largura do conteúdo; a sobra vai para as colunas de texto. */
+html.computador .cb-tabela-vistorias :is(th, td):nth-child(7),
+html.computador .cb-tabela-vistorias :is(th, td):nth-child(8),
+html.computador .cb-tabela-vistorias :is(th, td):nth-child(9) { width: 1%; white-space: nowrap; padding-left: 16px; padding-right: 16px; }
