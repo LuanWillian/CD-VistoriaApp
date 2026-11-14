@@ -30,6 +30,10 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 
 **Quem vê o quê:** contas de **loja** (migration `0006`) veem só as vistorias, avarias e arquivos da própria loja, registram o recebimento delas e não criam, alteram nem excluem nada. Para os vistoriadores: todo vistoriador **vê todas** as vistorias, avarias, fotos e assinaturas (migration `0003`). Só o **dono** cria e edita as suas; **qualquer usuário cadastrado pode excluir** qualquer vistoria (migration `0004`), pelo botão Excluir do navegador do computador. Para voltar a "cada um vê só as suas", recrie as policies "dono lê" da `0001` no lugar das "todos leem" da `0003`; para voltar a "só o dono exclui", recrie as "dono exclui" da `0001` no lugar das "todos excluem" da `0004`.
 
+### 1.1 Dados de demonstração (opcional)
+
+Para apresentar o app com números: no SQL Editor, rode `supabase/snippets/demo_criar.sql`. Ele cria 120 vistorias falsas dos últimos 75 dias (marcas da empresa, avarias e recebimentos nas lojas), sem fotos. Para tirar tudo, rode `supabase/snippets/demo_apagar.sql`; as vistorias de verdade não são tocadas.
+
 ## 2. Rodar localmente
 
 1. Preencha o `env.js` (passo 1.4).
