@@ -1,0 +1,20 @@
+# CD Vistoria — cabeçalhos no Cloudflare Pages (o mesmo que o netlify.toml faz no Netlify).
+# A CSP libera só o próprio site e o Supabase.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+# O Service Worker precisa ser sempre revalidado, senão o app não recebe atualizações.
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+
+# Ícones, bibliotecas e fontes (com a versão no nome do arquivo): cache de 1 ano.
+/icons/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable

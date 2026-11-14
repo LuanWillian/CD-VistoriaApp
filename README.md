@@ -69,6 +69,19 @@ O **caminho padrão** é publicar a pasta como está, com o `env.js` já preench
 
 As pastas `tests/`, `docs/`, `supabase/` e `scripts/` devolvem 404 em produção.
 
+### 3.1 Publicar no Cloudflare Pages (recomendado)
+
+Sem limite de tráfego no plano gratuito e com servidores no Brasil. Os cabeçalhos (CSP, `sw.js` sem cache) ficam no arquivo `_headers`.
+
+1. No painel da Cloudflare: **Workers & Pages → Create → Pages → Connect to Git** e escolha este repositório.
+2. Configuração do build:
+   - **Framework preset:** None
+   - **Build command:** `node scripts/gerar-env.js && rm -rf tests docs supabase scripts`
+   - **Build output directory:** `.`
+3. Em **Environment variables (Production)**, cadastre `SUPABASE_URL` e `SUPABASE_ANON_KEY` (a anon/publishable key, nunca a service_role).
+4. **Save and Deploy.** Cada push no `main` publica uma versão nova (e o app mostra "Nova versão disponível").
+5. Copie a URL `https://<projeto>.pages.dev` para o Supabase, em Authentication → URL Configuration (passo 1.5).
+
 ## 4. Instalar no celular
 
 1. Abra a URL do Netlify no celular e entre com o e-mail e a senha criados no Supabase. O primeiro acesso precisa de internet.

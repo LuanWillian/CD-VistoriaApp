@@ -24,6 +24,11 @@ test("gera env.js e carimba a versão do cache com o commit", () => {
   assert.deepEqual(r, { versao: "v-01234567" });
 });
 
+test("no Cloudflare Pages a versão usa o commit do CF_PAGES_COMMIT_SHA", () => {
+  const r = gerarEnv({ env: { SUPABASE_URL: "https://abc.supabase.co", SUPABASE_ANON_KEY: "k1", CF_PAGES_COMMIT_SHA: "fedcba9876543210" }, raiz: pastaTemporaria() });
+  assert.deepEqual(r, { versao: "v-fedcba98" });
+});
+
 test("sem COMMIT_REF a versão usa o horário e muda a cada deploy", () => {
   const r = gerarEnv({ env: { SUPABASE_URL: "https://abc.supabase.co", SUPABASE_ANON_KEY: "k1" }, raiz: pastaTemporaria() });
   assert.match(r.versao, /^v-[0-9a-z]{8}$/);
