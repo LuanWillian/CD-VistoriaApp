@@ -38,3 +38,25 @@ test("versão nova assume sozinha ao instalar (Chrome não fica preso na antiga)
   await espera;
   assert.equal(pulouEspera, true, "install deveria chamar self.skipWaiting() depois de guardar os arquivos");
 });
+
+test("abrir o app: página inicial guardada por redirecionamento (Cloudflare) é entregue limpa, sem ERR_FAILED", async () => {
+  const tratadores = {};
+  let chaveBuscada = null;
+  class RespostaFalsa {
+    constructor(corpo, opcoes = {}) { this.body = corpo; this.status = opcoes.status ?? 200; this.headers = opcoes.headers; this.redirected = false; }
+  }
+  const guardada = { body: "<html>", status: 200, statusText: "OK", headers: {}, redirected: true };
+  const contexto = {
+    self: { addEventListener: (t, fn) => { tratadores[t] = fn; }, location: { origin: "http://app" } },
+    caches: { match: async (chave) => { chaveBuscada = chave; return guardada; } },
+    fetch: async () => { throw new Error("sem rede"); }, URL, Request: class { constructor(u) { this.url = u; } },
+    Response: RespostaFalsa, Promise, console, setTimeout,
+  };
+  vm.runInNewContext(fs.readFileSync(new URL("../sw.js", import.meta.url), "utf8"), contexto);
+  let resposta;
+  tratadores.fetch({ request: { method: "GET", url: "http://app/", mode: "navigate" }, respondWith: (p) => { resposta = p; } });
+  const r = await resposta;
+  assert.equal(chaveBuscada, "./", "a página inicial fica guardada como ./ (o endereço que não redireciona)");
+  assert.equal(r.redirected, false, "resposta redirecionada derruba a navegação no Chrome");
+  assert.equal(r.body, "<html>");
+});

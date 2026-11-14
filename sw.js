@@ -1,12 +1,16 @@
 // Service Worker do CD Vistoria: guarda o app inteiro para abrir sem
 // internet. Troque CACHE_VERSION a cada deploy (o scripts/gerar-env.js faz isso
 // sozinho quando usado como comando de build no Netlify).
-const CACHE_VERSION = "v69";
+const CACHE_VERSION = "v70";
 const CACHE = `vistoria-${CACHE_VERSION}`;
 const LIMITE_ENV_MS = 3000;
 
+// A página inicial é guardada como "./": no Cloudflare, "/index.html" redireciona
+// para "/", e uma página guardada a partir de um redirecionamento derruba a abertura
+// do app no Chrome (ERR_FAILED).
+const PAGINA_INICIAL = "./";
 const ARQUIVOS = [
-  "index.html",
+  PAGINA_INICIAL,
   "styles.css",
   "manifest.webmanifest",
   "env.js",
@@ -64,6 +68,13 @@ const ARQUIVOS = [
   "icons/logo-apple-180.png",
 ];
 
+// Cópia da resposta sem a marca de redirecionamento (o Chrome recusa uma resposta
+// redirecionada para abrir uma página). Versões antigas do cache podem ter guardado assim.
+function semRedirecionamento(r) {
+  if (!r.redirected) return r;
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: r.headers });
+}
+
 self.addEventListener("install", (e) => {
   // cache: "reload" ignora o cache HTTP do navegador e garante os arquivos desta versão.
   // Depois de guardar tudo, assume na hora (sem esperar fechar todas as abas: no
@@ -103,7 +114,7 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.includes("/tests/")) return;
 
   if (req.mode === "navigate") {
-    e.respondWith(caches.match("index.html").then((r) => r || fetch(req)));
+    e.respondWith(caches.match(PAGINA_INICIAL).then((r) => (r ? semRedirecionamento(r) : fetch(req))));
     return;
   }
   if (url.pathname.endsWith("/env.js")) {
