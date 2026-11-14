@@ -116,12 +116,7 @@ teste("detalhe (computador): coluna principal fotos, avarias, assinaturas; later
     igual(t.el.querySelectorAll('a[href^="#/nova"]').length, 0, "o computador não tem link para nova vistoria");
     igual(t.el.querySelector("#btn-compartilhar"), null, "o computador não tem Compartilhar");
     ok(t.el.querySelector("#btn-baixar") && t.el.querySelector("#btn-excluir"), "faltam Baixar PDF e Excluir");
-    const abas = [...t.el.querySelectorAll("[data-ir]")].map((b) => b.textContent.trim());
-    igual(abas, ["Resumo", "Fotos (3)", "Avarias (0)", "Checklist", "Recebimento", "Assinaturas"]);
-    igual(t.el.querySelectorAll(".cb-abas a").length, 0, "abas são botões: um # mudaria a rota");
-    t.el.querySelector('[data-ir="h-checklist"]').click();
-    igual(t.el.querySelector('[data-ir="h-checklist"]').hasAttribute("aria-current"), true);
-    igual(t.el.querySelector('[data-ir=""]').hasAttribute("aria-current"), false);
+    igual(t.el.querySelector(".cb-abas"), null, "o computador não tem a barra de abas");
     ok(t.el.querySelector(".cb-checklist").textContent.includes("Ok"), "checklist sem os Ok");
     ok(t.el.textContent.includes("13/13 ok"), "falta a contagem do checklist");
   } finally {
@@ -141,7 +136,6 @@ teste("detalhe (computador): avarias em tabela com gravidade, sem HTML vindo dos
     ok(linhas[0].textContent.includes("Capô") && linhas[0].querySelector(".selo-grave"), "falta a avaria grave");
     igual(t.el.querySelector(".cb-avarias b"), null, "descrição com HTML não pode virar tag");
     ok(t.el.querySelector("#h-avarias").textContent.includes("2 registradas"));
-    igual(t.el.querySelector('[data-ir="h-avarias"]').textContent.trim(), "Avarias (2)");
   } finally {
     t.fim();
   }

@@ -311,8 +311,6 @@ export async function montar(el, ctx, params) {
           ${v.checklistObs ? `<p class="cb-obs"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}`,
       `<span class="cb-nota cb-tnum">${okQtd}/${itens.length} ok</span>`);
 
-    const abas = [["", "Resumo"], ["h-fotos", `Fotos (${FOTOS_VEICULO.length})`], ["h-avarias", `Avarias (${nAvarias})`], ["h-checklist", "Checklist"],
-      ...(cardReceb ? [["h-receb", "Recebimento"]] : []), ["h-assinaturas", "Assinaturas"]];
 
     el.innerHTML = `
       <div class="cb-detalhe">
@@ -346,9 +344,6 @@ export async function montar(el, ctx, params) {
               ${modoLoja ? "" : `<button type="button" class="cb-btn cb-btn-primario" id="btn-baixar" disabled>${icone("pdf")} Preparando PDF…</button>`}
             </div>
           </div>
-          <nav class="cb-abas" aria-label="Seções da vistoria">
-            ${abas.map(([alvo, rotulo], i) => `<button type="button" data-ir="${alvo}"${i === 0 ? ' aria-current="true"' : ""}>${rotulo}</button>`).join("")}
-          </nav>
         </header>
         <div class="detalhe-corpo cb-corpo">
           <div class="cb-principal">${secFotos}${secAvarias}${secAssin}</div>
