@@ -165,3 +165,15 @@ test("recebimento: divergências por loja e lista por situação (mais recentes 
   assert.deepEqual(listaPorRecebimento(itens, "divergencia").map((x) => x.id), ["2", "1"]);
   assert.deepEqual(listaPorRecebimento(itens, "aguardando").map((x) => x.id), ["3"]);
 });
+
+test("período Tudo: do dia da primeira vistoria até hoje, sem período anterior para comparar", () => {
+  const agora = new Date(2026, 10, 14, 15, 0);
+  const i = intervaloDoDashboard("tudo", agora, { inicio: new Date(2026, 10, 2, 9, 30).toISOString() });
+  assert.equal(i.de, new Date(2026, 10, 2).toISOString());
+  assert.equal(i.ate, new Date(2026, 10, 15).toISOString());
+  assert.equal(i.dias, 13);
+  assert.equal(i.tudo, true);
+  assert.deepEqual(i.anterior, { de: i.de, ate: i.de });
+  const vazio = intervaloDoDashboard("tudo", agora, {});
+  assert.equal(vazio.de, new Date(2026, 10, 14).toISOString(), "sem vistorias: só hoje");
+});

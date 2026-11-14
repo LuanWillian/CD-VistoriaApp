@@ -114,10 +114,11 @@ teste("dashboard: o cartão Vistorias no período mostra o período escolhido", 
   const t = await montarDashboard();
   try {
     const rotulo = () => t.el.querySelector(".db-kpis .cb-kpi-rot").textContent.trim();
-    for (const [valor, texto] of [["7d", "7 dias"], ["hoje", "Hoje"], ["mes", "Este mês"], ["30d", "30 dias"]]) {
+    for (const [valor, texto] of [["7d", "7 dias"], ["hoje", "Hoje"], ["mes", "Este mês"], ["tudo", "Tudo"], ["30d", "30 dias"]]) {
       t.el.querySelector(`[data-periodo="${valor}"]`).click();
       await esperar(150);
       igual(rotulo(), `Vistorias no período · ${texto}`);
+      if (valor === "tudo") ok(t.el.querySelector("#db-subtitulo").textContent.includes("todas as vistorias, desde"), "subtítulo do Tudo sem comparação");
     }
   } finally {
     t.fim();

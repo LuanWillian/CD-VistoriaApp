@@ -14,7 +14,7 @@ import { $, $$, esc, icone } from "../ui.js";
 import { seloRecebimento } from "./card-recebimento.js";
 import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 
-const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
+const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["tudo", "Tudo"], ["personalizado", "Personalizado"]];
 const dataCurta = (aaaaMmDd) => (aaaaMmDd ? aaaaMmDd.split("-").reverse().slice(0, 2).join("/") : "");
 const COR_GRAVIDADE = Object.fromEntries(GRAVIDADES.map((g) => [g.valor, g]));
 const num = (n) => Number(n).toLocaleString("pt-BR");
@@ -127,7 +127,7 @@ export async function montar(raiz, ctx) {
   // ---------- Dados ----------
   async function carregar() {
     const minha = ++geracao;
-    const intervalo = intervaloDoDashboard(estado.periodo, new Date(), { de: estado.de, ate: estado.ate });
+    let intervalo = intervaloDoDashboard(estado.periodo, new Date(), { de: estado.de, ate: estado.ate });
     if (!intervalo) {
       aviso("Escolha as datas De e Até (a data inicial não pode ser depois da final).");
       return;
@@ -143,8 +143,15 @@ export async function montar(raiz, ctx) {
     desenhar();
     try {
       // Uma consulta só, do início do período anterior até o fim do atual.
-      const todos = await ctx.remoto.listarParaDashboard({ de: intervalo.anterior.de, ate: intervalo.ate });
+      // Tudo: busca desde sempre e começa no dia da primeira vistoria.
+      const todos = await ctx.remoto.listarParaDashboard(intervalo.tudo
+        ? { de: new Date(2000, 0, 1).toISOString(), ate: intervalo.ate }
+        : { de: intervalo.anterior.de, ate: intervalo.ate });
       if (!ativo || minha !== geracao) return;
+      if (intervalo.tudo) {
+        const inicio = todos.reduce((min, v) => (!min || v.realizadaEm < min ? v.realizadaEm : min), null);
+        intervalo = intervaloDoDashboard("tudo", new Date(), { inicio });
+      }
       estado.intervalo = intervalo;
       estado.itens = todos.filter((v) => dentro(v.realizadaEm, intervalo));
       estado.anteriores = todos.filter((v) => dentro(v.realizadaEm, intervalo.anterior));
@@ -175,6 +182,7 @@ export async function montar(raiz, ctx) {
     if (!estado.intervalo) { p.textContent = "Saídas do CD"; return; }
     const [ini, fim] = diasDoIntervalo(estado.intervalo);
     const datas = estado.intervalo.dias === 1 ? dataBr(ini) : `${dataBr(ini)} – ${dataBr(fim)}`;
+    if (estado.intervalo.tudo) { p.textContent = `Saídas do CD · todas as vistorias, desde ${dataBr(ini)}`; return; }
     const compara = estado.intervalo.dias === 1 ? "comparado ao dia anterior" : `comparado aos ${num(estado.intervalo.dias)} dias anteriores`;
     p.textContent = `Saídas do CD · ${datas} · ${compara}`;
   }
@@ -260,7 +268,7 @@ export async function montar(raiz, ctx) {
       <div class="cb-dash-corpo${estado.carregando ? " cb-atualizando" : ""}" aria-busy="${estado.carregando}">
       <section class="cb-indicadores" aria-label="Resumo do período">
         <div class="db-kpis">
-          ${kpi(`Vistorias no período · <span class="cb-kpi-periodo">${esc(nomeDoPeriodo())}</span>`, r.total, `${variacao}vs. ${num(r.totalAnterior)} ${r.totalAnterior === 1 ? "anterior" : "anteriores"}`, "", minigrafico(s.atual))}
+          ${kpi(`Vistorias no período · <span class="cb-kpi-periodo">${esc(nomeDoPeriodo())}</span>`, r.total, (estado.intervalo.tudo ? "todas as vistorias" : `${variacao}vs. ${num(r.totalAnterior)} ${r.totalAnterior === 1 ? "anterior" : "anteriores"}`), "", minigrafico(s.atual))}
           ${kpi("Avarias registradas", r.avarias, media ? `${media} por veículo` : "nenhuma no período")}
         </div>
         <div class="db-receb" role="group" aria-labelledby="db-h-receb">

@@ -27,6 +27,13 @@ export function intervaloDoDashboard(tipo, agora = new Date(), personalizado = {
   else if (tipo === "7d") [de, ate] = [meiaNoite(a, m, d - 6), amanha];
   else if (tipo === "30d") [de, ate] = [meiaNoite(a, m, d - 29), amanha];
   else if (tipo === "mes") [de, ate] = [meiaNoite(a, m, 1), amanha];
+  else if (tipo === "tudo") {
+    // Tudo: do dia da primeira vistoria (personalizado.inicio) até hoje; sem comparação.
+    const ini = personalizado.inicio ? new Date(personalizado.inicio) : agora;
+    de = meiaNoite(ini.getFullYear(), ini.getMonth(), ini.getDate());
+    const dias = Math.round((amanha - de) / DIA_MS);
+    return { de: de.toISOString(), ate: amanha.toISOString(), dias, porHora: dias === 1, tudo: true, anterior: { de: de.toISOString(), ate: de.toISOString() } };
+  }
   else if (tipo === "personalizado") {
     const p = periodoPersonalizado(personalizado.de, personalizado.ate);
     if (!p.de || !p.ate || p.de >= p.ate) return null;
@@ -49,7 +56,7 @@ export const dentro = (iso, { de, ate }) => iso >= de && iso < ate;
 
 // Texto do período para os cartões: nome do filtro e datas (dd/mm; com o ano
 // quando o intervalo atravessa anos). "ate" é exclusivo, então o último dia é ate − 1.
-const NOMES_PERIODO = { hoje: "Hoje", "7d": "Últimos 7 dias", "30d": "Últimos 30 dias", mes: "Este mês", personalizado: "Período personalizado" };
+const NOMES_PERIODO = { hoje: "Hoje", "7d": "Últimos 7 dias", "30d": "Últimos 30 dias", mes: "Este mês", tudo: "Tudo", personalizado: "Período personalizado" };
 function datasDe({ de, ate }) {
   const ini = new Date(de);
   const fimEx = new Date(ate);
