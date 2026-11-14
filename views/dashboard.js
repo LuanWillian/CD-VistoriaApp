@@ -266,7 +266,7 @@ export async function montar(raiz, ctx) {
         <div class="db-receb" role="group" aria-labelledby="db-h-receb">
           <h2 class="sr-only" id="db-h-receb">Recebimento nas lojas</h2>
           ${kpiLista("aguardando", "Aguardando recebimento", contRec.aguardando, "na loja", "pendente")}
-          ${kpi("Recebidos conforme", contRec.conforme, dosRecebidos(contRec.conforme), "ok")}
+          ${kpi("Recebido conforme vistoria", contRec.conforme, dosRecebidos(contRec.conforme), "ok")}
           ${kpiLista("divergencia", "Com divergência", contRec.divergencia, dosRecebidos(contRec.divergencia), "erro")}
         </div>
       </section>
