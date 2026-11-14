@@ -16,7 +16,8 @@ export function formatarDataHora(iso) {
 
 export function dataArquivo(iso) {
   const d = new Date(iso);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  // Dia-mês-ano no nome do arquivo (ex.: 14-11-2026); "/" não pode em nome de arquivo.
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
 }
 
 const meiaNoite = (ano, mes, dia) => new Date(ano, mes, dia).toISOString();

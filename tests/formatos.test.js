@@ -9,7 +9,7 @@ import {
 test("datas no fuso do aparelho (23:30 em São Paulo é o dia seguinte em UTC)", () => {
   assert.equal(formatarDataHora("2026-11-08T02:30:00.000Z"), "07/11/2026 23:30");
   assert.equal(formatarData("2026-11-08T02:30:00.000Z"), "07/11/2026");
-  assert.equal(dataArquivo("2026-11-08T02:30:00.000Z"), "2026-11-07");
+  assert.equal(dataArquivo("2026-11-08T02:30:00.000Z"), "07-11-2026");
 });
 
 test("km com separador de milhar e leitura só de dígitos", () => {
@@ -31,7 +31,7 @@ test("identificação provisória e nomes de arquivo", () => {
   assert.equal(idProvisorio("8f3a1c2e-0000-4000-8000-000000000000"), "Provisório 8F3A");
   assert.equal(nomeVistoria({ id: "8f3a1c2e-0000-4000-8000-000000000000", numero: null }), "Provisório 8F3A");
   assert.equal(nomeVistoria({ id: "x", numero: "VIS-000123" }), "VIS-000123");
-  assert.equal(nomeArquivoPdf({ chassi: "AB123C", realizadaEm: "2026-11-08T02:30:00.000Z" }), "Vistoria_AB123C_2026-11-07.pdf");
+  assert.equal(nomeArquivoPdf({ chassi: "AB123C", realizadaEm: "2026-11-08T02:30:00.000Z" }), "Vistoria_AB123C_07-11-2026.pdf");
   assert.equal(caminhoRemoto("u1", "v1", "frente.jpg"), "u1/v1/frente.jpg");
   assert.equal(chaveLocal("v1", "frente.jpg"), "v1/frente.jpg");
   assert.equal(arquivoAvaria("f9"), "avaria_f9.jpg");

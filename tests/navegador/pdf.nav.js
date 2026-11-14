@@ -71,7 +71,7 @@ async function cenario({ avarias = 10, fotosPorAvaria = 3, numero = null, semAva
 teste("pdf: laudo com 33 fotos fica abaixo de 10 MB e aceita emoji", async () => {
   const { v, obter } = await cenario();
   const r = await gerarPdf(v, obter);
-  igual(r.nomeArquivo, "Vistoria_AB123C_2026-11-07.pdf");
+  igual(r.nomeArquivo, "Vistoria_AB123C_07-11-2026.pdf");
   igual(r.blob.type, "application/pdf");
   ok(r.blob.size < 10 * 1024 * 1024, `PDF com ${r.blob.size} bytes`);
   ok(r.paginas >= 4, `só ${r.paginas} páginas`);
