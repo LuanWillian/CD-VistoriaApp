@@ -1,4 +1,4 @@
-import { teste, igual, ok, esperarAte } from "./runner.js";
+import { teste, igual, ok, esperar, esperarAte } from "./runner.js";
 import * as dashboard from "../../views/dashboard.js";
 
 // Vistorias falsas devolvidas pelo "servidor": hoje e ontem no período atual,
@@ -43,6 +43,8 @@ teste("dashboard: indicadores, tabelas e sem HTML vindo dos dados", async () => 
     igual(kpis, ["2", "2"]); // 2 vistorias, 2 avarias
     igual(t.el.querySelector('.db-kpi-botao[data-lista="avaria"], .db-kpi-botao[data-lista="graves"]'), null, "os cartões Veículos com avaria e Avarias graves foram removidos");
     ok(t.el.textContent.includes("vs. 1 anterior"), "falta a comparação com o período anterior");
+    const rotulo = () => t.el.querySelector(".db-kpis .cb-kpi-rot").textContent.trim();
+    igual(rotulo(), "Vistorias no período · 30 dias");
     const colunas = t.el.querySelectorAll(".db-coluna");
     igual(colunas.length, 30);
     const lojas = [...t.el.querySelectorAll('[aria-labelledby="db-h-loja"] tbody tr td:first-child')].map((td) => td.textContent);
@@ -105,6 +107,20 @@ teste("dashboard: offline e erro do servidor mostram aviso", async () => {
     ok(erro.el.querySelector('[data-acao="tentar"]'), "faltou o botão Tentar de novo");
   } finally {
     erro.fim();
+  }
+});
+
+teste("dashboard: o cartão Vistorias no período mostra o período escolhido", async () => {
+  const t = await montarDashboard();
+  try {
+    const rotulo = () => t.el.querySelector(".db-kpis .cb-kpi-rot").textContent.trim();
+    for (const [valor, texto] of [["7d", "7 dias"], ["hoje", "Hoje"], ["mes", "Este mês"], ["30d", "30 dias"]]) {
+      t.el.querySelector(`[data-periodo="${valor}"]`).click();
+      await esperar(150);
+      igual(rotulo(), `Vistorias no período · ${texto}`);
+    }
+  } finally {
+    t.fim();
   }
 });
 

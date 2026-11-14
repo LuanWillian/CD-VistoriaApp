@@ -1486,3 +1486,5 @@ html.computador .entrada { min-height: 44px; border: 1px solid #E4E7EB; border-r
 html.computador .entrada::placeholder { color: #9CA3AF; }
 html.computador .entrada:focus { border-color: #1D4ED8; box-shadow: 0 0 0 3px #EFF4FF; }
 html.computador .entrada[aria-invalid="true"] { border-color: #B3261E; }
+
+html.computador .cb-kpi-periodo { color: #111827; font-weight: 500; }

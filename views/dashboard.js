@@ -15,6 +15,7 @@ import { seloRecebimento } from "./card-recebimento.js";
 import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
+const dataCurta = (aaaaMmDd) => (aaaaMmDd ? aaaaMmDd.split("-").reverse().slice(0, 2).join("/") : "");
 const COR_GRAVIDADE = Object.fromEntries(GRAVIDADES.map((g) => [g.valor, g]));
 const num = (n) => Number(n).toLocaleString("pt-BR");
 const dois = (n) => String(n).padStart(2, "0");
@@ -226,6 +227,13 @@ export async function montar(raiz, ctx) {
       aguardando: "Nenhum veículo aguardando recebimento no período.", divergencia: "Nenhum veículo recebido com divergência no período.",
     }[lista] || "Nenhuma vistoria no período.";
 
+    // Nome do período no cartão: "7 dias", "Hoje"…; no personalizado, as datas escolhidas.
+    const nomeDoPeriodo = () => {
+      if (estado.periodo === "personalizado") {
+        return estado.de && estado.ate ? `${dataCurta(estado.de)} a ${dataCurta(estado.ate)}` : "Personalizado";
+      }
+      return PERIODOS.find(([v]) => v === estado.periodo)?.[1] ?? "";
+    };
     const ponto = (classe) => (classe ? `<span class="cb-kpi-ponto cb-cor-${classe}"></span>` : "");
     const kpi = (rot, n, sub, classe = "", extra = "") => `<div class="cb-cartao cb-kpi">
         <div class="cb-kpi-topo"><span class="cb-kpi-rot">${rot}</span>${ponto(classe)}</div>
@@ -252,7 +260,7 @@ export async function montar(raiz, ctx) {
       <div class="cb-dash-corpo${estado.carregando ? " cb-atualizando" : ""}" aria-busy="${estado.carregando}">
       <section class="cb-indicadores" aria-label="Resumo do período">
         <div class="db-kpis">
-          ${kpi("Vistorias no período", r.total, `${variacao}vs. ${num(r.totalAnterior)} ${r.totalAnterior === 1 ? "anterior" : "anteriores"}`, "", minigrafico(s.atual))}
+          ${kpi(`Vistorias no período · <span class="cb-kpi-periodo">${esc(nomeDoPeriodo())}</span>`, r.total, `${variacao}vs. ${num(r.totalAnterior)} ${r.totalAnterior === 1 ? "anterior" : "anteriores"}`, "", minigrafico(s.atual))}
           ${kpi("Avarias registradas", r.avarias, media ? `${media} por veículo` : "nenhuma no período")}
         </div>
         <div class="db-receb" role="group" aria-labelledby="db-h-receb">
