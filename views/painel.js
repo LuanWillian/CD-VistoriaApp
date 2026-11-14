@@ -54,7 +54,7 @@ export async function montar(raiz, ctx) {
       <section class="cb-cartao cb-resumo" aria-label="Resumo das vistorias">
         <p class="cb-resumo-item">${icone("pranchetaLista", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Vistorias hoje</span><strong id="dash-r-hoje">—</strong></p>
         <button type="button" class="cb-resumo-item" data-receb="aguardando" title="Mostrar só as que aguardam recebimento">${icone("relogio", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Aguardando recebimento</span><strong id="dash-r-aguardando">—</strong></button>
-        <button type="button" class="cb-resumo-item" data-receb="divergencia" title="Mostrar só as recebidas com divergência">${icone("alertaCirculo", "ic cb-ic-erro")}<span class="cb-resumo-rot">Com divergência</span><strong id="dash-r-divergencia">—</strong></button>
+        <button type="button" class="cb-resumo-item" data-receb="divergencia" title="Mostrar só as recebidas com divergência">${icone("alertaCirculo", "ic cb-ic-erro")}<span class="cb-resumo-rot">Recebido com divergência</span><strong id="dash-r-divergencia">—</strong></button>
         <p class="cb-resumo-item">${icone("nuvemEnviar", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Pendentes de envio</span><strong id="dash-r-pendentes">—</strong></p>
         <p class="cb-resumo-item">${icone("banco", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Total no período</span><strong id="dash-r-total">—</strong></p>
       </section>

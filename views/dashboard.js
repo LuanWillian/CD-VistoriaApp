@@ -314,7 +314,7 @@ export async function montar(raiz, ctx) {
         </section>
         <section class="cb-cartao" aria-labelledby="db-h-loja">
           <div class="cb-tab-topo"><h2 id="db-h-loja">Por loja de destino</h2><span class="cb-nota">ordenado por volume</span></div>
-          ${lojas.length ? tabela(["Loja", "Enviados", "Aguardando", "Conforme", "Divergência"],
+          ${lojas.length ? tabela(["Loja", "Enviados", "Aguardando", "Conforme", "Recebido com divergência"],
     lojas.map((l) => {
       const rec = recPorLoja.get(l.nome) || { aguardando: 0, conforme: 0 };
       return [esc(semPrefixo(l.nome)), num(l.vistorias), num(rec.aguardando), num(rec.conforme), num(l.divergencias)];

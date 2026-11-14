@@ -151,7 +151,7 @@ teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna
     bloco().querySelector('[data-lista="divergencia"]').click();
     igual(titulo(), "Últimas vistorias");
     const cab = [...t.el.querySelectorAll('[aria-labelledby="db-h-loja"] thead th')].map((th) => th.textContent.trim());
-    igual(cab, ["Loja", "Enviados", "Aguardando", "Conforme", "Divergência"]);
+    igual(cab, ["Loja", "Enviados", "Aguardando", "Conforme", "Recebido com divergência"]);
   } finally {
     t.fim();
   }
