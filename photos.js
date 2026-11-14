@@ -114,19 +114,14 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
       <button type="button" class="btn-topo visualizador-nav visualizador-prox" data-acao="1" aria-label="Próxima foto">${icone("avancar", "ic ic-lg")}</button>
     </div>
     <div class="visualizador-rodape">
-      <p class="visualizador-dica">Toque duas vezes para aproximar</p>
+      <p class="visualizador-dica">Use dois dedos ou toque duas vezes para aproximar</p>
       <div class="visualizador-pontos" aria-hidden="true"></div>
     </div>`;
   const titulo = d.querySelector("h2");
   const img = d.querySelector("img");
   const pontos = d.querySelector(".visualizador-pontos");
   const navs = d.querySelectorAll('[data-acao="-1"], [data-acao="1"]');
-  let zoom = false;
-  const tirarZoom = () => {
-    zoom = false;
-    img.classList.remove("ampliada");
-    img.style.transformOrigin = "";
-  };
+  let tirarZoom = () => {};
   const mostrar = () => {
     const f = fotos[atual];
     tirarZoom();
@@ -147,27 +142,123 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
     const acao = e.target.closest("[data-acao]")?.dataset.acao;
     if (acao === "fechar") d.close();
     else if (acao) ir(Number(acao));
-    else if (grande && (e.target === d || e.target.matches(".visualizador-palco, .cheio-topo"))) d.close(); // clicou fora da foto
-  });
-  // Toque duplo (ou duplo clique) aproxima no ponto tocado; outro toque duplo volta.
-  img.addEventListener("dblclick", (e) => {
-    if (zoom) return tirarZoom();
-    const r = img.getBoundingClientRect();
-    img.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
-    img.classList.add("ampliada");
-    zoom = true;
+    else if (moveu) moveu = false; // fim de um arraste ou pinça, não um clique
+    else if (grande && z.escala === 1 && (e.target === d || e.target.matches(".visualizador-palco, .cheio-topo"))) d.close(); // clicou fora da foto
   });
   d.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft") ir(-1);
     if (e.key === "ArrowRight") ir(1);
   });
-  let x0 = null;
-  d.addEventListener("pointerdown", (e) => { x0 = e.clientX; });
-  d.addEventListener("pointerup", (e) => {
-    // Arrastar para o lado troca de foto (com zoom, não troca).
-    if (!zoom && x0 !== null && Math.abs(e.clientX - x0) > 50) ir(e.clientX < x0 ? 1 : -1);
-    x0 = null;
+  // ---------- Zoom: pinça com dois dedos, arrastar a foto ampliada, toque duplo ----------
+  // Sem zoom, arrastar para o lado troca de foto. O palco tem touch-action: none, então
+  // o navegador não interfere: todos os gestos são tratados aqui (Pointer Events).
+  const palco = d.querySelector(".visualizador-palco");
+  const MAX = 4;
+  const z = { escala: 1, x: 0, y: 0 };
+  const ponteiros = new Map();
+  let gesto = null;
+  let moveu = false;
+  let ultimoToque = { t: 0, x: 0, y: 0 };
+  const centroDoPalco = () => {
+    const r = palco.getBoundingClientRect();
+    return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width, h: r.height };
+  };
+  const aplicar = (animar = false) => {
+    img.classList.toggle("animando", animar);
+    img.style.transform = z.escala === 1 ? "" : `translate(${z.x}px, ${z.y}px) scale(${z.escala})`;
+  };
+  const limitar = () => {
+    z.escala = Math.min(Math.max(z.escala, 1), MAX);
+    if (z.escala === 1) { z.x = 0; z.y = 0; return; }
+    const { w, h } = centroDoPalco();
+    const mx = (w * (z.escala - 1)) / 2;
+    const my = (h * (z.escala - 1)) / 2;
+    z.x = Math.min(Math.max(z.x, -mx), mx);
+    z.y = Math.min(Math.max(z.y, -my), my);
+  };
+  // Muda a escala mantendo parado o ponto (px, py) da tela (relativo ao centro do palco).
+  const escalarEm = (nova, px, py, base = z) => {
+    const fator = nova / base.escala;
+    z.x = px - (px - base.x) * fator;
+    z.y = py - (py - base.y) * fator;
+    z.escala = nova;
+    limitar();
+  };
+  tirarZoom = (animar = false) => { z.escala = 1; z.x = 0; z.y = 0; aplicar(animar); };
+  const doisDedos = () => {
+    const [a, b] = [...ponteiros.values()];
+    const { cx, cy } = centroDoPalco();
+    return { dist: Math.hypot(b.x - a.x, b.y - a.y), mx: (a.x + b.x) / 2 - cx, my: (a.y + b.y) / 2 - cy };
+  };
+  palco.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    try { palco.setPointerCapture(e.pointerId); } catch { /* ponteiro já solto */ }
+    ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ponteiros.size === 2) {
+      gesto = { tipo: "pinca", ...doisDedos(), base: { ...z } };
+    } else if (ponteiros.size === 1) {
+      moveu = false;
+      gesto = { tipo: "um", x0: e.clientX, y0: e.clientY, base: { ...z } };
+    }
   });
+  palco.addEventListener("pointermove", (e) => {
+    if (!ponteiros.has(e.pointerId) || !gesto) return;
+    ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (gesto.tipo === "pinca" && ponteiros.size >= 2) {
+      const agora = doisDedos();
+      moveu = true;
+      z.x = gesto.base.x + (agora.mx - gesto.mx);
+      z.y = gesto.base.y + (agora.my - gesto.my);
+      escalarEm(gesto.base.escala * (agora.dist / gesto.dist), agora.mx, agora.my, { ...z, escala: gesto.base.escala });
+      aplicar();
+    } else if (gesto.tipo === "um") {
+      const dx = e.clientX - gesto.x0;
+      const dy = e.clientY - gesto.y0;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moveu = true;
+      if (z.escala > 1) {
+        z.x = gesto.base.x + dx;
+        z.y = gesto.base.y + dy;
+        limitar();
+        aplicar();
+      }
+    }
+  });
+  const soltar = (e) => {
+    if (!ponteiros.has(e.pointerId)) return;
+    ponteiros.delete(e.pointerId);
+    if (gesto?.tipo === "pinca") {
+      // Um dedo continua na tela: segue arrastando a partir daqui.
+      if (ponteiros.size === 1) {
+        const [p] = [...ponteiros.values()];
+        gesto = { tipo: "um", x0: p.x, y0: p.y, base: { ...z }, depoisDaPinca: true };
+      } else gesto = null;
+      if (z.escala < 1.05) tirarZoom(true);
+      return;
+    }
+    if (gesto?.tipo !== "um" || ponteiros.size) return;
+    const dx = e.clientX - gesto.x0;
+    if (z.escala === 1 && !gesto.depoisDaPinca && Math.abs(dx) > 50) ir(dx < 0 ? 1 : -1);
+    else if (!moveu) {
+      // Toque duplo: aproxima no ponto tocado; outro toque duplo volta.
+      const agora = Date.now();
+      if (agora - ultimoToque.t < 320 && Math.hypot(e.clientX - ultimoToque.x, e.clientY - ultimoToque.y) < 30) {
+        const { cx, cy } = centroDoPalco();
+        if (z.escala > 1) tirarZoom(true);
+        else { escalarEm(2.5, e.clientX - cx, e.clientY - cy); aplicar(true); }
+        ultimoToque = { t: 0, x: 0, y: 0 };
+      } else ultimoToque = { t: agora, x: e.clientX, y: e.clientY };
+    }
+    gesto = null;
+  };
+  palco.addEventListener("pointerup", soltar);
+  palco.addEventListener("pointercancel", soltar);
+  // Computador: rodinha do mouse aproxima e afasta no ponto do cursor.
+  palco.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const { cx, cy } = centroDoPalco();
+    escalarEm(z.escala * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX - cx, e.clientY - cy);
+    aplicar();
+  }, { passive: false });
   const rolagemAntes = document.documentElement.style.overflow;
   d.addEventListener("close", () => {
     d.remove();

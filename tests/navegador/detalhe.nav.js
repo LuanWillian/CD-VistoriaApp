@@ -183,6 +183,37 @@ teste("visualizador: fora do modo grande (celular) não vira lightbox", async ()
   }
 });
 
+teste("visualizador: pinça com dois dedos aproxima, toque duplo volta e sem zoom arrastar troca a foto", async () => {
+  const gif = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+  abrirVisualizador([{ src: gif, legenda: "Frente" }, { src: gif, legenda: "Traseira" }], 0);
+  const d = [...document.querySelectorAll("dialog.visualizador")].at(-1); // o que acabou de abrir
+  const palco = d.querySelector(".visualizador-palco");
+  const img = d.querySelector("img");
+  const r = palco.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const ev = (tipo, id, x, y) => palco.dispatchEvent(new PointerEvent(tipo, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch" }));
+  const escala = () => Number(/scale\(([\d.]+)\)/.exec(img.style.transform)?.[1] ?? 1);
+  try {
+    // dois dedos afastando: 40 px → 120 px
+    ev("pointerdown", 1, cx - 20, cy); ev("pointerdown", 2, cx + 20, cy);
+    ev("pointermove", 1, cx - 60, cy); ev("pointermove", 2, cx + 60, cy);
+    ok(escala() > 2.5, `a pinça não aproximou (escala ${escala()})`);
+    ev("pointerup", 1, cx - 60, cy); ev("pointerup", 2, cx + 60, cy);
+    // com zoom, arrastar move a foto e não troca
+    ev("pointerdown", 3, cx, cy); ev("pointermove", 3, cx - 120, cy); ev("pointerup", 3, cx - 120, cy);
+    ok(d.querySelector("h2").textContent.includes("Frente"), "com zoom, arrastar não pode trocar de foto");
+    // toque duplo volta ao normal
+    for (const id of [4, 5]) { ev("pointerdown", id, cx, cy); ev("pointerup", id, cx, cy); }
+    await esperar(250);
+    igual(escala(), 1, "o toque duplo deveria tirar o zoom");
+    // sem zoom, arrastar para o lado troca de foto
+    ev("pointerdown", 6, cx + 100, cy); ev("pointermove", 6, cx - 100, cy); ev("pointerup", 6, cx - 100, cy);
+    ok(d.querySelector("h2").textContent.includes("Traseira"), "arrastar sem zoom deveria ir para a próxima foto");
+  } finally {
+    d.close();
+  }
+});
+
 // ---------- Recebimento na loja ----------
 const LOJA = { id: "u-loja", email: "loja@teste", nome: "Davi Loja", papel: "loja", loja: "PG Prime BMW Natal" };
 const recebido = (status, extra = {}) => ({
