@@ -40,8 +40,8 @@ export function abrirFormRecebimento({ vistoria, ctx, deps = {} }) {
           <div class="cm-cartao-cabeca"><h3 id="receb-status-rotulo">Como o carro chegou?</h3></div>
           <div class="cm-cartao-corpo">
             <div class="receb-opcoes" role="radiogroup" aria-labelledby="receb-status-rotulo">
-              <button type="button" role="radio" aria-checked="false" data-status="conforme"><span class="cm-radio" aria-hidden="true"></span>${icone("checkCirculo")} Recebido conforme a vistoria</button>
-              <button type="button" role="radio" aria-checked="false" data-status="divergencia"><span class="cm-radio" aria-hidden="true"></span>${icone("alerta")} Recebido com divergência</button>
+              <button type="button" role="radio" aria-checked="false" data-status="conforme"><span class="cm-radio" aria-hidden="true"></span>${icone("checkCirculo")} Chegou conforme a vistoria</button>
+              <button type="button" role="radio" aria-checked="false" data-status="divergencia"><span class="cm-radio" aria-hidden="true"></span>${icone("alerta")} Chegou com divergência</button>
             </div>
             <p class="erro-campo" id="receb-erro-status" aria-live="polite"></p>
           </div>
