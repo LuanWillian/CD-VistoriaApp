@@ -253,9 +253,7 @@ export async function montar(raiz, ctx) {
       <section class="cb-indicadores" aria-label="Resumo do período">
         <div class="db-kpis">
           ${kpi("Vistorias no período", r.total, `${variacao}vs. ${num(r.totalAnterior)} ${r.totalAnterior === 1 ? "anterior" : "anteriores"}`, "", minigrafico(s.atual))}
-          ${kpiLista("avaria", "Veículos com avaria", r.comAvaria, `${formatarPct(r.pctComAvaria)} das vistorias`, "moderada")}
           ${kpi("Avarias registradas", r.avarias, media ? `${media} por veículo` : "nenhuma no período")}
-          ${kpiLista("graves", "Avarias graves", r.graves, `${formatarPct(r.pctGraves)} do total`, "grave")}
         </div>
         <div class="db-receb" role="group" aria-labelledby="db-h-receb">
           <h2 class="sr-only" id="db-h-receb">Recebimento nas lojas</h2>

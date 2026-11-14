@@ -181,7 +181,6 @@ export async function montar(el, ctx, params) {
     const nAvarias = v.semAvarias ? 0 : (v.avarias || []).length;
     const okQtd = itens.filter((i) => v.checklist?.[i] === "presente").length;
     const estadoItem = (i) => ({ presente: '<span class="presente">Ok</span>', ausente: '<span class="ausente">Ausente</span>' })[v.checklist?.[i]] || '<span class="cm-apagado">—</span>';
-    const abas = [["", "Resumo"], ["h-fotos", `Fotos (${FOTOS_VEICULO.length})`], ["h-checklist", "Checklist"], ["h-avarias", `Avarias (${nAvarias})`], ["h-assinaturas", "Assinaturas"]];
     const acoes = modoLoja
       ? (podeReceber ? `<button type="button" class="btn btn-primario" id="btn-receber">${icone("check")} Registrar recebimento</button>` : "")
       : `<button type="button" class="btn btn-secundario" id="btn-compartilhar" disabled>${icone("compartilhar")} Compartilhar</button>
@@ -209,9 +208,6 @@ export async function montar(el, ctx, params) {
               ${nova && !modoLoja ? `<a class="btn btn-secundario cm-btn cm-nova" href="#/nova?novo=1">${icone("mais")} Nova vistoria</a>` : ""}
             </div>
           </div>
-          <nav class="cm-abas" aria-label="Seções da vistoria">
-            ${abas.map(([alvo, rotulo], i) => `<button type="button" data-ir="${alvo}"${i === 0 ? ' aria-current="true"' : ""}>${rotulo}</button>`).join("")}
-          </nav>
         </header>
         <div class="detalhe-corpo cm-corpo">
         ${cartaoCelular("det-dados", "h-dados", "Dados do veículo", `<dl class="cm-dados">

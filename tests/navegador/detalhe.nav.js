@@ -290,8 +290,7 @@ teste("detalhe (celular): veículo no título, abas e Baixar PDF e Compartilhar 
     igual(t.el.querySelector("#detalhe-numero").textContent.trim(), "VIS-000010");
     ok(t.el.querySelector(".cm-cabecalho").textContent.includes("PG Prime BMW Natal"), "a loja fica no cabeçalho");
     ok(t.el.querySelector(".cm-acoes #btn-baixar") && t.el.querySelector(".cm-acoes #btn-compartilhar"), "faltam as ações fixas");
-    igual([...t.el.querySelectorAll("[data-ir]")].map((b) => b.textContent.trim()),
-      ["Resumo", "Fotos (3)", "Checklist", "Avarias (0)", "Assinaturas"], "as abas seguem a ordem da página");
+    igual(t.el.querySelector(".cm-abas"), null, "o celular não tem mais a barra de abas");
     igual([...t.el.querySelectorAll("section.secao")].map((s) => s.getAttribute("aria-labelledby")),
       ["h-dados", "h-receb", "h-fotos", "h-checklist", "h-avarias", "h-assinaturas"]);
   } finally {

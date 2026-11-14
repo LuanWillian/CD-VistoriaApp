@@ -954,7 +954,7 @@ html.computador .cb-segmentos { display: inline-flex; overflow: hidden; border: 
 html.computador .cb-segmentos button { height: 32px; padding: 0 12px; border: 0; background: none; color: #374151; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; }
 html.computador .cb-segmentos button + button { border-left: 1px solid #E4E7EB; }
 html.computador .cb-segmentos button[aria-checked="true"] { background: #EFF4FF; color: #1D4ED8; }
-html.computador .cb-indicadores { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+html.computador .cb-indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
 html.computador .cb-indicadores .db-kpis, html.computador .cb-indicadores .db-receb { display: contents; }
 html.computador .cb-kpi { display: flex; flex-direction: column; align-items: stretch; padding: 16px; color: #111827; font: inherit; text-align: left; }
 html.computador button.cb-kpi { cursor: pointer; }
@@ -1024,7 +1024,7 @@ html.computador .cb-lista { scroll-margin-top: 80px; }
 html.computador .cb-lista:focus { outline: none; }
 html.computador .cb-lista-aberta { border-color: #1D4ED8; }
 @media (max-width: 1280px) {
-  html.computador .cb-indicadores { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
   html.computador .cb-graficos > * { grid-column: span 6; }
   html.computador .cb-graficos > .cb-volume { grid-column: 1 / -1; }
 }

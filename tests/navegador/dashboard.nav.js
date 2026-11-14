@@ -40,7 +40,8 @@ teste("dashboard: indicadores, tabelas e sem HTML vindo dos dados", async () => 
   try {
     igual(t.chamadas.length, 1, "uma consulta só (período anterior + atual)");
     const kpis = [...t.el.querySelectorAll(".db-kpis .db-kpi-num")].map((n) => n.textContent);
-    igual(kpis, ["2", "1", "2", "1"]); // 2 vistorias, 1 com avaria, 2 avarias, 1 grave
+    igual(kpis, ["2", "2"]); // 2 vistorias, 2 avarias
+    igual(t.el.querySelector('.db-kpi-botao[data-lista="avaria"], .db-kpi-botao[data-lista="graves"]'), null, "os cartões Veículos com avaria e Avarias graves foram removidos");
     ok(t.el.textContent.includes("vs. 1 anterior"), "falta a comparação com o período anterior");
     const colunas = t.el.querySelectorAll(".db-coluna");
     igual(colunas.length, 30);
@@ -104,29 +105,6 @@ teste("dashboard: offline e erro do servidor mostram aviso", async () => {
     ok(erro.el.querySelector('[data-acao="tentar"]'), "faltou o botão Tentar de novo");
   } finally {
     erro.fim();
-  }
-});
-
-teste("dashboard: cartões de avaria abrem a lista de veículos e clicar de novo volta às últimas", async () => {
-  const t = await montarDashboard();
-  try {
-    const titulo = () => t.el.querySelector("#db-h-ultimas").textContent.trim();
-    const linhas = () => t.el.querySelectorAll("#db-lista tbody tr").length;
-    igual(titulo(), "Últimas vistorias");
-    t.el.querySelector('.db-kpi-botao[data-lista="graves"]').click();
-    igual(titulo(), "Veículos com avaria grave (1)");
-    igual(linhas(), 1);
-    igual(t.el.querySelector('.db-kpi-botao[data-lista="graves"]').getAttribute("aria-pressed"), "true");
-    t.el.querySelector('.db-kpi-botao[data-lista="avaria"]').click();
-    igual(titulo(), "Veículos com avaria (1)");
-    t.el.querySelector('.db-kpi-botao[data-lista="avaria"]').click();
-    igual(titulo(), "Últimas vistorias");
-    t.el.querySelector('.db-kpi-botao[data-lista="graves"]').click();
-    t.el.querySelector(".db-fechar-lista").click();
-    igual(titulo(), "Últimas vistorias");
-    igual(t.navegacoes.length, 0, "clicar no cartão não abre vistoria");
-  } finally {
-    t.fim();
   }
 });
 
