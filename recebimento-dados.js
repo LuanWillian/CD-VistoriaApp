@@ -6,7 +6,7 @@
 import { nomeVistoria } from "./formatos.js";
 import { semAcento } from "./painel-dados.js";
 
-export const STATUS_RECEBIMENTO = { conforme: "Conforme", divergencia: "Com divergência", aguardando: "Aguardando recebimento" };
+export const STATUS_RECEBIMENTO = { conforme: "Conforme vistoria", divergencia: "Com divergência", aguardando: "Aguardando recebimento" };
 
 const temLoja = (v) => Boolean(String(v.loja ?? "").trim());
 

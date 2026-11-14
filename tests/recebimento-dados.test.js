@@ -15,7 +15,7 @@ const v = (id, extra = {}) => ({
 });
 
 test("rótulos dos status", () => {
-  assert.deepEqual(STATUS_RECEBIMENTO, { conforme: "Conforme", divergencia: "Com divergência", aguardando: "Aguardando recebimento" });
+  assert.deepEqual(STATUS_RECEBIMENTO, { conforme: "Conforme vistoria", divergencia: "Com divergência", aguardando: "Aguardando recebimento" });
 });
 
 test("situação: aguardando, conforme, divergência e sem loja", () => {

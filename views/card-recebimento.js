@@ -9,7 +9,7 @@ import { miniaturaHtml } from "../photos.js";
 const ICONE = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "alertaCirculo" };
 // Computador: ícones e textos curtos do visual do computador.
 const ICONE_CURTO = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "alertaCirculo" };
-const TEXTO_CURTO = { aguardando: "Aguardando", conforme: "Conforme", divergencia: "Com divergência" };
+const TEXTO_CURTO = { aguardando: "Aguardando", conforme: "Conforme vistoria", divergencia: "Com divergência" };
 
 export function seloRecebimento(v, { curto = false } = {}) {
   const s = situacaoRecebimento(v);
