@@ -56,7 +56,7 @@ export async function montar(raiz, ctx) {
         <button type="button" class="cb-resumo-item" data-receb="aguardando" title="Mostrar só as que aguardam recebimento">${icone("relogio", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Aguardando recebimento</span><strong id="dash-r-aguardando">—</strong></button>
         <button type="button" class="cb-resumo-item" data-receb="divergencia" title="Mostrar só as recebidas com divergência">${icone("alertaCirculo", "ic cb-ic-erro")}<span class="cb-resumo-rot">Recebido com divergência</span><strong id="dash-r-divergencia">—</strong></button>
         <p class="cb-resumo-item">${icone("nuvemEnviar", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Pendentes de envio</span><strong id="dash-r-pendentes">—</strong></p>
-        <p class="cb-resumo-item">${icone("banco", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Total no período</span><strong id="dash-r-total">—</strong></p>
+        <p class="cb-resumo-item">${icone("banco", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Total no período · <span class="cb-kpi-periodo" id="dash-r-periodo">Tudo</span></span><strong id="dash-r-total">—</strong></p>
       </section>
       <section class="cb-cartao cb-tabela-cartao" aria-labelledby="dash-titulo-tabela">
         <h2 class="sr-only" id="dash-titulo-tabela">Vistorias</h2>
@@ -177,6 +177,16 @@ export async function montar(raiz, ctx) {
     return tr;
   }
 
+  // Nome do período ao lado do total: "7 dias", "Hoje"…; "Tudo" sem filtro; no personalizado, as datas.
+  const dataCurta = (aaaaMmDd) => (aaaaMmDd ? aaaaMmDd.split("-").reverse().slice(0, 2).join("/") : "");
+  function nomeDoPeriodo() {
+    if (estado.periodo === "todos") return "Tudo";
+    if (estado.periodo === "personalizado") {
+      return estado.de && estado.ate ? `${dataCurta(estado.de)} a ${dataCurta(estado.ate)}` : "Personalizado";
+    }
+    return PERIODOS.find(([v]) => v === estado.periodo)?.[1] ?? "";
+  }
+
   // Resumo acima da tabela: contas de todas as vistorias carregadas; o total
   // respeita só o período escolhido.
   function desenharResumo() {
@@ -188,6 +198,7 @@ export async function montar(raiz, ctx) {
     $("#dash-r-divergencia", raiz).textContent = num(r.divergencia);
     $("#dash-r-pendentes", raiz).textContent = num(m.pendentes);
     $("#dash-r-total", raiz).textContent = num(total);
+    $("#dash-r-periodo", raiz).textContent = nomeDoPeriodo();
     $$("[data-receb]", raiz).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.receb === estado.recebimento)));
   }
 

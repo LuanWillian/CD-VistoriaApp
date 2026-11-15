@@ -211,6 +211,16 @@ teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção
   const texto = (id) => el.querySelector(id).textContent;
   try {
     igual([texto("#dash-r-hoje"), texto("#dash-r-aguardando"), texto("#dash-r-divergencia"), texto("#dash-r-pendentes"), texto("#dash-r-total")], ["3", "1", "1", "1", "3"]);
+    // O período escolhido aparece ao lado de "Total no período" (igual ao Dashboard).
+    const rotuloTotal = () => el.querySelector("#dash-r-total").closest(".cb-resumo-item").querySelector(".cb-resumo-rot").textContent.replace(/\s+/g, " ").trim();
+    igual(rotuloTotal(), "Total no período · Tudo");
+    const seletor = el.querySelector("#dash-periodo");
+    for (const [valor, texto2] of [["7d", "7 dias"], ["hoje", "Hoje"], ["mes", "Este mês"], ["30d", "30 dias"], ["todos", "Tudo"]]) {
+      seletor.value = valor;
+      seletor.dispatchEvent(new Event("change"));
+      await esperar(120);
+      igual(rotuloTotal(), `Total no período · ${texto2}`);
+    }
     // Resumo "Com divergência" liga o filtro; a pílula mostra o filtro e fica ativa.
     el.querySelector('[data-receb="divergencia"]').click();
     igual(el.querySelector("#dash-recebimento").value, "divergencia");
