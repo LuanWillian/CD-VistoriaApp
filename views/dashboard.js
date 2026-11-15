@@ -31,19 +31,33 @@ function diasDoIntervalo({ de, ate }) {
 const dataBr = (d) => `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()}`;
 
 // ---------- Gráficos (HTML/SVG desenhado aqui, sem biblioteca) ----------
-// Colunas agrupadas: período anterior (cinza) e atual (azul) lado a lado, por hora,
+// Colunas agrupadas: período anterior (cinza) e atual (preto) lado a lado, por hora,
 // dia, semana ou mês (dashboard-dados.js escolhe pelo tamanho do período). A altura vai em data-altura (a CSP bloqueia style="" no HTML).
+// Até 14 colunas o número aparece em cima da barra; acima disso a legenda mostra o máximo.
+// No "Tudo" não existe período anterior: só as barras do período.
 const NOME_UNIDADE = { hora: "hora", dia: "dia", semana: "semana", mes: "mês" };
-function graficoColunas({ rotulos, atual, anterior, unidade }) {
-  const max = Math.max(...atual, ...anterior, 1);
+const MAX_COLUNAS_COM_VALOR = 14;
+function graficoColunas({ rotulos, atual, anterior, unidade }, { semAnterior = false } = {}) {
+  const max = Math.max(...atual, ...(semAnterior ? [] : anterior), 1);
   const passo = Math.max(1, Math.ceil(rotulos.length / 15));
   const alt = (v) => ((v / max) * 100).toFixed(1);
-  return `<div class="cb-colunas" role="img" aria-label="Vistorias por ${NOME_UNIDADE[unidade]}: período atual e anterior">
-    ${rotulos.map((r, i) => `<div class="cb-coluna-grupo" title="${esc(r)}: ${num(atual[i])} ${atual[i] === 1 ? "vistoria" : "vistorias"} (período anterior: ${num(anterior[i])})">
-      <div class="cb-barras"><span class="cb-barra-anterior" data-altura="${alt(anterior[i])}"></span><span class="db-coluna cb-barra-atual" data-altura="${alt(atual[i])}"></span></div>
+  const comValores = rotulos.length <= MAX_COLUNAS_COM_VALOR;
+  const classes = ["cb-colunas", comValores ? "cb-com-valores" : "", semAnterior ? "cb-sem-anterior" : ""].filter(Boolean).join(" ");
+  const dica = (i) => `${num(atual[i])} ${atual[i] === 1 ? "vistoria" : "vistorias"}${semAnterior ? "" : ` (período anterior: ${num(anterior[i])})`}`;
+  return `<div class="${classes}" role="img" aria-label="Vistorias por ${NOME_UNIDADE[unidade]}${semAnterior ? "" : ": período atual e anterior"}">
+    ${rotulos.map((r, i) => `<div class="cb-coluna-grupo" title="${esc(r)}: ${dica(i)}">
+      <div class="cb-barras">${semAnterior ? "" : `<span class="cb-barra-anterior" data-altura="${alt(anterior[i])}"></span>`}<span class="db-coluna cb-barra-atual" data-altura="${alt(atual[i])}"${comValores && atual[i] ? ` data-valor="${num(atual[i])}"` : ""}></span></div>
       <span class="cb-coluna-rot">${i % passo === 0 ? esc(r) : "&nbsp;"}</span>
     </div>`).join("")}
   </div>`;
+}
+
+// Legenda do gráfico de colunas: Atual/Anterior e, sem os números nas barras, o máximo.
+function legendaColunas({ rotulos, atual }, { semAnterior = false } = {}) {
+  const itens = [`<span><span class="cb-quad cb-quad-atual"></span>${semAnterior ? "Vistorias" : "Atual"}</span>`];
+  if (!semAnterior) itens.push('<span><span class="cb-quad cb-quad-anterior"></span>Anterior</span>');
+  if (rotulos.length > MAX_COLUNAS_COM_VALOR) itens.push(`<span class="cb-legenda-max">Máximo: ${num(Math.max(...atual, 0))}</span>`);
+  return `<p class="cb-legenda">${itens.join("")}</p>`;
 }
 
 // Linha do volume diário (dentro do cartão "Vistorias no período").
@@ -260,10 +274,10 @@ export async function montar(raiz, ctx) {
     const media = r.comAvaria ? (r.avarias / r.comAvaria).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : null;
     const dosRecebidos = (n) => (recebidos ? `${formatarPct((n / recebidos) * 100)} dos recebidos` : "nenhum recebido");
 
-    const tabela = (cab, linhas) => `<table class="cb-tabela cb-tabela-resumo">
+    const tabela = (cab, linhas) => `<div class="cb-rolagem"><table class="cb-tabela cb-tabela-resumo">
         <thead><tr>${cab.map((c, i) => `<th scope="col"${i ? ' class="cb-dir"' : ""}>${c}</th>`).join("")}</tr></thead>
         <tbody>${linhas.map((l) => `<tr>${l.map((c, i) => `<td${i ? ' class="cb-dir cb-tnum"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</tbody>
-      </table>`;
+      </table></div>`;
 
     conteudo.innerHTML = `
       <div class="cb-dash-corpo${estado.carregando ? " cb-atualizando" : ""}" aria-busy="${estado.carregando}">
@@ -284,9 +298,9 @@ export async function montar(raiz, ctx) {
         <section class="cb-cartao cb-p4 cb-volume" aria-labelledby="db-h-volume">
           <div class="cb-graf-topo">
             <h2 id="db-h-volume">Vistorias por ${NOME_UNIDADE[s.unidade]}</h2>
-            <p class="cb-legenda"><span><span class="cb-quad cb-quad-atual"></span>Atual</span><span><span class="cb-quad cb-quad-anterior"></span>Anterior</span></p>
+            ${legendaColunas(s, { semAnterior: estado.intervalo.tudo })}
           </div>
-          ${graficoColunas(s)}
+          ${graficoColunas(s, { semAnterior: estado.intervalo.tudo })}
         </section>
         <section class="cb-cartao cb-p4" aria-labelledby="db-h-grav">
           <h2 id="db-h-grav" class="cb-mb4">Avarias por gravidade</h2>
@@ -329,7 +343,7 @@ export async function montar(raiz, ctx) {
           ${lista ? `<button type="button" class="cb-link db-fechar-lista" data-lista="">${icone("x")} Voltar às últimas</button>`
     : '<a class="cb-link" href="#/inicio">Ver todas →</a>'}
         </div>
-        ${ultimas.length ? `<table class="cb-tabela cb-tabela-lista db-clicavel">
+        ${ultimas.length ? `<div class="cb-rolagem"><table class="cb-tabela cb-tabela-lista db-clicavel">
           <thead><tr><th scope="col">ID</th><th scope="col">Data/Hora</th><th scope="col">Veículo</th><th scope="col">Chassi</th><th scope="col">Loja</th>
             <th scope="col" class="cb-centro">Avarias</th><th scope="col">Recebimento</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead>
           <tbody>${ultimas.map((v) => {
@@ -341,7 +355,7 @@ export async function montar(raiz, ctx) {
             <td>${seloRecebimento(v, { curto: true }) || '<span class="cb-cinza">—</span>'}</td>
             <td class="cb-dir"><a class="cb-link" href="#/vistoria/${encodeURIComponent(v.id)}">Abrir</a></td></tr>`;
   }).join("")}</tbody>
-        </table>` : `<p class="cb-cartao-corpo cb-cinza">${vazioLista}</p>`}
+        </table></div>` : `<p class="cb-cartao-corpo cb-cinza">${vazioLista}</p>`}
       </section>
       </div>`;
     aplicarMedidas(conteudo);

@@ -12,7 +12,7 @@ export function montar(el, editor, ctx) {
       </div>
       <div class="linha-acoes">
         <button type="button" class="btn btn-secundario" data-acao="todos">Marcar todos como Ok</button>
-        <button type="button" class="btn btn-texto" data-acao="limpar">Limpar</button>
+        <button type="button" class="btn btn-texto btn-texto-perigo" data-acao="limpar">Limpar</button>
       </div>
       <div class="secao checklist">
         ${CHECKLIST_ITENS.map((item, i) => `

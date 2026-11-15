@@ -172,7 +172,7 @@ export async function montar(el, ctx) {
               <p class="pequeno texto-2">Etapa ${r.etapa || 1} de 4 · Atualizado em ${formatarDataHora(r.atualizadoEm)}</p>
               <div class="linha-acoes">
                 <a class="btn btn-primario" href="#/nova?rascunho=${esc(r.id)}">Continuar</a>
-                <button type="button" class="btn btn-texto" data-descartar="${esc(r.id)}">${icone("lixeira")} Descartar</button>
+                <button type="button" class="btn btn-texto btn-texto-perigo" data-descartar="${esc(r.id)}">${icone("lixeira")} Descartar</button>
               </div>
             </article>`;
         }).join("")}

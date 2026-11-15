@@ -143,7 +143,9 @@ teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorid
   igual(cor("Leve"), "245,196,0");
   igual(cor("Moderada"), "242,140,40");
   igual(cor("Grave"), "198,40,40");
-  igual(cor("Ausente"), "17,17,17", "Ausente continua preto");
+  igual(cor("Ausente"), "179,38,30", "Ausente vermelho, como no app");
+  igual(r.faixas.map((f) => f.join()), ["245,196,0", "242,140,40", "198,40,40"].slice(0, r.faixas.length), "faixa lateral na cor da gravidade");
+  ok(r.faixas.length === 3, `uma faixa por avaria (veio ${r.faixas.length})`);
 });
 
 teste("pdf: seção Recebimento na loja só quando há recebimento, com divergência, fotos e assinatura", async () => {
@@ -165,5 +167,6 @@ teste("pdf: seção Recebimento na loja só quando há recebimento, com divergê
   }
   const pos = (texto) => r.textos.findIndex((x) => x.includes(texto));
   ok(pos("Assinaturas") < pos("Recebimento na loja"), "a seção vem depois das Assinaturas");
+  igual(r.selos.find((s) => s.texto === "Com divergência")?.fundo.join(), "179,38,30", "Com divergência vermelho, como no app");
   ok(r.blob.size < 10 * 1024 * 1024);
 });

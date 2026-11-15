@@ -135,6 +135,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const textos = [];
   const posicoes = [];
   const selos = [];
+  const faixas = [];
   const avarias = v.semAvarias ? [] : v.avarias || [];
   const totalFotos = 3 + avarias.reduce((n, a) => n + a.fotos.length, 0);
   const maxLado = totalFotos > PDF_FOTO.limiteMuitas ? PDF_FOTO.maxLadoMuitas : PDF_FOTO.maxLado;
@@ -186,7 +187,8 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   };
   const titulo = (tamanho, cor = COR.preto) => fonte("bold", tamanho, cor, TIT);
   const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  // Selo arredondado: preto com texto branco ("Ausente") ou na cor da gravidade.
+  const VERMELHO = rgb("#B3261E"); // o mesmo vermelho de erro do app (Ausente, Com divergência)
+  // Selo arredondado: vermelho ("Ausente"), verde/vermelho (recebimento) ou na cor da gravidade.
   const selo = (texto, x, yBase, { alinhar = "esquerda", fundo = COR.preto, cor = [255, 255, 255] } = {}) => {
     fonte("bold", 9, cor);
     const w = largura(texto) + 6;
@@ -293,7 +295,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
         fonte("bold", 11, COR.texto);
         escrever("OK", x + colChk, yBase, { align: "right" });
       } else if (estado(item) === "ausente") {
-        selo("Ausente", x + colChk, yBase, { alinhar: "direita" });
+        selo("Ausente", x + colChk, yBase, { alinhar: "direita", fundo: VERMELHO });
       } else {
         fonte("normal", 11, COR.apagado);
         escrever("—", x + colChk, yBase, { align: "right" });
@@ -365,7 +367,10 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
         doc.setDrawColor(...COR.borda);
         doc.setLineWidth(0.3);
         doc.rect(M, inicioSegmento, LARG, fim - inicioSegmento);
-        doc.setFillColor(...COR.preto);
+        // Faixa lateral na cor da gravidade, como no app.
+        const corFaixa = rgb((GRAVIDADES.find((x) => x.valor === a.gravidade) || GRAVIDADES[0]).cor);
+        faixas.push(corFaixa);
+        doc.setFillColor(...corFaixa);
         doc.rect(M, inicioSegmento, faixa, fim - inicioSegmento, "F");
       };
 
@@ -442,7 +447,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     fonte("bold", 11.5, COR.texto);
     escrever(umaLinha(`Recebido por ${rec.recebedorNome} — ${rec.loja}`, LARG - 45), M, y + 4);
     selo(STATUS_RECEBIMENTO[rec.status], M + LARG, y + 4, {
-      alinhar: "direita", fundo: divergencia ? rgb("#F28C28") : rgb("#1B7F3B"), cor: divergencia ? rgb("#1A1A1A") : [255, 255, 255],
+      alinhar: "direita", fundo: divergencia ? VERMELHO : rgb("#1B7F3B"), cor: [255, 255, 255],
     });
     fonte("normal", 10, COR.texto2);
     escrever(`Data/hora do recebimento: ${formatarDataHora(rec.recebidoEm)}`, M, y + 10);
@@ -493,6 +498,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     resultado.textos = textos;
     resultado.posicoes = posicoes;
     resultado.selos = selos;
+    resultado.faixas = faixas;
     resultado.familias = Object.keys(doc.getFontList());
     resultado.fonteTitulo = TIT;
   }

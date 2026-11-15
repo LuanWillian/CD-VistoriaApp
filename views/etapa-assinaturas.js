@@ -39,7 +39,7 @@ export function montar(el, editor, ctx) {
               <div class="assinatura-previa" hidden><img alt="Assinatura: ${b.titulo}"></div>
               <div class="linha-acoes">
                 <button type="button" class="btn btn-primario" data-assinar="${b.chave}">${icone("editar")} <span>Assinar</span></button>
-                <button type="button" class="btn btn-texto" data-limpar="${b.chave}" hidden>${icone("borracha")} Limpar assinatura</button>
+                <button type="button" class="btn btn-texto btn-texto-perigo" data-limpar="${b.chave}" hidden>${icone("borracha")} Limpar assinatura</button>
               </div>
             </div>
             <p class="erro-campo" id="${b.chave}-assinatura-erro" aria-live="polite"></p>

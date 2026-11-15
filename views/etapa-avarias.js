@@ -59,7 +59,7 @@ export function montar(el, editor, ctx) {
             ${a.descricao ? `<p class="pequeno texto-2">${esc(a.descricao.length > 120 ? `${a.descricao.slice(0, 117)}…` : a.descricao)}</p>` : ""}
             <div class="linha-acoes">
               <button type="button" class="btn btn-secundario" data-acao="editar">${icone("editar")} Editar</button>
-              <button type="button" class="btn btn-texto" data-acao="remover">${icone("lixeira")} Remover</button>
+              <button type="button" class="btn btn-texto btn-texto-perigo" data-acao="remover">${icone("lixeira")} Remover</button>
             </div>
           </div>
         </article>`;

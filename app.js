@@ -162,6 +162,11 @@ function atualizarIndicadores({ pendentes = 0, erros = 0, sincronizando = false,
   status.dataset.estado = estado;
   status.textContent = texto;
   $("#faixa-sessao").hidden = !sessaoExpirada;
+  // Sem internet: faixa escura embaixo do topo (só com alguém logado, quando o status aparece).
+  $("#faixa-offline").hidden = estado !== "offline" || status.hidden;
+  $("#faixa-offline-texto").textContent = document.documentElement.classList.contains("computador")
+    ? "Sem internet. Os dados mostrados podem estar desatualizados."
+    : "Sem internet. As vistorias ficam salvas no aparelho e são enviadas quando a conexão voltar.";
 }
 
 async function sincronizar() {
@@ -198,6 +203,7 @@ async function mostrarLogin() {
   $("#topo-nav").hidden = true;
   $("#status-rede").hidden = true;
   $("#faixa-sessao").hidden = true;
+  $("#faixa-offline").hidden = true;
   const raiz = document.createElement("div");
   main.replaceChildren(raiz);
   await viewLogin.montar(raiz, ctx, {});

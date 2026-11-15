@@ -113,7 +113,7 @@ export function abrirTelaAssinatura({ titulo }) {
       <div class="assinar-barra">
         <p class="assinar-titulo">${esc(titulo)}</p>
         <button type="button" class="btn btn-secundario" data-acao="cancelar">Cancelar</button>
-        <button type="button" class="btn btn-texto" data-acao="limpar">Limpar</button>
+        <button type="button" class="btn btn-texto btn-texto-perigo" data-acao="limpar">Limpar</button>
         <button type="button" class="btn btn-primario" data-acao="confirmar" disabled>Confirmar</button>
       </div>
       <div class="assinar-area">

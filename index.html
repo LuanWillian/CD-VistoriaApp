@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111111">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="color-scheme" content="light">
   <meta name="description" content="Vistoria veicular em campo, com laudo em PDF e funcionamento offline.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,6 +34,9 @@
     </button>
   </header>
 
+  <div class="faixa faixa-offline" id="faixa-offline" role="status" hidden>
+    <p id="faixa-offline-texto">Sem internet. As vistorias ficam salvas no aparelho e são enviadas quando a conexão voltar.</p>
+  </div>
   <div class="faixa" id="faixa-versao" hidden>
     <p>Nova versão disponível.</p>
     <button type="button" class="btn btn-primario" id="btn-atualizar-versao">Atualizar</button>

@@ -156,3 +156,24 @@ teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna
     t.fim();
   }
 });
+
+teste("dashboard: barras com o valor em até 14 colunas; no Tudo não há período anterior", async () => {
+  const t = await montarDashboard();
+  try {
+    t.el.querySelector('[data-periodo="7d"]').click();
+    await esperarAte(() => t.el.querySelectorAll(".db-coluna").length === 7);
+    ok(t.el.querySelector(".cb-colunas.cb-com-valores"), "com 7 colunas os valores aparecem");
+    const valores = [...t.el.querySelectorAll(".db-coluna[data-valor]")].map((b) => b.dataset.valor);
+    igual(valores, ["1", "1"], "só as barras com vistorias mostram o número");
+    t.el.querySelector('[data-periodo="30d"]').click();
+    await esperarAte(() => t.el.querySelectorAll(".db-coluna").length === 30);
+    ok(!t.el.querySelector(".cb-com-valores"), "com 30 colunas não cabem os valores");
+    ok(t.el.querySelector(".cb-legenda").textContent.includes("Máximo: 1"), "sem valores, a legenda mostra o máximo");
+    t.el.querySelector('[data-periodo="tudo"]').click();
+    await esperarAte(() => t.el.querySelector("#db-subtitulo").textContent.includes("desde"));
+    igual(t.el.querySelectorAll(".cb-barra-anterior").length, 0, "Tudo não tem barras do período anterior");
+    ok(!t.el.querySelector(".cb-legenda").textContent.includes("Anterior"), "Tudo não mostra a legenda Anterior");
+  } finally {
+    t.fim();
+  }
+});
