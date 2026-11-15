@@ -16,7 +16,7 @@ import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 
 // Mesmos períodos do dashboard, mais "Todo o período" (o padrão da lista).
 const PERIODOS = [["todos", "Todo o período"], ["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
-const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Recebimento: Aguardando"], ["conforme", "Recebimento: Conforme"], ["divergencia", "Recebimento: Com divergência"]];
+const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Recebimento: Aguardando"], ["conforme", "Recebimento: Nenhuma divergência"], ["divergencia", "Recebimento: Com divergência"]];
 const hojeCampo = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const semPrefixo = (loja) => String(loja ?? "").replace(/^PG Prime /, "");
 const num = (n) => Number(n).toLocaleString("pt-BR");

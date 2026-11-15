@@ -15,7 +15,7 @@ export function seloDaLista(v) {
 }
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["todos", "Todos"], ["personalizado", "Personalizado"]];
-const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Aguardando"], ["conforme", "Conforme"], ["divergencia", "Com divergência"]];
+const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Aguardando"], ["conforme", "Nenhuma divergência"], ["divergencia", "Com divergência"]];
 
 export async function montar(el, ctx) {
   const usuario = ctx.auth.usuarioAtual();

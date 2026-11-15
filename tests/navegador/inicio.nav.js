@@ -183,7 +183,7 @@ teste("painel (computador): coluna Recebimento e filtro de recebimento", async (
     ok(el.querySelector("#dash-corpo .selo-receb-aguardando"), "falta o selo Aguardando");
     ok(el.querySelector("#dash-corpo .selo-receb-divergencia"), "falta o selo Com divergência");
     const sel = el.querySelector("#dash-recebimento");
-    igual([...sel.options].map((o) => o.text), ["Recebimento", "Recebimento: Aguardando", "Recebimento: Conforme", "Recebimento: Com divergência"]);
+    igual([...sel.options].map((o) => o.text), ["Recebimento", "Recebimento: Aguardando", "Recebimento: Nenhuma divergência", "Recebimento: Com divergência"]);
     sel.value = "divergencia";
     sel.dispatchEvent(new Event("change"));
     igual(el.querySelectorAll("#dash-corpo tr").length, 1);
