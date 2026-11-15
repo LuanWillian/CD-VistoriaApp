@@ -9,7 +9,6 @@ import {
 } from "../dashboard-dados.js";
 import { maisRecentesPrimeiro } from "../painel-dados.js";
 import { contarRecebimentos, situacaoRecebimento } from "../recebimento-dados.js";
-import { baixarCsv, linhasDeVistorias } from "../exportar.js";
 import { $, $$, esc, icone } from "../ui.js";
 import { seloRecebimento } from "./card-recebimento.js";
 import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
@@ -117,7 +116,6 @@ export async function montar(raiz, ctx) {
           </div>
           ${pilulaSelect({ id: "db-marca", rotulo: "Marca", opcoes: [["", "Todas as marcas"]] })}
           ${pilulaSelect({ id: "db-loja", rotulo: "Loja de destino", opcoes: [["", "Todas as lojas"], ...LOJAS.map((l) => [l, l]), [SEM_LOJA, SEM_LOJA]] })}
-          <button type="button" class="cb-btn" id="db-exportar">${icone("baixar")} Exportar</button>
         </div>
       </div>
       <div class="cb-datas cb-datas-dir" id="db-datas" hidden>
@@ -367,21 +365,6 @@ export async function montar(raiz, ctx) {
     }
   }
 
-  // ---------- Exportar ----------
-  function exportar() {
-    if (!estado.intervalo || estado.erro) {
-      ctx.avisar?.("Carregue o dashboard antes de exportar.");
-      return;
-    }
-    const lista = maisRecentesPrimeiro(filtrarDashboard(estado.itens, filtros()));
-    if (!lista.length) {
-      ctx.avisar?.("Nenhuma vistoria no período para exportar.");
-      return;
-    }
-    const [ini, fim] = diasDoIntervalo(estado.intervalo);
-    baixarCsv(linhasDeVistorias(lista, { painel: false }), `dashboard_${hojeCampo(ini)}_${hojeCampo(fim)}.csv`);
-  }
-
   // ---------- Eventos ----------
   $("#db-periodos", raiz).addEventListener("click", (e) => {
     const b = e.target.closest("[data-periodo]");
@@ -399,7 +382,6 @@ export async function montar(raiz, ctx) {
   }
   $("#db-marca", raiz).addEventListener("change", (e) => { estado.marca = e.target.value; atualizarPilula(e.target); desenhar(); });
   $("#db-loja", raiz).addEventListener("change", (e) => { estado.loja = e.target.value; atualizarPilula(e.target); desenhar(); });
-  $("#db-exportar", raiz).addEventListener("click", exportar);
   conteudo.addEventListener("click", (e) => {
     if (e.target.closest('[data-acao="tentar"]')) return carregar();
     // Cartões com "Ver veículos": abrem (ou fecham) a lista de baixo.
