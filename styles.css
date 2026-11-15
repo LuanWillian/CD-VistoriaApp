@@ -976,7 +976,7 @@ html.computador .cb-desce { color: #B3261E; }
 html.computador .cb-minigrafico { display: block; width: 100%; height: 32px; margin-top: 8px; }
 html.computador .cb-minigrafico polyline { fill: none; stroke: #1D4ED8; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 
-html.computador .cb-graficos { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; align-items: start; margin-bottom: 12px; }
+html.computador .cb-graficos { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; align-items: stretch; margin-bottom: 12px; }
 html.computador .cb-graficos > * { grid-column: span 3; min-width: 0; }
 html.computador .cb-graficos > .cb-volume { grid-column: span 6; }
 html.computador .cb-graf-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
