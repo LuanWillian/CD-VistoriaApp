@@ -42,7 +42,6 @@ teste("dashboard: indicadores, tabelas e sem HTML vindo dos dados", async () => 
     const kpis = [...t.el.querySelectorAll(".db-kpis .db-kpi-num")].map((n) => n.textContent);
     igual(kpis, ["2", "2"]); // 2 vistorias, 2 avarias
     igual(t.el.querySelector('.db-kpi-botao[data-lista="avaria"], .db-kpi-botao[data-lista="graves"]'), null, "os cartões Veículos com avaria e Avarias graves foram removidos");
-    ok(!t.el.textContent.includes("Recebido conforme vistoria"), "o cartão Recebido conforme vistoria foi removido");
     ok(t.el.textContent.includes("vs. 1 anterior"), "falta a comparação com o período anterior");
     const rotulo = () => t.el.querySelector(".db-kpis .cb-kpi-rot").textContent.trim();
     igual(rotulo(), "Vistorias no período · 30 dias");
@@ -141,7 +140,7 @@ teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna
     const bloco = () => t.el.querySelector(".db-receb"); // a tela é redesenhada a cada clique
     ok(bloco(), "falta o bloco Recebimento nas lojas");
     const nums = [...bloco().querySelectorAll(".db-kpi-num")].map((n) => n.textContent);
-    igual(nums, ["1", "1"]); // aguardando e com divergência (o cartão "conforme" foi removido)
+    igual(nums, ["1", "1", "1"]);
     const titulo = () => t.el.querySelector("#db-h-ultimas").textContent.trim();
     bloco().querySelector('[data-lista="aguardando"]').click();
     igual(titulo(), "Veículos aguardando recebimento (1)");
