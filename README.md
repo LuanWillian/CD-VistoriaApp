@@ -32,7 +32,7 @@ App instalável (PWA) para vistoriadores em campo registrarem o estado de um ve�
 
 ### 1.1 Dados de demonstração (opcional)
 
-Para apresentar o app com números: no SQL Editor, rode `supabase/snippets/demo_criar.sql`. Ele cria 120 vistorias falsas dos últimos 75 dias (marcas da empresa, avarias e recebimentos nas lojas), sem fotos. Para tirar tudo, rode `supabase/snippets/demo_apagar.sql`; as vistorias de verdade não são tocadas.
+Para apresentar o app com números: no SQL Editor, rode `supabase/snippets/demo_criar.sql`. Ele cria 300 vistorias falsas dos últimos 90 dias (marcas da empresa, avarias e recebimentos nas lojas), sem fotos. Para tirar tudo, rode `supabase/snippets/demo_apagar.sql`; as vistorias de verdade não são tocadas.
 
 ## 2. Rodar localmente
 

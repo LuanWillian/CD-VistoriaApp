@@ -1,7 +1,7 @@
 -- =====================================================================
 -- CD Vistoria — DADOS DE DEMONSTRAÇÃO (para apresentar o app)
 --
--- Cria 120 vistorias falsas dos últimos 75 dias, com as marcas da empresa,
+-- Cria 300 vistorias falsas dos últimos 90 dias, com as marcas da empresa,
 -- avarias e recebimentos nas lojas. Não cria fotos nem assinaturas (as telas
 -- mostram o espaço vazio e o PDF sai sem as imagens).
 --
@@ -28,7 +28,6 @@ where id in (select md5('demo-cdvistoria-' || g)::uuid from generate_series(1, 1
 do $$
 declare
   dono uuid;
-  -- marca | modelo | combustível | loja de destino
   -- marca|modelo|combustível|loja de destino
   carros text[] := array[
     'GWM|Haval H6 HEV|Híbrido|PG Prime GWM Natal',
@@ -100,16 +99,16 @@ begin
 
   perform setseed(0.42); -- mesmos dados a cada execução
 
-  for n in 1..120 loop
+  for n in 1..300 loop
     vid := md5('demo-cdvistoria-' || n)::uuid;
     carro := string_to_array(carros[1 + floor(random() * array_length(carros, 1))::int], '|');
-    -- Mais vistorias nos dias recentes; 4 delas hoje (para o filtro "Hoje").
-    if n <= 4 then
-      quando := date_trunc('day', now()) + make_interval(hours => 8 + n * 2, mins => floor(random() * 50)::int);
+    -- Mais vistorias nos dias recentes; 6 delas hoje (para o filtro "Hoje").
+    if n <= 6 then
+      quando := date_trunc('day', now()) + make_interval(hours => 7 + n, mins => floor(random() * 50)::int);
       if quando > now() then quando := now() - make_interval(mins => n * 7); end if;
     else
       quando := date_trunc('day', now())
-        - make_interval(days => 1 + floor(power(random(), 1.6) * 74)::int)
+        - make_interval(days => 1 + floor(power(random(), 1.5) * 89)::int)
         + make_interval(hours => 7 + floor(random() * 11)::int, mins => floor(random() * 60)::int);
     end if;
 
@@ -175,7 +174,7 @@ begin
     end if;
   end loop;
 
-  raise notice 'Demonstração criada: 120 vistorias na conta %.', dono;
+  raise notice 'Demonstração criada: 300 vistorias na conta %.', dono;
 end;
 $$;
 
