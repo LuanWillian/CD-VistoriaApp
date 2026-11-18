@@ -737,14 +737,11 @@ html.computador .db-bom { color: var(--ok); }
 html.computador .db-ruim { color: var(--erro); }
 html.computador .db-neutro { color: var(--texto); }
 
-/* Gráfico grande à esquerda; recebimento e marcas à direita */
-/* O gráfico tem altura própria (cabe na tela); não estica junto com a coluna da direita. */
-html.computador .db-grade { display: grid; grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr); gap: 12px; align-items: start; }
-html.computador .db-lateral { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+/* Gráfico grande à esquerda; recebimento à direita, da mesma altura */
+/* O gráfico tem altura própria (cabe na tela); o recebimento estica até a altura dele. */
+html.computador .db-grade { display: grid; grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr); gap: 12px; align-items: stretch; }
 html.computador :is(.db-volume, .db-receb) { padding: 20px; }
-html.computador .db-marcas { padding: 20px 0 6px; }
-html.computador .db-marcas > :is(h2, .db-cartao-sub, .db-vazio) { padding-left: 20px; padding-right: 20px; }
-html.computador :is(.db-volume, .db-receb, .db-marcas) h2 { margin: 0; font-size: 15px; font-weight: 600; }
+html.computador :is(.db-volume, .db-receb) h2 { margin: 0; font-size: 15px; font-weight: 600; }
 html.computador .db-cartao-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 html.computador .db-cartao-sub { margin-top: 2px; font-size: 12px; color: var(--texto-2); }
 html.computador .db-cartao-sub strong { color: var(--texto); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -769,6 +766,8 @@ html.computador .db-grade-linha span { position: absolute; right: calc(100% + 8p
 html.computador .db-media { position: absolute; left: 0; right: 0; z-index: 1; border-top: 2px dashed var(--principal); pointer-events: none; }
 html.computador .db-media span { position: absolute; left: calc(100% + 8px); top: -10px; font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 html.computador .db-media-anterior { border-top-color: var(--apagado); }
+html.computador .db-rot-acima span { top: -17px; }
+html.computador .db-rot-abaixo span { top: 1px; }
 html.computador .db-media-anterior span { color: var(--cinza); font-weight: 400; }
 html.computador .db-colunas { position: absolute; inset: 0; z-index: 2; display: flex; gap: 3px; }
 html.computador .db-coluna { position: relative; flex: 1; min-width: 0; border-radius: 4px 4px 0 0; }
@@ -792,36 +791,20 @@ html.computador .db-rotulos span { flex: 1; min-width: 0; color: var(--cinza); f
 /* Recebimento nas lojas */
 html.computador .db-barra-h { display: flex; gap: 2px; height: 12px; margin-top: 16px; overflow: hidden; border-radius: 999px; }
 html.computador .db-barra-h > span { display: block; height: 100%; }
-html.computador .db-rec-lista { margin: 8px 0 0; padding: 0; list-style: none; }
-html.computador .db-rec-linha { display: grid; grid-template-columns: 10px minmax(0, 1fr) 40px 40px 20px; align-items: center; gap: 12px; height: 44px; font-size: 13px; }
+html.computador .db-receb { display: flex; flex-direction: column; min-width: 0; }
+html.computador .db-rec-lista { display: flex; flex: 1; flex-direction: column; margin: 12px 0 0; padding: 0; list-style: none; }
+html.computador .db-rec-linha { display: grid; flex: 1; grid-template-columns: 10px minmax(0, 1fr) auto; align-content: center; align-items: center; gap: 8px 10px; padding: 14px 0; font-size: 13px; }
 html.computador .db-rec-linha + .db-rec-linha { border-top: 1px solid var(--suave); }
-html.computador .db-rec-num { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-html.computador .db-rec-pct { color: var(--cinza); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
-html.computador .db-rec-ver { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; color: var(--cinza); }
-html.computador .db-rec-ver .ic { width: 16px; height: 16px; }
-html.computador a.db-rec-ver:hover { background: var(--fundo); color: var(--texto); }
-
-/* Por marca: % com avaria contra a média geral (traço) */
-html.computador .db-tabela-marcas { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 13px; }
-html.computador .db-tabela-marcas :is(th, td) { padding: 0 8px; }
-html.computador .db-tabela-marcas :is(th, td):first-child { padding-left: 20px; }
-html.computador .db-tabela-marcas :is(th, td):last-child { padding-right: 20px; }
-html.computador .db-tabela-marcas thead th { padding-bottom: 8px; color: var(--cinza); font-size: 12px; font-weight: 500; text-align: left; }
-html.computador .db-tabela-marcas thead th.cb-dir { text-align: right; }
-html.computador .db-tabela-marcas tbody tr { height: 40px; border-top: 1px solid var(--suave); }
-html.computador .db-tabela-marcas tbody th { font-weight: 500; text-align: left; white-space: nowrap; }
-html.computador .db-trilho { position: relative; display: block; min-width: 72px; height: 8px; border-radius: 999px; background: var(--fundo); }
-html.computador .db-trilho-barra { display: block; height: 100%; border-radius: 999px; background: var(--principal); }
-html.computador .db-acima .db-trilho-barra { background: var(--moderada); }
-html.computador .db-trilho-media { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--cinza); }
-html.computador .db-col-trilho { width: 45%; }
-html.computador .db-pct { width: 40px; }
-html.computador .db-acima .db-pct { font-weight: 600; }
-html.computador .db-zero { color: var(--cinza); }
+html.computador .db-rec-rot { color: var(--texto-2); }
+html.computador .db-rec-valor { display: flex; grid-column: 2 / -1; align-items: baseline; gap: 8px; }
+html.computador .db-rec-num { font-size: 26px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+html.computador .db-rec-pct { color: var(--cinza); font-size: 12px; font-variant-numeric: tabular-nums; }
+html.computador .db-rec-ver { display: inline-flex; align-items: center; gap: 4px; color: var(--texto); font-size: 12px; font-weight: 500; text-decoration: underline; text-decoration-color: var(--linha-forte); text-underline-offset: 3px; }
+html.computador .db-rec-ver .ic { width: 12px; height: 12px; }
+html.computador .db-rec-ver:hover { text-decoration-color: currentColor; }
 
 @media (max-width: 1180px) {
   html.computador .db-grade { grid-template-columns: minmax(0, 1fr); }
-  html.computador .db-lateral { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
 
 /* ---------- Vistoria do veículo (views/detalhe.js, desenharComputador) ---------- */

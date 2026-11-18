@@ -1,11 +1,11 @@
 // Dashboard do gerente (#/dashboard), só no navegador do computador. Versão enxuta:
 // faixa com 5 números, gráfico de veículos enviados (sem e com avaria, com as médias)
-// e, ao lado, o recebimento nas lojas e o % com avaria por marca.
+// e, ao lado, o recebimento nas lojas.
 // Lê direto do servidor (precisa de internet); as contas ficam em dashboard-dados.js.
 import { LOJAS } from "../config.js";
 import {
   SEM_LOJA, dentro, diasUteis, filtrarDashboard, formatarPct, intervaloDoDashboard, maisAntigoAguardando, marcasDisponiveis,
-  mediasDaSerie, porMarca, resumo, serie, topoDoEixo,
+  mediasDaSerie, resumo, serie, topoDoEixo,
 } from "../dashboard-dados.js";
 import { enderecoDasVistorias } from "../painel-dados.js";
 import { contarRecebimentos } from "../recebimento-dados.js";
@@ -17,8 +17,6 @@ const NOME_UNIDADE = { hora: "hora", dia: "dia", semana: "semana", mes: "mês" }
 const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 // Até este número de colunas cabe o valor em cima de cada barra.
 const MAX_COLUNAS_COM_VALOR = 31;
-// Marca "bem acima da média": pelo menos 5 pontos percentuais acima do % geral com avaria.
-const ACIMA_DA_MEDIA_PP = 5;
 
 const num = (n) => Number(n).toLocaleString("pt-BR");
 const dec = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -63,9 +61,12 @@ function graficoVolume(s, medias, { semAnterior, rotuloDia }) {
   const passo = Math.max(1, Math.ceil(n / 11));
   const grade = [0, topo / 2, topo].filter((k) => Number.isInteger(k))
     .map((k) => `<div class="db-grade-linha" data-baixo="${pctDe(k, topo)}"><span>${num(k)}</span></div>`).join("");
+  // Médias muito próximas: o rótulo da linha de cima sobe e o da de baixo desce, para não se sobreporem.
+  const perto = medias && medias.anterior != null && Math.abs(medias.atual - medias.anterior) / topo < 0.07;
+  const lado = (eAtual) => (!perto ? "" : (eAtual ? medias.atual >= medias.anterior : medias.anterior > medias.atual) ? " db-rot-acima" : " db-rot-abaixo");
   const linhas = !medias ? "" : [
-    medias.anterior == null ? "" : `<div class="db-media db-media-anterior" data-baixo="${pctDe(medias.anterior, topo)}"><span>ant. ${dec(medias.anterior)}</span></div>`,
-    `<div class="db-media" data-baixo="${pctDe(medias.atual, topo)}"><span>média ${dec(medias.atual)}</span></div>`,
+    medias.anterior == null ? "" : `<div class="db-media db-media-anterior${lado(false)}" data-baixo="${pctDe(medias.anterior, topo)}"><span>ant. ${dec(medias.anterior)}</span></div>`,
+    `<div class="db-media${lado(true)}" data-baixo="${pctDe(medias.atual, topo)}"><span>média ${dec(medias.atual)}</span></div>`,
   ].join("");
   const colunas = s.atual.map((total, i) => {
     const avaria = s.comAvaria[i];
@@ -222,7 +223,6 @@ export async function montar(raiz, ctx) {
     const recebidos = rec.conforme + rec.divergencia;
     const antigo = maisAntigoAguardando(itens);
     const uteis = diasUteis(intervalo);
-    const marcas = porMarca(itens);
     const deDia = (i) => { const d = new Date(intervalo.de); return new Date(d.getFullYear(), d.getMonth(), d.getDate() + i); };
 
     // ----- Faixa de indicadores -----
@@ -242,7 +242,8 @@ export async function montar(raiz, ctx) {
       ${indicador({
         icone: "carro", rot: "Veículos enviados", valor: num(r.total),
         linhas: [
-          semAnterior ? "todas as vistorias" : `${variacaoTotal} vs. ${num(r.totalAnterior)} no período anterior`,
+          semAnterior ? "todas as vistorias" : r.totalAnterior && r.total === r.totalAnterior ? `igual ao período anterior (${num(r.totalAnterior)})`
+            : `${variacaoTotal} vs. ${num(r.totalAnterior)} no período anterior`,
           uteis > 1 ? `${dec(r.total / uteis)} por dia útil` : "",
         ],
       })}
@@ -291,10 +292,12 @@ export async function montar(raiz, ctx) {
     </section>`;
 
     // ----- Recebimento nas lojas -----
+    // Cada situação em bloco: rótulo (e "Ver veículos") em cima, número grande e % embaixo.
     const linhaRec = (rot, n, classe, situacao) => `<li class="db-rec-linha">
         <span class="db-quad db-quad-${classe}"></span><span class="db-rec-rot">${rot}</span>
-        <span class="db-rec-num">${num(n)}</span><span class="db-rec-pct">${formatarPct(paraLojas ? (n / paraLojas) * 100 : 0, { casas: 0 })}</span>
-        ${situacao && n ? `<a class="db-rec-ver" href="${verVeiculos(situacao)}" title="Ver veículos" aria-label="Ver veículos: ${rot.toLowerCase()}">${icone("avancar")}</a>` : '<span class="db-rec-ver"></span>'}
+        ${situacao && n ? `<a class="db-rec-ver" href="${verVeiculos(situacao)}" aria-label="Ver veículos: ${rot.toLowerCase()}">Ver veículos ${icone("setaDireita", "ic")}</a>` : "<span></span>"}
+        <span class="db-rec-valor"><span class="db-rec-num${classe === "divergencia" && n ? " db-erro" : ""}">${num(n)}</span>
+          <span class="db-rec-pct">${formatarPct(paraLojas ? (n / paraLojas) * 100 : 0, { casas: 0 })} dos enviados</span></span>
       </li>`;
     const recebimento = `<section class="cb-cartao db-receb" aria-labelledby="db-h-receb">
       <h2 id="db-h-receb">Recebimento nas lojas</h2>
@@ -310,30 +313,11 @@ export async function montar(raiz, ctx) {
       </ul>` : '<p class="db-vazio">Nenhum veículo enviado para loja no período.</p>'}
     </section>`;
 
-    // ----- Por marca: % com avaria contra a média geral -----
-    const escala = Math.max(50, Math.ceil(Math.max(0, ...marcas.map((m) => m.pctComAvaria)) / 10) * 10);
-    const linhaMarca = (m) => {
-      const acima = m.pctComAvaria >= r.pctComAvaria + ACIMA_DA_MEDIA_PP;
-      return `<tr${acima ? ' class="db-acima"' : ""}>
-        <th scope="row">${esc(m.nome)}</th><td class="cb-dir cb-tnum">${num(m.vistorias)}</td>
-        <td class="db-col-trilho"><span class="db-trilho"><span class="db-trilho-barra" data-largura="${pctDe(m.pctComAvaria, escala)}"></span><span class="db-trilho-media" data-esquerda="${pctDe(r.pctComAvaria, escala)}"></span></span></td>
-        <td class="cb-dir cb-tnum db-pct">${formatarPct(m.pctComAvaria, { casas: 0 })}</td>
-        <td class="cb-dir cb-tnum${m.graves ? " db-grave" : " db-zero"}">${num(m.graves)}</td></tr>`;
-    };
-    const porMarcaHtml = `<section class="cb-cartao db-marcas" aria-labelledby="db-h-marca">
-      <h2 id="db-h-marca">Por marca</h2>
-      <p class="db-cartao-sub">Traço = média geral (${formatarPct(r.pctComAvaria)}) · laranja = bem acima</p>
-      ${marcas.length ? `<table class="db-tabela-marcas">
-        <thead><tr><th scope="col">Marca</th><th scope="col" class="cb-dir">Veículos</th><th scope="col" colspan="2">% com avaria</th><th scope="col" class="cb-dir">Graves</th></tr></thead>
-        <tbody>${marcas.map(linhaMarca).join("")}</tbody></table>` : '<p class="db-vazio">Nenhuma vistoria no período.</p>'}
-    </section>`;
-
     conteudo.innerHTML = `<div class="db-corpo${estado.carregando ? " cb-atualizando" : ""}" aria-busy="${estado.carregando}">
       ${faixa}
-      <div class="db-grade">${volume}<div class="db-lateral">${recebimento}${porMarcaHtml}</div></div>
+      <div class="db-grade">${volume}${recebimento}</div>
     </div>`;
     aplicarMedidas(conteudo);
-    $$("[data-esquerda]", conteudo).forEach((b) => { b.style.left = `${b.dataset.esquerda}%`; });
   }
 
   // ---------- Eventos ----------

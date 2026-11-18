@@ -37,7 +37,7 @@ async function montarDashboard({ online = true, falhar = false, dados = dadosFal
 
 const numeros = (t) => [...t.el.querySelectorAll(".db-faixa .db-ind-num")].map((n) => n.textContent.trim());
 
-teste("dashboard: faixa de números, gráfico, marcas e sem HTML vindo dos dados", async () => {
+teste("dashboard: faixa de números, gráfico, recebimento e sem HTML vindo dos dados", async () => {
   const t = await montarDashboard();
   try {
     igual(t.chamadas.length, 1, "uma consulta só (período anterior + atual)");
@@ -47,8 +47,8 @@ teste("dashboard: faixa de números, gráfico, marcas e sem HTML vindo dos dados
     igual(t.el.querySelectorAll(".db-coluna").length, 30);
     igual(t.el.querySelectorAll(".db-seg-avaria").length, 1, "uma coluna com veículo com avaria");
     ok(t.el.querySelector(".db-media"), "falta a linha da média");
-    const marcas = [...t.el.querySelectorAll(".db-tabela-marcas tbody th")].map((th) => th.textContent);
-    ok(marcas.includes("Jeep") && marcas.length === 2, `marcas: ${marcas}`);
+    igual(t.el.querySelector(".db-marcas"), null, "o cartão Por marca foi removido");
+    ok([...t.el.querySelector("#db-marca").options].some((o) => o.value === "Jeep"), "o filtro de marca continua");
     ok(!t.el.querySelector("i"), "marca com HTML não pode virar tag");
     const barras = [...t.el.querySelectorAll("[data-largura]")];
     ok(barras.length && barras.every((b) => b.style.width.endsWith("%") && parseFloat(b.style.width) === Number(b.dataset.largura)), "larguras das barras não aplicadas");
