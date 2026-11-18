@@ -10,7 +10,6 @@ import "./etapa-avarias.nav.js";
 import "./finalizar.nav.js";
 import "./detalhe.nav.js";
 import "./inicio.nav.js";
-import "./dashboard.nav.js";
 import "./recebimentos.nav.js";
 import "./recebimento.nav.js";
 import "./pdf.nav.js";

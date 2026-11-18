@@ -22,7 +22,7 @@ export function deveAbrirNoMenu(hash, tipoNavegacao) {
 // Computador: não existe iniciar vistoria nem a lista separada (o painel do menu já
 // lista as vistorias), então #/nova e #/vistorias (e subrotas) vão para o menu.
 // Devolve o hash de destino, ou null se a rota pode ficar como está.
-// Fora do computador não existe o dashboard: #/dashboard também vai para o menu.
+// O dashboard foi removido: #/dashboard (endereço antigo) vai para o início em qualquer aparelho.
 // Conta de loja: só existem o menu e as telas de recebimento (em qualquer aparelho);
 // as telas de recebimento não existem para vistoriadores.
 export function redirecionamento(hash, desktop, papel = "vistoriador") {
@@ -31,8 +31,9 @@ export function redirecionamento(hash, desktop, papel = "vistoriador") {
   // papel null = conta ainda desconhecida (abertura do app): as telas de recebimento
   // esperam; depois do login a rota é conferida de novo com o papel certo.
   if (/^#\/(recebimentos|recebimento)([/?]|$)/.test(h)) return papel === null ? null : "#/inicio";
+  if (/^#\/dashboard([/?]|$)/.test(h)) return "#/inicio";
   if (desktop) return /^#\/(nova|vistorias)([/?]|$)/.test(h) ? "#/inicio" : null;
-  return /^#\/dashboard([/?]|$)/.test(h) ? "#/inicio" : null;
+  return null;
 }
 
 // Histórico no app e no celular: o menu é sempre o nível 0 (primeira entrada),
@@ -103,7 +104,7 @@ function montarCelular(el, ctx) {
 export function montar(el, ctx, params) {
   if (ctx.auth?.usuarioAtual()?.papel === "loja") return montarLoja(el, ctx);
   // Navegador do computador: a página principal é o painel de consulta (com os
-  // filtros que vierem no endereço, como os links do dashboard).
+  // filtros que vierem no endereço, ex.: #/inicio?recebimento=aguardando).
   if (ctx.desktop) return montarPainel(el, ctx, params);
   return montarCelular(el, ctx);
 }

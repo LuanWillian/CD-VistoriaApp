@@ -99,19 +99,19 @@ A cada deploy, troque `const CACHE_VERSION = "v1";` no `sw.js` (por exemplo, par
 
 ## 6. Editar listas
 
-**Dashboard do gerente (`#/dashboard`):** só no navegador do computador, pelo link "Dashboard" no topo. Mostra, no período escolhido: uma faixa com 5 números (veículos enviados, % que saiu com avaria, avarias graves, aguardando recebimento e recebidos com divergência, comparados ao período anterior); o gráfico de veículos enviados por dia (sem e com avaria, com a média por dia útil e a do período anterior); e, ao lado, o recebimento nas lojas. "Ver veículos" abre a aba Vistorias já filtrada (mesmo período, marca, loja e situação do recebimento). Precisa de internet. Vistorias feitas antes do campo Loja aparecem como "Sem loja informada".
+**Dashboard:** foi removido em 17/11/2026 (ninguém tinha a rotina de usá-lo). O endereço antigo `#/dashboard` leva à lista de vistorias. Os números do dia a dia ficam no resumo da aba Vistorias. Um relatório mensal para a diretoria está em desenho.
 
-**Recebimento na loja (contas de loja, migration `0006`):** quem entra com uma conta de loja vê só o cartão **Recebimentos**: abas "A receber" e "Recebidos" com os carros enviados para a sua loja e busca pelo chassi. Ao abrir um carro, a pessoa confere a vistoria do CD e toca em **Registrar recebimento**: escolhe "Recebido conforme a vistoria" ou "Recebido com divergência" (aí descreve o que está diferente e pode tirar fotos), assina e confirma. Nome, loja e data/hora vêm do servidor, e o recebimento não pode ser alterado nem apagado pelo app (só pelo Supabase). Precisa de internet; se a conexão cair na hora de confirmar, nada do que foi preenchido se perde. O CD vê o recebimento no detalhe, na coluna e no filtro do painel, no bloco "Recebimento nas lojas" do dashboard e no PDF.
+**Recebimento na loja (contas de loja, migration `0006`):** quem entra com uma conta de loja vê só o cartão **Recebimentos**: abas "A receber" e "Recebidos" com os carros enviados para a sua loja e busca pelo chassi. Ao abrir um carro, a pessoa confere a vistoria do CD e toca em **Registrar recebimento**: escolhe "Recebido conforme a vistoria" ou "Recebido com divergência" (aí descreve o que está diferente e pode tirar fotos), assina e confirma. Nome, loja e data/hora vêm do servidor, e o recebimento não pode ser alterado nem apagado pelo app (só pelo Supabase). Precisa de internet; se a conexão cair na hora de confirmar, nada do que foi preenchido se perde. O CD vê o recebimento no detalhe, na coluna e no filtro do painel, e no PDF.
 
 As listas ficam em `config.js`:
 - itens do checklist (`CHECKLIST_ITENS`);
 - áreas e tipos de avaria (`AREAS_AVARIA`, `TIPOS_AVARIA`);
-- lojas de destino (`LOJAS`), usadas na etapa "Dados do veículo" e nos filtros do dashboard;
+- lojas de destino (`LOJAS`), usadas na etapa "Dados do veículo" e nos filtros da aba Vistorias;
 - combustíveis;
 - parâmetros de foto e de PDF;
 - dias de cache de fotos.
 
-Mudar áreas, tipos e lojas não exige migration (renomear uma loja não muda as vistorias antigas, que ficam com o nome antigo no dashboard). Combustível e gravidade têm `check` no banco: se mudar essas listas, ajuste a migration também. Os ícones ficam em `icons/` (logo-*.png); ao trocar a logo, use nomes de arquivo novos, porque essa pasta tem cache imutável.
+Mudar áreas, tipos e lojas não exige migration (renomear uma loja não muda as vistorias antigas, que ficam com o nome antigo nos filtros). Combustível e gravidade têm `check` no banco: se mudar essas listas, ajuste a migration também. Os ícones ficam em `icons/` (logo-*.png); ao trocar a logo, use nomes de arquivo novos, porque essa pasta tem cache imutável.
 
 ## 7. Testes
 

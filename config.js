@@ -19,7 +19,7 @@ export const GRAVIDADES = [
 ];
 
 // Lojas de destino (para onde o veículo vendido é enviado). Aparecem, nesta
-// ordem, na etapa "Dados do veículo" e nos filtros do painel e do dashboard.
+// ordem, na etapa "Dados do veículo" e nos filtros do painel.
 // Ordem alfabética pela marca (sem o "PG Prime"); na mesma marca, pela cidade.
 export const LOJAS = [
   "PG Prime Audi Natal",

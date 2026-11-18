@@ -193,7 +193,7 @@ teste("painel (computador): coluna Recebimento e filtro de recebimento", async (
   }
 });
 
-teste("painel (computador): abre já filtrado pelo endereço (link Ver veículos do dashboard)", async () => {
+teste("painel (computador): abre já filtrado pelo endereço (#/inicio?recebimento=…)", async () => {
   await storage.apagarBanco();
   const v = (id, extra) => ({ ...novoRascunho(EU.id, id, "2026-11-08T10:00:00.000Z"), id, userId: EU.id, realizadaEm: "2026-11-08T10:00:00.000Z", status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
   await storage.salvarVistoria(v("1", { recebimento: null }));
@@ -237,7 +237,7 @@ teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção
   const texto = (id) => el.querySelector(id).textContent;
   try {
     igual([texto("#dash-r-hoje"), texto("#dash-r-aguardando"), texto("#dash-r-divergencia"), texto("#dash-r-pendentes"), texto("#dash-r-total")], ["3", "1", "1", "1", "3"]);
-    // O período escolhido aparece ao lado de "Total no período" (igual ao Dashboard).
+    // O período escolhido aparece ao lado de "Total no período".
     const rotuloTotal = () => el.querySelector("#dash-r-total").closest(".cb-resumo-item").querySelector(".cb-resumo-rot").textContent.replace(/\s+/g, " ").trim();
     igual(rotuloTotal(), "Total no período · Tudo");
     const seletor = el.querySelector("#dash-periodo");

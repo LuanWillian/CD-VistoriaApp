@@ -57,9 +57,9 @@ export function juntarComServidor(remoto, local) {
   return { ...remoto, ...local, recebimento: remoto.recebimento !== undefined ? remoto.recebimento : local.recebimento };
 }
 
-// ---------- Link do dashboard para a aba Vistorias ----------
-// Os cartões "Ver veículos" do dashboard abrem a aba Vistorias já filtrada, com o
-// mesmo período, marca e loja. "Tudo" do dashboard é "Todo o período" aqui.
+// ---------- Link para a aba Vistorias já filtrada ----------
+// Monta e lê #/inicio?periodo=…&marca=…&loja=…&recebimento=…, para outra tela (como o
+// relatório mensal) abrir a aba Vistorias filtrada. "Tudo" vira "Todo o período".
 const PERIODOS_DO_ENDERECO = ["todos", "hoje", "7d", "30d", "mes", "personalizado"];
 const RECEBIMENTOS_DO_ENDERECO = ["aguardando", "conforme", "divergencia"];
 const DATA_CAMPO = /^\d{4}-\d{2}-\d{2}$/;
