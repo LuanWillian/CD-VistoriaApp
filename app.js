@@ -14,7 +14,6 @@ import * as viewVistorias from "./views/vistorias.js";
 import * as viewDetalhe from "./views/detalhe.js";
 import * as viewInicio from "./views/inicio.js";
 import * as viewRecebimentos from "./views/recebimentos.js";
-import { htmlLateral } from "./views/lateral.js";
 
 const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, recebimentos: viewRecebimentos,
   // Conta de loja: a mesma tela de detalhe, em modo de conferência (Registrar recebimento).
@@ -199,9 +198,6 @@ async function mostrarLogin() {
   tituloComoLinkDoMenu(false);
   $("#btn-menu").hidden = true;
   $(".topo").removeAttribute("data-consulta");
-  // Na tela de entrar, o computador volta ao topo branco (sem a barra lateral).
-  document.documentElement.classList.remove("com-lateral");
-  $("#lat-nav")?.remove();
   $("#status-rede").hidden = true;
   $("#faixa-sessao").hidden = true;
   $("#faixa-offline").hidden = true;
@@ -219,10 +215,7 @@ function tituloComoLinkDoMenu(ligar) {
       // Computador: o logo já é o link (sem seta). Conta de loja vai ao início dela.
       const loja = papelAtual() === "loja";
       const rotulo = !desktop ? "CD Vistoria — voltar ao menu" : loja ? "CD Vistoria — ir para o início" : "CD Vistoria — ir para Vistorias";
-      // Computador: logo + nome no alto da barra lateral.
-      return desktop
-        ? `<a class="topo-link" href="#/inicio" aria-label="${rotulo}"><img class="topo-logo" src="icons/logo-192.png" alt="" width="36" height="36"><span class="topo-nome">CD Vistoria</span></a>`
-        : `<a class="topo-link" href="#/inicio" aria-label="${rotulo}">${icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`;
+      return `<a class="topo-link" href="#/inicio" aria-label="${rotulo}">${desktop ? "" : icone("voltar", "ic topo-voltar")}<span>CD Vistoria</span></a>`;
     })()
     : "CD Vistoria";
 }
@@ -249,9 +242,9 @@ if (!desktop) {
 function mostrarUsuarioNoTopo() {
   const u = ctx.auth.usuarioAtual();
   const nome = String(u?.nome ?? "").trim();
-  // Computador: iniciais num círculo + nome completo (no pé da barra lateral).
+  // Computador: iniciais num círculo + primeiro nome (o nome completo fica no menu).
   const partes = nome.split(/\s+/).filter(Boolean);
-  const curto = desktop ? nome : "";
+  const curto = desktop ? (partes[0] || "") : "";
   $("#topo-nome").textContent = curto;
   $("#topo-nome").hidden = !curto;
   // Iniciais num círculo em todos os ambientes (celular e app: sem o nome ao lado).
@@ -268,9 +261,6 @@ function entrarNoApp() {
   $("#btn-menu").hidden = false;
   // Selo "Consulta" ao lado do nome: só para vistoriadores no computador.
   $(".topo").toggleAttribute("data-consulta", desktop && papelAtual() !== "loja");
-  // Computador: o topo vira a barra lateral preta; contas do CD ganham os atalhos da lista.
-  document.documentElement.classList.toggle("com-lateral", desktop);
-  if (desktop && papelAtual() !== "loja" && !$("#lat-nav")) $(".topo-titulo").insertAdjacentHTML("afterend", htmlLateral());
   // Selo de conexão (Online/Offline/pendentes) no topo em todos os ambientes.
   $("#status-rede").hidden = false;
   if (!location.hash || location.hash === "#") location.replace("#/inicio");

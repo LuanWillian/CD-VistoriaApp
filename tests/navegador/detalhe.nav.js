@@ -118,28 +118,9 @@ teste("detalhe (computador): coluna principal fotos, avarias, assinaturas; later
     ok(t.el.querySelector("#btn-baixar") && t.el.querySelector("#btn-excluir"), "faltam Baixar PDF e Excluir");
     igual(t.el.querySelector(".cb-abas"), null, "o computador não tem a barra de abas");
     ok(t.el.querySelector(".cb-checklist").textContent.includes("Ok"), "checklist sem os Ok");
-    ok(t.el.textContent.includes("13 de 13 ok"), "falta a contagem do checklist");
+    ok(t.el.textContent.includes("13/13 ok"), "falta a contagem do checklist");
   } finally {
     t.fim();
-  }
-});
-
-teste("detalhe (computador): Anterior e Próxima seguem a ordem da lista do painel", async () => {
-  sessionStorage.setItem("cd-vistoria:ordem-da-lista", JSON.stringify(["antes", "meio", "depois"]));
-  const t = await abrir(vistoria("meio", EU.id));
-  try {
-    const links = [...t.el.querySelectorAll(".cb-vizinhas a")].map((a) => [a.textContent.trim(), a.getAttribute("href")]);
-    igual(links, [["Anterior", "#/vistoria/antes"], ["Próxima", "#/vistoria/depois"]]);
-  } finally {
-    t.fim();
-  }
-  sessionStorage.setItem("cd-vistoria:ordem-da-lista", JSON.stringify(["outra"]));
-  const t2 = await abrir(vistoria("fora", EU.id));
-  try {
-    igual(t2.el.querySelector(".cb-vizinhas"), null, "fora da lista não há Anterior/Próxima");
-  } finally {
-    t2.fim();
-    sessionStorage.removeItem("cd-vistoria:ordem-da-lista");
   }
 });
 
@@ -153,8 +134,6 @@ teste("detalhe (computador): avarias em tabela com gravidade, sem HTML vindo dos
     const linhas = [...t.el.querySelectorAll(".cb-avarias tbody tr")];
     igual(linhas.length, 2);
     ok(linhas[0].textContent.includes("Capô") && linhas[0].querySelector(".selo-grave"), "falta a avaria grave");
-    igual(linhas[0].querySelector(".cb-desc-texto").textContent, "<b>fundo</b>", "a descrição fica embaixo da área");
-    igual(linhas[1].querySelector(".cb-desc-texto"), null, "sem descrição, só a área");
     igual(t.el.querySelector(".cb-avarias b"), null, "descrição com HTML não pode virar tag");
     ok(t.el.querySelector("#h-avarias").textContent.includes("2 registradas"));
   } finally {

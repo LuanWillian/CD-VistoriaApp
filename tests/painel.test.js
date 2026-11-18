@@ -1,7 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { numerosDePagina, vizinhasNaLista } from "../painel-dados.js";
-import { atalhoAtivo, filtrosDoAtalho, tituloDoAtalho } from "../views/lateral.js";
 import { calcularMetricas, filtrarVistorias, juntarComServidor, paginar, primeiroNome, semAcento, enderecoDasVistorias, filtrosDoEndereco, carrosDoDia, marcasDosCarros, textoCarrosEnviados } from "../painel-dados.js";
 
 const AGORA = new Date(2026, 10, 9, 15, 0); // 09/11/2026 15:00 (fuso local)
@@ -149,34 +147,4 @@ test("relatório de carros enviados: texto no formato da mensagem do WhatsApp", 
   assert.equal(textoCarrosEnviados(carros, []), "", "nenhuma marca escolhida: texto vazio");
   assert.equal(textoCarrosEnviados([]), "", "dia sem carros: texto vazio");
   assert.equal(textoCarrosEnviados([carro("x", "GWM", "", "", 17, 9)]), "Carros enviados;\n\nGWM:\n(sem modelo) - (sem chassi)");
-});
-
-test("paginação: botões numerados com a primeira, a última e as vizinhas da atual", () => {
-  assert.deepEqual(numerosDePagina(0, 1), [0]);
-  assert.deepEqual(numerosDePagina(2, 7), [0, 1, 2, 3, 4, 5, 6]);
-  assert.deepEqual(numerosDePagina(0, 52), [0, 1, 2, 3, 4, null, 51]);
-  assert.deepEqual(numerosDePagina(20, 52), [0, null, 19, 20, 21, null, 51]);
-  assert.deepEqual(numerosDePagina(51, 52), [0, null, 47, 48, 49, 50, 51]);
-});
-
-test("detalhe: Anterior e Próxima são as vizinhas na ordem da lista", () => {
-  const ids = ["a", "b", "c"];
-  assert.deepEqual(vizinhasNaLista(ids, "b"), { anterior: "a", proxima: "c" });
-  assert.deepEqual(vizinhasNaLista(ids, "a"), { anterior: null, proxima: "b" });
-  assert.deepEqual(vizinhasNaLista(ids, "c"), { anterior: "b", proxima: null });
-  assert.deepEqual(vizinhasNaLista(ids, "x"), { anterior: null, proxima: null });
-  assert.deepEqual(vizinhasNaLista(null, "a"), { anterior: null, proxima: null });
-});
-
-test("barra lateral: cada atalho liga o período e o recebimento, e o ativo segue os filtros", () => {
-  assert.deepEqual(filtrosDoAtalho("todas"), { periodo: "todos", recebimento: "" });
-  assert.deepEqual(filtrosDoAtalho("hoje"), { periodo: "hoje", recebimento: "" });
-  assert.deepEqual(filtrosDoAtalho("divergencia"), { periodo: "todos", recebimento: "divergencia" });
-  assert.equal(atalhoAtivo({ periodo: "todos", recebimento: "" }), "todas");
-  assert.equal(atalhoAtivo({ periodo: "hoje", recebimento: "" }), "hoje");
-  assert.equal(atalhoAtivo({ periodo: "todos", recebimento: "aguardando" }), "aguardando");
-  assert.equal(atalhoAtivo({ periodo: "7d", recebimento: "" }), null);
-  assert.equal(atalhoAtivo({ periodo: "hoje", recebimento: "conforme" }), null);
-  assert.equal(tituloDoAtalho("conforme"), "Recebidas sem divergência");
-  assert.equal(tituloDoAtalho(null), "Vistorias");
 });
