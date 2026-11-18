@@ -49,7 +49,7 @@ export async function montar(raiz, ctx, params = {}) {
         </div>
         <div class="cb-acoes">
           <button type="button" class="cb-btn" id="dash-atualizar">${icone("recarregar")} Atualizar</button>
-          <button type="button" class="cb-btn cb-btn-primario" id="dash-relatorio">${icone("mensagem")} Relatório de carros enviados</button>
+          <!-- Botão "Relatório de carros enviados" escondido para um teste do usuário (18/11/2026); volta depois. -->
         </div>
       </div>
       <section class="cb-cartao cb-resumo" aria-label="Resumo das vistorias">
@@ -389,7 +389,8 @@ export async function montar(raiz, ctx, params = {}) {
     recarregar();
   });
   // Mensagem do WhatsApp do gerente com os carros do dia (views/relatorio-envios.js).
-  $("#dash-relatorio", raiz).addEventListener("click", () => abrirRelatorioEnvios(estado.itens, { avisar: ctx.avisar }));
+  // Botão tirado por enquanto (teste do usuário); a janela continua pronta para voltar.
+  $("#dash-relatorio", raiz)?.addEventListener("click", () => abrirRelatorioEnvios(estado.itens, { avisar: ctx.avisar }));
   $("#dash-pdf-lote", raiz).addEventListener("click", baixarPdfs);
   $("#dash-anterior", raiz).addEventListener("click", () => { estado.pagina -= 1; desenharTabela(); });
   $("#dash-proxima", raiz).addEventListener("click", () => { estado.pagina += 1; desenharTabela(); });
