@@ -1,13 +1,13 @@
 // Painel do navegador do computador (#/inicio quando ctx.desktop): saudação,
-// resumo, busca, filtros, seleção (PDF de várias vistorias), exportação CSV e
-// tabela de vistorias. Só consulta: não existe iniciar vistoria aqui. Os dados são
+// resumo, busca, filtros, seleção (PDF de várias vistorias), relatório de carros
+// enviados (mensagem do WhatsApp) e tabela de vistorias. Só consulta: não existe iniciar vistoria aqui. Os dados são
 // os da tela Vistorias (servidor quando há conexão, senão o que está guardado no aparelho).
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
 import { calcularMetricas, filtrarVistorias, filtrosDoEndereco, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
 import { contarRecebimentos } from "../recebimento-dados.js";
-import { baixarBlob, baixarCsv, dataDoArquivo, linhasDeVistorias, qtdAvarias } from "../exportar.js";
+import { baixarBlob, qtdAvarias } from "../exportar.js";
 import { criarObterImagem, vistoriaParaPdf } from "../vistoria-completa.js";
 import { gerarPdf } from "../pdf.js";
 import { $, $$, esc, icone } from "../ui.js";
@@ -48,9 +48,8 @@ export async function montar(raiz, ctx, params = {}) {
           <p class="cb-sub" id="dash-status" role="status"></p>
         </div>
         <div class="cb-acoes">
-          <button type="button" class="cb-btn cb-btn-primario" id="dash-relatorio">${icone("mensagem")} Relatório de carros enviados</button>
           <button type="button" class="cb-btn" id="dash-atualizar">${icone("recarregar")} Atualizar</button>
-          <button type="button" class="cb-btn" id="dash-exportar">${icone("baixar")} Exportar CSV</button>
+          <button type="button" class="cb-btn cb-btn-primario" id="dash-relatorio">${icone("mensagem")} Relatório de carros enviados</button>
         </div>
       </div>
       <section class="cb-cartao cb-resumo" aria-label="Resumo das vistorias">
@@ -291,15 +290,7 @@ export async function montar(raiz, ctx, params = {}) {
     if (ativo) $("#dash-atualizar", raiz).disabled = false;
   }
 
-  // ---------- Exportar e PDF de várias ----------
-  function exportarCsv() {
-    const lista = filtrados();
-    if (!lista.length) {
-      ctx.avisar("Nenhuma vistoria para exportar com esses filtros.");
-      return;
-    }
-    baixarCsv(linhasDeVistorias(lista), `vistorias_${dataDoArquivo()}.csv`);
-  }
+  // ---------- PDF de várias ----------
 
   async function baixarPdfs() {
     if (estado.gerandoPdf || !estado.selecionadas.size) return;
@@ -397,7 +388,6 @@ export async function montar(raiz, ctx, params = {}) {
     await (ctx.sincronizar || ctx.sync.sincronizar)();
     recarregar();
   });
-  $("#dash-exportar", raiz).addEventListener("click", exportarCsv);
   // Mensagem do WhatsApp do gerente com os carros do dia (views/relatorio-envios.js).
   $("#dash-relatorio", raiz).addEventListener("click", () => abrirRelatorioEnvios(estado.itens, { avisar: ctx.avisar }));
   $("#dash-pdf-lote", raiz).addEventListener("click", baixarPdfs);
