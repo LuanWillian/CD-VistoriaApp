@@ -15,8 +15,6 @@ import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["tudo", "Tudo"], ["personalizado", "Personalizado"]];
 const NOME_UNIDADE = { hora: "hora", dia: "dia", semana: "semana", mes: "mês" };
 const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-// Até este número de colunas cabe o valor em cima de cada barra.
-const MAX_COLUNAS_COM_VALOR = 31;
 
 const num = (n) => Number(n).toLocaleString("pt-BR");
 const dec = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -56,18 +54,13 @@ function comparacao(diferenca, texto, { bomQuandoCai = false } = {}) {
 // anterior, no "Tudo"). Passando o mouse, a dica mostra os números da coluna.
 function graficoVolume(s, medias, { semAnterior, rotuloDia }) {
   const n = s.atual.length;
-  const topo = topoDoEixo(Math.max(...s.atual, medias?.atual ?? 0, medias?.anterior ?? 0, 1));
-  const comValores = n <= MAX_COLUNAS_COM_VALOR;
+  const topo = topoDoEixo(Math.max(...s.atual, medias?.atual ?? 0, 1));
+  // Só o dia de pico mostra o número em cima da barra; os outros aparecem na dica (passar o mouse).
+  const pico = s.atual.indexOf(Math.max(...s.atual));
   const passo = Math.max(1, Math.ceil(n / 11));
   const grade = [0, topo / 2, topo].filter((k) => Number.isInteger(k))
     .map((k) => `<div class="db-grade-linha" data-baixo="${pctDe(k, topo)}"><span>${num(k)}</span></div>`).join("");
-  // Médias muito próximas: o rótulo da linha de cima sobe e o da de baixo desce, para não se sobreporem.
-  const perto = medias && medias.anterior != null && Math.abs(medias.atual - medias.anterior) / topo < 0.07;
-  const lado = (eAtual) => (!perto ? "" : (eAtual ? medias.atual >= medias.anterior : medias.anterior > medias.atual) ? " db-rot-acima" : " db-rot-abaixo");
-  const linhas = !medias ? "" : [
-    medias.anterior == null ? "" : `<div class="db-media db-media-anterior${lado(false)}" data-baixo="${pctDe(medias.anterior, topo)}"><span>ant. ${dec(medias.anterior)}</span></div>`,
-    `<div class="db-media${lado(true)}" data-baixo="${pctDe(medias.atual, topo)}"><span>média ${dec(medias.atual)}</span></div>`,
-  ].join("");
+  const linhas = !medias ? "" : `<div class="db-media" data-baixo="${pctDe(medias.atual, topo)}"><span>média ${dec(medias.atual)}</span></div>`;
   const colunas = s.atual.map((total, i) => {
     const avaria = s.comAvaria[i];
     const domingo = s.unidade === "dia" && rotuloDia(i).getDay() === 0;
@@ -77,7 +70,7 @@ function graficoVolume(s, medias, { semAnterior, rotuloDia }) {
     return `<div class="db-coluna${total ? "" : " db-coluna-vazia"}">
         ${total ? `<span class="db-pilha" data-altura="${pctDe(total, topo)}">
           ${avaria ? `<span class="db-seg-avaria" data-altura="${pctDe(avaria, total)}"></span>` : ""}<span class="db-seg-ok"></span></span>` : ""}
-        ${total && comValores ? `<span class="db-valor" data-baixo="${pctDe(total, topo)}">${num(total)}</span>` : ""}
+        ${total && i === pico ? `<span class="db-valor" data-baixo="${pctDe(total, topo)}">${num(total)}</span>` : ""}
         ${domingo && !total ? '<span class="db-dom">dom</span>' : ""}
         ${dica}
       </div>`;
@@ -276,7 +269,7 @@ export async function montar(raiz, ctx) {
 
     // ----- Gráfico de volume -----
     const subVolume = medias
-      ? `Média de <strong>${dec(medias.atual)}</strong> por ${medias.unidade}${medias.anterior == null ? "" : ` · período anterior: ${dec(medias.anterior)}`}`
+      ? `Média de <strong>${dec(medias.atual)}</strong> por ${medias.unidade}`
       : "Hoje, hora a hora";
     const volume = `<section class="cb-cartao db-volume" aria-labelledby="db-h-volume">
       <div class="db-cartao-topo">
@@ -284,8 +277,6 @@ export async function montar(raiz, ctx) {
         <p class="db-legenda">
           <span><span class="db-quad db-quad-sem"></span>Sem avaria</span>
           <span><span class="db-quad db-quad-avaria"></span>Com avaria</span>
-          ${medias ? '<span><span class="db-traco"></span>Média</span>' : ""}
-          ${medias?.anterior != null ? '<span><span class="db-traco db-traco-anterior"></span>Média anterior</span>' : ""}
         </p>
       </div>
       ${r.total ? graficoVolume(s, medias, { semAnterior, rotuloDia: deDia }) : '<p class="db-vazio">Nenhum veículo enviado no período.</p>'}
@@ -294,10 +285,10 @@ export async function montar(raiz, ctx) {
     // ----- Recebimento nas lojas -----
     // Cada situação em bloco: rótulo (e "Ver veículos") em cima, número grande e % embaixo.
     const linhaRec = (rot, n, classe, situacao) => `<li class="db-rec-linha">
-        <span class="db-quad db-quad-${classe}"></span><span class="db-rec-rot">${rot}</span>
-        ${situacao && n ? `<a class="db-rec-ver" href="${verVeiculos(situacao)}" aria-label="Ver veículos: ${rot.toLowerCase()}">Ver veículos ${icone("setaDireita", "ic")}</a>` : "<span></span>"}
-        <span class="db-rec-valor"><span class="db-rec-num${classe === "divergencia" && n ? " db-erro" : ""}">${num(n)}</span>
-          <span class="db-rec-pct">${formatarPct(paraLojas ? (n / paraLojas) * 100 : 0, { casas: 0 })} dos enviados</span></span>
+        <span class="db-quad db-quad-${classe}"></span>
+        <span class="db-rec-rot">${rot}${situacao && n ? `<a class="db-rec-ver" href="${verVeiculos(situacao)}" aria-label="Ver veículos: ${rot.toLowerCase()}">Ver veículos ${icone("setaDireita", "ic")}</a>` : ""}</span>
+        <span class="db-rec-num${classe === "divergencia" && n ? " db-erro" : ""}">${num(n)}</span>
+        <span class="db-rec-pct">${formatarPct(paraLojas ? (n / paraLojas) * 100 : 0, { casas: 0 })}</span>
       </li>`;
     const recebimento = `<section class="cb-cartao db-receb" aria-labelledby="db-h-receb">
       <h2 id="db-h-receb">Recebimento nas lojas</h2>

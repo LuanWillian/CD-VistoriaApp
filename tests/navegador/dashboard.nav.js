@@ -137,17 +137,18 @@ teste("dashboard: Recebimento nas lojas, o mais antigo aguardando e links para a
   }
 });
 
-teste("dashboard: valores em cima das barras; no Tudo não há média anterior nem comparação", async () => {
+teste("dashboard: número só no pico; uma linha de média só; no Tudo não há comparação", async () => {
   const t = await montarDashboard();
   try {
     t.el.querySelector('[data-periodo="7d"]').click();
     await esperarAte(() => t.el.querySelectorAll(".db-coluna").length === 7);
-    igual([...t.el.querySelectorAll(".db-valor")].map((b) => b.textContent), ["1", "1"], "só as colunas com vistorias mostram o número");
-    ok(t.el.querySelector(".db-media-anterior"), "7 dias tem a média anterior");
+    igual([...t.el.querySelectorAll(".db-valor")].map((b) => b.textContent), ["1"], "só o dia de pico mostra o número");
+    igual(t.el.querySelectorAll(".db-media").length, 1, "uma linha de média só");
+    igual(t.el.querySelector(".db-media-anterior"), null, "sem a linha da média anterior");
+    igual([...t.el.querySelectorAll(".db-legenda > span")].map((s) => s.textContent.trim()), ["Sem avaria", "Com avaria"]);
     t.el.querySelector('[data-periodo="tudo"]').click();
     await esperarAte(() => t.el.querySelector("#db-subtitulo").textContent.includes("desde"));
     igual(t.el.querySelector(".db-media-anterior"), null, "Tudo não tem média anterior");
-    ok(!t.el.querySelector(".db-legenda").textContent.includes("Média anterior"), "Tudo não mostra a legenda Média anterior");
     ok(t.el.querySelector(".db-faixa").textContent.includes("todas as vistorias"), "Tudo não compara com o anterior");
     igual(t.el.querySelector(".db-ind-link").getAttribute("href").split("&")[0], "#/inicio?periodo=todos");
   } finally {
