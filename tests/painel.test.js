@@ -37,7 +37,7 @@ test("filtro: períodos Hoje, 7 dias, 30 dias e Todos, combinados com a busca", 
   assert.deepEqual(ids({ periodo: "7d", busca: "jeep" }), ["1", "2"]);
 });
 
-test("filtro: Este mês, Personalizado, marca e loja", () => {
+test("filtro: Este mês, Personalizado, marca e loja (iguais ao dashboard)", () => {
   const lista = [
     v("a", { realizadaEm: em(0), loja: "PG Prime Jeep Natal" }),
     v("b", { realizadaEm: em(8), marca: "BMW", loja: "PG Prime BMW Natal" }),
@@ -94,7 +94,7 @@ test("junção servidor + aparelho: o recebimento do servidor vale mais que a c�
   assert.equal(juntarComServidor(v("b", { recebimento: undefined }), v("b", { recebimento: { id: "x" } })).recebimento.id, "x");
 });
 
-test("link para a aba Vistorias filtrada: leva período, marca, loja e recebimento", () => {
+test("link do dashboard para a aba Vistorias: leva período, marca, loja e recebimento", () => {
   assert.equal(enderecoDasVistorias({ periodo: "30d", marca: "", loja: "" }, "aguardando"), "#/inicio?periodo=30d&recebimento=aguardando");
   assert.equal(enderecoDasVistorias({ periodo: "tudo", marca: "BMW", loja: "PG Prime BMW Natal" }, "divergencia"),
     "#/inicio?periodo=todos&marca=BMW&loja=PG+Prime+BMW+Natal&recebimento=divergencia");

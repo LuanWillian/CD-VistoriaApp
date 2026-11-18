@@ -1,6 +1,4 @@
-// Contas de período, filtros e indicadores das vistorias (aba Vistorias no computador,
-// exportação e, no futuro, o relatório mensal). O dashboard foi removido em 17/11/2026:
-// as contas dele ficam aqui para o relatório. Períodos, filtros e
+// Regras do dashboard do gerente (views/dashboard.js): períodos, filtros e
 // indicadores. Só funções puras sobre a lista de vistorias do período; nada de
 // tela nem de servidor. Datas sempre no fuso do navegador.
 //

@@ -434,7 +434,7 @@ export async function montar(raiz, ctx, params = {}) {
   };
   ctx.sync.eventos.addEventListener("mudou", aoMudar);
 
-  // Filtros vindos no endereço (#/inicio?periodo=…&recebimento=…): período, marca, loja e recebimento.
+  // Filtros vindos no endereço (link "Ver veículos" do dashboard): período, marca, loja e recebimento.
   const inicial = filtrosDoEndereco(params.busca);
   for (const campo of ["de", "ate"]) {
     if (!inicial[campo]) continue;

@@ -13,9 +13,10 @@ import * as viewNova from "./views/nova.js";
 import * as viewVistorias from "./views/vistorias.js";
 import * as viewDetalhe from "./views/detalhe.js";
 import * as viewInicio from "./views/inicio.js";
+import * as viewDashboard from "./views/dashboard.js";
 import * as viewRecebimentos from "./views/recebimentos.js";
 
-const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, recebimentos: viewRecebimentos,
+const VIEWS = { nova: viewNova, vistorias: viewVistorias, detalhe: viewDetalhe, inicio: viewInicio, dashboard: viewDashboard, recebimentos: viewRecebimentos,
   // Conta de loja: a mesma tela de detalhe, em modo de conferência (Registrar recebimento).
   recebimento: { montar: (el, c, params) => viewDetalhe.montar(el, c, { ...params, modo: "loja" }) },
 };
@@ -88,6 +89,7 @@ function lerRota() {
   if (papelAtual() === "loja" && caminho === "/recebimentos") return { nome: "recebimentos", params: { busca } };
   const mr = caminho.match(/^\/recebimento\/([\w-]+)$/);
   if (papelAtual() === "loja" && mr) return { nome: "recebimento", params: { id: mr[1], busca } };
+  if (desktop && caminho === "/dashboard") return { nome: "dashboard", params: { busca } };
   if (!desktop && /^\/nova(\/|$)/.test(caminho)) return { nome: "nova", params: { busca } };
   return { nome: "inicio", params: { busca } }; // #/inicio e qualquer rota desconhecida
 }
@@ -105,6 +107,7 @@ async function renderizar() {
   // No menu não aparece a seta de voltar ao menu.
   document.body.classList.toggle("na-inicio", nome === "inicio");
   // O detalhe de uma vistoria faz parte de "Vistorias" (o caminho no topo da página diz isso).
+  marcarNavTopo(nome === "detalhe" ? "inicio" : nome);
   if (!desktop) {
     nivelAtual = viewInicio.nivelDaTela(history.state, nome, nivelAtual);
     if (history.state?.nivel !== nivelAtual) history.replaceState(comNivel(nivelAtual), "");
@@ -197,7 +200,7 @@ async function mostrarLogin() {
   document.body.classList.remove("com-acoes");
   tituloComoLinkDoMenu(false);
   $("#btn-menu").hidden = true;
-  $(".topo").removeAttribute("data-consulta");
+  $("#topo-nav").hidden = true;
   $("#status-rede").hidden = true;
   $("#faixa-sessao").hidden = true;
   $("#faixa-offline").hidden = true;
@@ -206,11 +209,20 @@ async function mostrarLogin() {
   await viewLogin.montar(raiz, ctx, {});
 }
 
+// Computador: links "Vistorias" (painel do menu) e "Dashboard" no topo.
+function marcarNavTopo(nome) {
+  for (const a of document.querySelectorAll("#topo-nav [data-rota]")) {
+    if (a.dataset.rota === nome) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  }
+}
+
 // O título "CD Vistoria" vira o caminho de volta ao menu (em todos os ambientes).
 function tituloComoLinkDoMenu(ligar) {
   const titulo = $(".topo-titulo");
   titulo.innerHTML = ligar
-    // Computador: sem a seta; o nome leva à lista de vistorias. Celular e app: seta de voltar ao menu.
+    // Computador: sem a seta (os links Vistorias/Dashboard já ficam no topo); o nome
+    // continua levando à lista de vistorias. Celular e app: seta de voltar ao menu.
     ? (() => {
       // Computador: o logo já é o link (sem seta). Conta de loja vai ao início dela.
       const loja = papelAtual() === "loja";
@@ -259,8 +271,8 @@ function entrarNoApp() {
   tituloComoLinkDoMenu(true);
   mostrarUsuarioNoTopo();
   $("#btn-menu").hidden = false;
-  // Selo "Consulta" ao lado do nome: só para vistoriadores no computador.
-  $(".topo").toggleAttribute("data-consulta", desktop && papelAtual() !== "loja");
+  // Links Vistorias/Dashboard só para vistoriadores no computador.
+  $("#topo-nav").hidden = !desktop || papelAtual() === "loja";
   // Selo de conexão (Online/Offline/pendentes) no topo em todos os ambientes.
   $("#status-rede").hidden = false;
   if (!location.hash || location.hash === "#") location.replace("#/inicio");

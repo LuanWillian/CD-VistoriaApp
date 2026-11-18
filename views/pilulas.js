@@ -1,4 +1,4 @@
-// Filtro em "pílula" do visual do computador (painel): o texto da
+// Filtro em "pílula" do visual do computador (painel e dashboard): o texto da
 // opção escolhida + ícone, com um <select> nativo transparente por cima (abre a
 // lista do sistema, funciona no teclado e no leitor de tela). A pílula fica azul
 // quando há filtro escolhido (ou sempre, com sempreAtiva). Com fechar, a pílula
