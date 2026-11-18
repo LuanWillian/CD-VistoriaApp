@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calcularMetricas, filtrarVistorias, juntarComServidor, paginar, primeiroNome, semAcento } from "../painel-dados.js";
+import { calcularMetricas, filtrarVistorias, juntarComServidor, paginar, primeiroNome, semAcento, enderecoDasVistorias, filtrosDoEndereco } from "../painel-dados.js";
 
 const AGORA = new Date(2026, 10, 9, 15, 0); // 09/11/2026 15:00 (fuso local)
 const em = (diasAtras, hora = 10) => new Date(2026, 10, 9 - diasAtras, hora, 0).toISOString();
@@ -92,4 +92,21 @@ test("junção servidor + aparelho: o recebimento do servidor vale mais que a c�
   const local = v("a", { recebimento: null, status: "sincronizada" });
   assert.deepEqual(juntarComServidor(remoto, local).recebimento, { id: "r1", status: "conforme" });
   assert.equal(juntarComServidor(v("b", { recebimento: undefined }), v("b", { recebimento: { id: "x" } })).recebimento.id, "x");
+});
+
+test("link do dashboard para a aba Vistorias: leva período, marca, loja e recebimento", () => {
+  assert.equal(enderecoDasVistorias({ periodo: "30d", marca: "", loja: "" }, "aguardando"), "#/inicio?periodo=30d&recebimento=aguardando");
+  assert.equal(enderecoDasVistorias({ periodo: "tudo", marca: "BMW", loja: "PG Prime BMW Natal" }, "divergencia"),
+    "#/inicio?periodo=todos&marca=BMW&loja=PG+Prime+BMW+Natal&recebimento=divergencia");
+  assert.equal(enderecoDasVistorias({ periodo: "personalizado", de: "2026-11-01", ate: "2026-11-10" }, "aguardando"),
+    "#/inicio?periodo=personalizado&de=2026-11-01&ate=2026-11-10&recebimento=aguardando");
+});
+
+test("filtros vindos do endereço: só valores conhecidos; o resto é ignorado", () => {
+  const ida = (h) => filtrosDoEndereco(new URLSearchParams(h.split("?")[1]));
+  assert.deepEqual(ida(enderecoDasVistorias({ periodo: "7d", marca: "Jeep", loja: "Sem loja informada" }, "divergencia")),
+    { periodo: "7d", marca: "Jeep", loja: "Sem loja informada", recebimento: "divergencia" });
+  assert.deepEqual(ida("#/inicio?periodo=personalizado&de=2026-11-01&ate=2026-11-10"), { periodo: "personalizado", de: "2026-11-01", ate: "2026-11-10" });
+  assert.deepEqual(ida("#/inicio?periodo=ontem&recebimento=talvez&de=xx"), {});
+  assert.deepEqual(filtrosDoEndereco(undefined), {});
 });

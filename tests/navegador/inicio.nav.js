@@ -193,6 +193,32 @@ teste("painel (computador): coluna Recebimento e filtro de recebimento", async (
   }
 });
 
+teste("painel (computador): abre já filtrado pelo endereço (link Ver veículos do dashboard)", async () => {
+  await storage.apagarBanco();
+  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, "2026-11-08T10:00:00.000Z"), id, userId: EU.id, realizadaEm: "2026-11-08T10:00:00.000Z", status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
+  await storage.salvarVistoria(v("1", { recebimento: null }));
+  await storage.salvarVistoria(v("2", { recebimento: { id: "r", userId: "u", status: "divergencia", recebedorNome: "D", loja: "PG Prime BMW Natal", recebidoEm: "2026-11-09T10:00:00.000Z", descricao: "x", assinatura: "p", fotos: [] } }));
+  await storage.salvarVistoria(v("3", { recebimento: null, loja: "PG Prime Jeep Natal" }));
+  const ctx = {
+    desktop: true, storage, auth: { usuarioAtual: () => EU }, online: () => false, navegar: () => {},
+    sync: { eventos: new EventTarget(), sincronizar: async () => ({}) }, remoto: {},
+  };
+  const el = document.createElement("div");
+  document.getElementById("palco").append(el);
+  const busca = new URLSearchParams("periodo=todos&loja=PG+Prime+BMW+Natal&recebimento=aguardando");
+  const tela = await inicio.montar(el, ctx, { busca });
+  await esperar(150);
+  try {
+    igual(el.querySelector("#dash-recebimento").value, "aguardando");
+    igual(el.querySelector("#dash-loja").value, "PG Prime BMW Natal");
+    igual(el.querySelector("#dash-periodo").value, "todos");
+    igual(el.querySelectorAll("#dash-corpo tr").length, 1, "só a da BMW Natal aguardando");
+  } finally {
+    tela?.desmontar?.();
+    el.remove();
+  }
+});
+
 teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção de linhas", async () => {
   await storage.apagarBanco();
   const agora = new Date().toISOString();

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   SEM_LOJA, dentro, descreverPeriodo, filtrarDashboard, formatarPct, listaPorRecebimento, gravidadeMaxima, intervaloDoDashboard, marcasDisponiveis,
   porGravidade, porLoja, porMarca, rankingAreas, rankingTipos, resumo, serie, topoDoEixo, ultimasComAvaria,
+  diasUteis, mediasDaSerie, maisAntigoAguardando,
 } from "../dashboard-dados.js";
 
 const AGORA = new Date(2026, 10, 11, 15, 0); // 11/11/2026 15:00 (fuso local)
@@ -63,7 +64,7 @@ test("filtros por marca e loja; vistoria sem loja cai em 'Sem loja informada'", 
 test("resumo: totais, % com avaria, graves e variação contra o período anterior", () => {
   const itens = [v("1", { avarias: [av("Leve"), av("Grave")] }), v("2", { avarias: [av("Grave")] }), v("3"), v("4")];
   const r = resumo(itens, [v("a"), v("b")]);
-  assert.deepEqual(r, { total: 4, totalAnterior: 2, variacao: 100, comAvaria: 2, pctComAvaria: 50, avarias: 3, graves: 2, pctGraves: (2 / 3) * 100 });
+  assert.deepEqual(r, { total: 4, totalAnterior: 2, variacao: 100, comAvaria: 2, pctComAvaria: 50, avarias: 3, graves: 2, pctGraves: (2 / 3) * 100, veiculosComGrave: 2 });
   assert.equal(resumo([], []).variacao, null, "sem período anterior não há variação");
   assert.equal(resumo([], []).pctComAvaria, 0);
 });
@@ -154,10 +155,12 @@ test("lista dos cartões: todas com avaria (sem limite) ou só as com avaria gra
 
 test("eixo do gráfico e porcentagem no formato brasileiro", () => {
   assert.equal(topoDoEixo(0), 4);
-  assert.equal(topoDoEixo(7), 10);
-  assert.equal(topoDoEixo(13), 20);
-  assert.equal(topoDoEixo(23), 25);
-  assert.equal(topoDoEixo(120), 200);
+  assert.equal(topoDoEixo(7), 8, "escala justa: a barra mais alta ocupa quase toda a altura");
+  assert.equal(topoDoEixo(11), 12);
+  assert.equal(topoDoEixo(13), 16);
+  assert.equal(topoDoEixo(23), 24);
+  assert.equal(topoDoEixo(120), 120);
+  assert.equal(topoDoEixo(121), 160);
   assert.equal(formatarPct(14.94), "14,9%");
   assert.equal(formatarPct(12, { sinal: true, casas: 0 }), "+12%");
   assert.equal(formatarPct(-3.2, { sinal: true, casas: 0 }), "-3%");
@@ -199,4 +202,49 @@ test("período Tudo: do dia da primeira vistoria até hoje, sem período anterio
   assert.deepEqual(i.anterior, { de: i.de, ate: i.de });
   const vazio = intervaloDoDashboard("tudo", agora, {});
   assert.equal(vazio.de, new Date(2026, 10, 14).toISOString(), "sem vistorias: só hoje");
+});
+
+test("série separa, em cada coluna, quantos veículos saíram com avaria", () => {
+  const i = intervaloDoDashboard("7d", AGORA);
+  const s = serie([
+    v("1", { realizadaEm: em(5, 9), avarias: [av("Leve")] }),
+    v("2", { realizadaEm: em(11, 8) }),
+    v("3", { realizadaEm: em(11, 9), avarias: [av("Grave"), av("Leve")] }),
+  ], [], i);
+  assert.deepEqual(s.atual, [1, 0, 0, 0, 0, 0, 2]);
+  assert.deepEqual(s.comAvaria, [1, 0, 0, 0, 0, 0, 1]);
+});
+
+test("dias úteis: de segunda a sábado (domingo não conta)", () => {
+  assert.equal(diasUteis(intervaloDoDashboard("7d", AGORA)), 6); // 05/11 a 11/11 tem o domingo 08/11
+  assert.equal(diasUteis(intervaloDoDashboard("30d", AGORA)), 26);
+  assert.equal(diasUteis(intervaloDoDashboard("hoje", AGORA)), 1);
+  const domingo = new Date(2026, 10, 8, 12);
+  assert.equal(diasUteis(intervaloDoDashboard("hoje", domingo)), 0);
+});
+
+test("médias do gráfico: por dia útil, por semana ou mês; sem média por hora; Tudo sem anterior", () => {
+  const i = intervaloDoDashboard("7d", AGORA);
+  const s = serie([v("1", { realizadaEm: em(5) }), v("2", { realizadaEm: em(11) }), v("3", { realizadaEm: em(11) })],
+    [v("a", { realizadaEm: em(29, 12, 9) }), v("b", { realizadaEm: em(30, 12, 9) })], i);
+  assert.deepEqual(mediasDaSerie(s, i), { atual: 3 / 6, anterior: 2 / 6, unidade: "dia útil" });
+  assert.equal(mediasDaSerie(serie([], [], intervaloDoDashboard("hoje", AGORA)), intervaloDoDashboard("hoje", AGORA)), null);
+  const semanas = { rotulos: ["a", "b", "c"], atual: [3, 6, 0], anterior: [1, 1, 1], unidade: "semana" };
+  assert.deepEqual(mediasDaSerie(semanas, { dias: 21, anterior: {} }), { atual: 3, anterior: 1, unidade: "semana" });
+  const tudo = intervaloDoDashboard("tudo", AGORA, { inicio: em(5) });
+  assert.equal(mediasDaSerie(serie([v("1", { realizadaEm: em(5) })], [], tudo), tudo).anterior, null);
+});
+
+test("aguardando há mais tempo: a vistoria mais antiga sem recebimento e há quantos dias", () => {
+  const rec = { id: "r", userId: "u", status: "conforme", recebedorNome: "D", loja: "L", recebidoEm: em(11), descricao: "", assinatura: "p", fotos: [] };
+  const itens = [
+    v("1", { realizadaEm: em(10, 17), recebimento: null }),
+    v("2", { realizadaEm: em(8, 9), recebimento: null, loja: "PG Prime BMW Natal" }),
+    v("3", { realizadaEm: em(2, 9), recebimento: rec }),
+    v("4", { realizadaEm: em(1, 9), loja: "", recebimento: null }),
+  ];
+  const m = maisAntigoAguardando(itens, AGORA);
+  assert.equal(m.vistoria.id, "2");
+  assert.equal(m.dias, 3);
+  assert.equal(maisAntigoAguardando([v("x", { recebimento: rec })], AGORA), null);
 });

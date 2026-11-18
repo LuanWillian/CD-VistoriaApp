@@ -9,7 +9,7 @@ function dadosFalsos() {
   return [
     { id: "a1", numero: "VIS-000001", realizadaEm: dia(0), chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime Jeep Natal",
       avarias: [{ area: "Capô", tipo: "Risco", gravidade: "Grave" }, { area: "Teto", tipo: "Amassado", gravidade: "Leve" }] },
-    { id: "a2", numero: "VIS-000002", realizadaEm: dia(1), chassi: "ZZ999Z", marca: "BMW", modelo: "<b>X1</b>", loja: "", avarias: [] },
+    { id: "a2", numero: "VIS-000002", realizadaEm: dia(1), chassi: "ZZ999Z", marca: "<i>Bmw</i>", modelo: "<b>X1</b>", loja: "", avarias: [] },
     { id: "a3", numero: "VIS-000003", realizadaEm: dia(40), chassi: "CC111C", marca: "Audi", modelo: "Q5", loja: "PG Prime Audi Natal", avarias: [] },
   ];
 }
@@ -35,57 +35,59 @@ async function montarDashboard({ online = true, falhar = false, dados = dadosFal
   return { el, chamadas, navegacoes, fim: () => { tela.desmontar(); el.remove(); } };
 }
 
-teste("dashboard: indicadores, tabelas e sem HTML vindo dos dados", async () => {
+const numeros = (t) => [...t.el.querySelectorAll(".db-faixa .db-ind-num")].map((n) => n.textContent.trim());
+
+teste("dashboard: faixa de números, gráfico, marcas e sem HTML vindo dos dados", async () => {
   const t = await montarDashboard();
   try {
     igual(t.chamadas.length, 1, "uma consulta só (período anterior + atual)");
-    const kpis = [...t.el.querySelectorAll(".db-kpis .db-kpi-num")].map((n) => n.textContent);
-    igual(kpis, ["2", "2"]); // 2 vistorias, 2 avarias
-    igual(t.el.querySelector('.db-kpi-botao[data-lista="avaria"], .db-kpi-botao[data-lista="graves"]'), null, "os cartões Veículos com avaria e Avarias graves foram removidos");
-    ok(t.el.textContent.includes("vs. 1 anterior"), "falta a comparação com o período anterior");
-    const rotulo = () => t.el.querySelector(".db-kpis .cb-kpi-rot").textContent.trim();
-    igual(rotulo(), "Vistorias no período · 30 dias");
-    const colunas = t.el.querySelectorAll(".db-coluna");
-    igual(colunas.length, 30);
-    const lojas = [...t.el.querySelectorAll('[aria-labelledby="db-h-loja"] tbody tr td:first-child')].map((td) => td.textContent);
-    igual(lojas, ["Jeep Natal", "Sem loja informada"]);
-    ok(!t.el.querySelector("b"), "modelo com HTML não pode virar tag");
+    // 2 enviados, 50% com avaria, 1 grave, 1 aguardando (a sem loja não conta), 0 divergências
+    igual(numeros(t), ["2", "50%", "1", "1", "0"]);
+    ok(t.el.textContent.includes("vs. 1 no período anterior"), "falta a comparação com o período anterior");
+    igual(t.el.querySelectorAll(".db-coluna").length, 30);
+    igual(t.el.querySelectorAll(".db-seg-avaria").length, 1, "uma coluna com veículo com avaria");
+    ok(t.el.querySelector(".db-media"), "falta a linha da média");
+    const marcas = [...t.el.querySelectorAll(".db-tabela-marcas tbody th")].map((th) => th.textContent);
+    ok(marcas.includes("Jeep") && marcas.length === 2, `marcas: ${marcas}`);
+    ok(!t.el.querySelector("i"), "marca com HTML não pode virar tag");
     const barras = [...t.el.querySelectorAll("[data-largura]")];
     ok(barras.length && barras.every((b) => b.style.width.endsWith("%") && parseFloat(b.style.width) === Number(b.dataset.largura)), "larguras das barras não aplicadas");
-    igual(t.el.querySelector(".cb-rosca-num").textContent, "2", "a rosca soma as 2 avarias");
-    t.el.querySelector(".db-clicavel tbody tr td").click();
-    igual(t.navegacoes, ["#/vistoria/a1"]);
+    ok([...t.el.querySelectorAll("[data-altura]")].every((b) => b.style.height.endsWith("%")), "alturas das barras não aplicadas");
+    igual(t.el.querySelector("#db-lista"), null, "a lista de baixo foi removida");
+    igual(t.el.querySelector(".db-ind-link").getAttribute("href"), "#/inicio?periodo=30d&recebimento=aguardando");
   } finally {
     t.fim();
   }
 });
 
-teste("dashboard: filtros de marca e loja recalculam sem nova consulta", async () => {
+teste("dashboard: filtros de marca e loja recalculam sem nova consulta e vão no link Ver veículos", async () => {
   const t = await montarDashboard();
   try {
     const marca = t.el.querySelector("#db-marca");
-    igual([...marca.options].map((o) => o.value), ["", "Audi", "BMW", "Jeep"]);
-    marca.value = "BMW";
+    igual([...marca.options].map((o) => o.value).length, 4);
+    marca.value = "Jeep";
     marca.dispatchEvent(new Event("change"));
-    igual(t.el.querySelector(".db-kpi-num").textContent, "1");
+    igual(numeros(t)[0], "1");
     marca.value = "";
     marca.dispatchEvent(new Event("change"));
     const loja = t.el.querySelector("#db-loja");
-    loja.value = "Sem loja informada";
+    loja.value = "PG Prime Jeep Natal";
     loja.dispatchEvent(new Event("change"));
-    igual(t.el.querySelector(".db-kpi-num").textContent, "1");
+    igual(numeros(t)[0], "1");
+    ok(t.el.querySelector(".db-ind-link").getAttribute("href").includes("loja=PG+Prime+Jeep+Natal"), "o link leva a loja escolhida");
     igual(t.chamadas.length, 1);
   } finally {
     t.fim();
   }
 });
 
-teste("dashboard: trocar o período consulta de novo; Hoje mostra 24 colunas", async () => {
+teste("dashboard: trocar o período consulta de novo; Hoje mostra 24 colunas e não tem média", async () => {
   const t = await montarDashboard();
   try {
     t.el.querySelector('[data-periodo="hoje"]').click();
     await esperarAte(() => t.chamadas.length === 2 && t.el.querySelectorAll(".db-coluna").length === 24);
-    igual(t.el.querySelector(".db-kpi-num").textContent, "1");
+    igual(numeros(t)[0], "1");
+    igual(t.el.querySelector(".db-media"), null, "gráfico por hora não tem média");
     t.el.querySelector('[data-periodo="personalizado"]').click();
     ok(!t.el.querySelector("#db-datas").hidden, "datas do período personalizado não apareceram");
   } finally {
@@ -110,22 +112,7 @@ teste("dashboard: offline e erro do servidor mostram aviso", async () => {
   }
 });
 
-teste("dashboard: o cartão Vistorias no período mostra o período escolhido", async () => {
-  const t = await montarDashboard();
-  try {
-    const rotulo = () => t.el.querySelector(".db-kpis .cb-kpi-rot").textContent.trim();
-    for (const [valor, texto] of [["7d", "7 dias"], ["hoje", "Hoje"], ["mes", "Este mês"], ["tudo", "Tudo"], ["30d", "30 dias"]]) {
-      t.el.querySelector(`[data-periodo="${valor}"]`).click();
-      await esperar(150);
-      igual(rotulo(), `Vistorias no período · ${texto}`);
-      if (valor === "tudo") ok(t.el.querySelector("#db-subtitulo").textContent.includes("todas as vistorias, desde"), "subtítulo do Tudo sem comparação");
-    }
-  } finally {
-    t.fim();
-  }
-});
-
-teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna Divergências", async () => {
+teste("dashboard: Recebimento nas lojas, o mais antigo aguardando e links para a aba Vistorias", async () => {
   const agora = new Date();
   const dia = (n) => new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - n, 10).toISOString();
   const rec = (status) => ({ id: `r-${status}`, userId: "uL", status, recebedorNome: "Davi", loja: "PG Prime BMW Natal", recebidoEm: dia(0), descricao: "x", assinatura: "p", fotos: [] });
@@ -137,42 +124,32 @@ teste("dashboard: bloco Recebimento nas lojas, cartões abrem as listas e coluna
     { ...base, id: "w4", numero: "VIS-4", realizadaEm: dia(4), loja: "", recebimento: null },
   ] });
   try {
-    const bloco = () => t.el.querySelector(".db-receb"); // a tela é redesenhada a cada clique
-    ok(bloco(), "falta o bloco Recebimento nas lojas");
-    const nums = [...bloco().querySelectorAll(".db-kpi-num")].map((n) => n.textContent);
-    igual(nums, ["1", "1", "1"]);
-    const titulo = () => t.el.querySelector("#db-h-ultimas").textContent.trim();
-    bloco().querySelector('[data-lista="aguardando"]').click();
-    igual(titulo(), "Veículos aguardando recebimento (1)");
-    ok([...t.el.querySelectorAll("#db-lista th")].some((th) => th.textContent.trim() === "Recebimento"), "a lista mostra a coluna Recebimento");
-    bloco().querySelector('[data-lista="divergencia"]').click();
-    igual(titulo(), "Veículos recebidos com divergência (1)");
-    ok(t.el.querySelector("#db-lista .selo-receb-divergencia"));
-    bloco().querySelector('[data-lista="divergencia"]').click();
-    igual(titulo(), "Últimas vistorias");
-    const cab = [...t.el.querySelectorAll('[aria-labelledby="db-h-loja"] thead th')].map((th) => th.textContent.trim());
-    igual(cab, ["Loja", "Enviados", "Aguardando", "Nenhuma divergência", "Com divergência"]);
+    const nums = [...t.el.querySelectorAll(".db-receb .db-rec-num")].map((n) => n.textContent);
+    igual(nums, ["1", "1", "1"], "sem divergência, com divergência, aguardando");
+    ok(t.el.querySelector(".db-receb").textContent.includes("3 veículos enviados para as lojas"), "a vistoria sem loja não conta");
+    const links = [...t.el.querySelectorAll(".db-receb a.db-rec-ver")].map((a) => a.getAttribute("href"));
+    igual(links, ["#/inicio?periodo=30d&recebimento=divergencia", "#/inicio?periodo=30d&recebimento=aguardando"]);
+    ok(t.el.querySelector(".db-faixa").textContent.includes("mais antigo há 1 dia"), "faltou o mais antigo aguardando");
+    igual(numeros(t).slice(3), ["1", "1"]);
+    ok(t.el.querySelector(".db-faixa").textContent.includes("50% dos 2 recebidos"), "faltou o % dos recebidos");
   } finally {
     t.fim();
   }
 });
 
-teste("dashboard: barras com o valor em até 14 colunas; no Tudo não há período anterior", async () => {
+teste("dashboard: valores em cima das barras; no Tudo não há média anterior nem comparação", async () => {
   const t = await montarDashboard();
   try {
     t.el.querySelector('[data-periodo="7d"]').click();
     await esperarAte(() => t.el.querySelectorAll(".db-coluna").length === 7);
-    ok(t.el.querySelector(".cb-colunas.cb-com-valores"), "com 7 colunas os valores aparecem");
-    const valores = [...t.el.querySelectorAll(".db-coluna[data-valor]")].map((b) => b.dataset.valor);
-    igual(valores, ["1", "1"], "só as barras com vistorias mostram o número");
-    t.el.querySelector('[data-periodo="30d"]').click();
-    await esperarAte(() => t.el.querySelectorAll(".db-coluna").length === 30);
-    ok(!t.el.querySelector(".cb-com-valores"), "com 30 colunas não cabem os valores");
-    ok(t.el.querySelector(".cb-legenda").textContent.includes("Máximo: 1"), "sem valores, a legenda mostra o máximo");
+    igual([...t.el.querySelectorAll(".db-valor")].map((b) => b.textContent), ["1", "1"], "só as colunas com vistorias mostram o número");
+    ok(t.el.querySelector(".db-media-anterior"), "7 dias tem a média anterior");
     t.el.querySelector('[data-periodo="tudo"]').click();
     await esperarAte(() => t.el.querySelector("#db-subtitulo").textContent.includes("desde"));
-    igual(t.el.querySelectorAll(".cb-barra-anterior").length, 0, "Tudo não tem barras do período anterior");
-    ok(!t.el.querySelector(".cb-legenda").textContent.includes("Anterior"), "Tudo não mostra a legenda Anterior");
+    igual(t.el.querySelector(".db-media-anterior"), null, "Tudo não tem média anterior");
+    ok(!t.el.querySelector(".db-legenda").textContent.includes("Média anterior"), "Tudo não mostra a legenda Média anterior");
+    ok(t.el.querySelector(".db-faixa").textContent.includes("todas as vistorias"), "Tudo não compara com o anterior");
+    igual(t.el.querySelector(".db-ind-link").getAttribute("href").split("&")[0], "#/inicio?periodo=todos");
   } finally {
     t.fim();
   }

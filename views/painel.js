@@ -5,7 +5,7 @@
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
-import { calcularMetricas, filtrarVistorias, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
+import { calcularMetricas, filtrarVistorias, filtrosDoEndereco, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
 import { contarRecebimentos } from "../recebimento-dados.js";
 import { baixarBlob, baixarCsv, dataDoArquivo, linhasDeVistorias, qtdAvarias } from "../exportar.js";
 import { criarObterImagem, vistoriaParaPdf } from "../vistoria-completa.js";
@@ -29,7 +29,7 @@ function el(tag, classe, texto) {
   return e;
 }
 
-export async function montar(raiz, ctx) {
+export async function montar(raiz, ctx, params = {}) {
   const usuario = ctx.auth.usuarioAtual();
   const estado = {
     busca: "", periodo: "todos", de: hojeCampo(new Date(Date.now() - 29 * 86400000)), ate: hojeCampo(),
@@ -438,6 +438,21 @@ export async function montar(raiz, ctx) {
     estavaSincronizando = sincronizando;
   };
   ctx.sync.eventos.addEventListener("mudou", aoMudar);
+
+  // Filtros vindos no endereço (link "Ver veículos" do dashboard): período, marca, loja e recebimento.
+  const inicial = filtrosDoEndereco(params.busca);
+  for (const campo of ["de", "ate"]) {
+    if (!inicial[campo]) continue;
+    estado[campo] = inicial[campo];
+    $(`#dash-${campo}`, raiz).value = inicial[campo];
+  }
+  if (inicial.periodo) definirPeriodo(inicial.periodo);
+  for (const campo of ["marca", "loja", "recebimento"]) {
+    if (!inicial[campo]) continue;
+    const sel = $(`#dash-${campo}`, raiz);
+    if (![...sel.options].some((o) => o.value === inicial[campo])) sel.add(new Option(inicial[campo], inicial[campo]));
+    definirFiltro(campo, inicial[campo]);
+  }
 
   desenharTabela(); // mostra "Carregando…" enquanto lê
   await atualizarDados(); // offline ou local: já aparece o que está guardado

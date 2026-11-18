@@ -104,11 +104,12 @@ export function resumo(itens, anteriores = []) {
     avarias,
     graves: gravesQtd,
     pctGraves: pct(gravesQtd, avarias),
+    veiculosComGrave: itens.filter((v) => graves(v) > 0).length,
   };
 }
 
 // Série do gráfico: uma coluna por dia (ou por hora, se o período é um dia só),
-// com a contagem do período anterior na mesma posição.
+// com a contagem do período anterior na mesma posição e quantos saíram com avaria.
 // Unidade das colunas do gráfico: por hora (um dia), por dia (até 45 dias), por
 // semana (até 200 dias) ou por mês. Com colunas demais, as barras somem.
 export function unidadeDaSerie(intervalo) {
@@ -137,9 +138,13 @@ export function serie(itens, anteriores, intervalo) {
   };
   const atual = Array(n).fill(0);
   const anterior = Array(n).fill(0);
+  const comAvaria = Array(n).fill(0);
   for (const v of itens) {
     const i = indice(v.realizadaEm, de);
-    if (i >= 0 && i < n) atual[i]++;
+    if (i >= 0 && i < n) {
+      atual[i]++;
+      if (temAvaria(v)) comAvaria[i]++;
+    }
   }
   for (const v of anteriores) {
     const i = indice(v.realizadaEm, deAnterior);
@@ -153,7 +158,34 @@ export function serie(itens, anteriores, intervalo) {
     const mes = new Date(de.getFullYear(), de.getMonth() + i, 1);
     return `${MESES[mes.getMonth()]}/${String(mes.getFullYear()).slice(-2)}`;
   });
-  return { rotulos, atual, anterior, unidade };
+  return { rotulos, atual, anterior, comAvaria, unidade };
+}
+
+// Dias de segunda a sábado no intervalo [de, ate): o CD não trabalha no domingo.
+export function diasUteis({ de, ate }) {
+  const ini = new Date(de);
+  const fim = new Date(ate);
+  let n = 0;
+  for (let d = meiaNoite(ini.getFullYear(), ini.getMonth(), ini.getDate()); d < fim; d = meiaNoite(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+    if (d.getDay() !== 0) n++;
+  }
+  return n;
+}
+
+// Linhas de média do gráfico: por dia útil (colunas por dia), por semana ou por mês.
+// null no gráfico por hora (um dia só); anterior null no "Tudo" (não há com o que comparar).
+export function mediasDaSerie(s, intervalo) {
+  if (s.unidade === "hora") return null;
+  const soma = (xs) => xs.reduce((t, x) => t + x, 0);
+  const media = (xs, dias) => (dias ? soma(xs) / dias : 0);
+  if (s.unidade === "dia") {
+    return {
+      atual: media(s.atual, diasUteis(intervalo)),
+      anterior: intervalo.tudo ? null : media(s.anterior, diasUteis(intervalo.anterior)),
+      unidade: "dia útil",
+    };
+  }
+  return { atual: media(s.atual, s.atual.length), anterior: intervalo.tudo ? null : media(s.anterior, s.anterior.length), unidade: s.unidade === "mes" ? "mês" : "semana" };
 }
 
 export function porGravidade(itens) {
@@ -222,11 +254,16 @@ export function ultimasComAvaria(itens, limite = 8, { soGraves = false } = {}) {
     .map((v) => ({ ...v, gravidadeMaxima: gravidadeMaxima(v) }));
 }
 
-// Escala "redonda" do eixo do gráfico (1, 2, 5, 10, 20, 50…), com no mínimo 4.
+// Topo do eixo do gráfico: o menor número "redondo" e par (a linha do meio cai
+// num inteiro) que cabe o máximo — 8, 12, 16, 20, 24, 30, 40, 50, 60, 80, 100,
+// 120… — para a barra mais alta ocupar quase toda a altura. No mínimo 4.
 export function topoDoEixo(maximo) {
   if (maximo <= 4) return 4;
   const base = 10 ** Math.floor(Math.log10(maximo));
-  for (const f of [1, 2, 2.5, 5, 10]) if (f * base >= maximo) return f * base;
+  for (const f of [1, 1.2, 1.6, 2, 2.4, 3, 4, 5, 6, 8, 10]) {
+    const v = Math.round(f * base * 100) / 100;
+    if (v >= maximo && Number.isInteger(v) && v % 2 === 0) return v;
+  }
   return 10 * base;
 }
 
@@ -241,4 +278,15 @@ export function formatarPct(valor, { sinal = false, casas = 1 } = {}) {
 export function listaPorRecebimento(itens, situacao) {
   return itens.filter((v) => situacaoRecebimento(v) === situacao)
     .sort((x, y) => y.realizadaEm.localeCompare(x.realizadaEm));
+}
+
+// Veículo enviado há mais tempo que a loja ainda não recebeu, e há quantos dias
+// (de calendário). null quando nenhum está aguardando.
+export function maisAntigoAguardando(itens, agora = new Date()) {
+  const vistoria = itens.filter((v) => situacaoRecebimento(v) === "aguardando")
+    .reduce((m, v) => (!m || v.realizadaEm < m.realizadaEm ? v : m), null);
+  if (!vistoria) return null;
+  const t = new Date(vistoria.realizadaEm);
+  const dias = Math.round((meiaNoite(agora.getFullYear(), agora.getMonth(), agora.getDate()) - meiaNoite(t.getFullYear(), t.getMonth(), t.getDate())) / DIA_MS);
+  return { vistoria, dias };
 }

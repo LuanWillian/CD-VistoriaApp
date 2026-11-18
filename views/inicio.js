@@ -100,9 +100,10 @@ function montarCelular(el, ctx) {
   return {};
 }
 
-export function montar(el, ctx) {
+export function montar(el, ctx, params) {
   if (ctx.auth?.usuarioAtual()?.papel === "loja") return montarLoja(el, ctx);
-  // Navegador do computador: a página principal é o painel de consulta.
-  if (ctx.desktop) return montarPainel(el, ctx);
+  // Navegador do computador: a página principal é o painel de consulta (com os
+  // filtros que vierem no endereço, como os links do dashboard).
+  if (ctx.desktop) return montarPainel(el, ctx, params);
   return montarCelular(el, ctx);
 }

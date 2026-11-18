@@ -56,3 +56,41 @@ export const primeiroNome = (nome) => String(nome ?? "").trim().split(/\s+/)[0] 
 export function juntarComServidor(remoto, local) {
   return { ...remoto, ...local, recebimento: remoto.recebimento !== undefined ? remoto.recebimento : local.recebimento };
 }
+
+// ---------- Link do dashboard para a aba Vistorias ----------
+// Os cartões "Ver veículos" do dashboard abrem a aba Vistorias já filtrada, com o
+// mesmo período, marca e loja. "Tudo" do dashboard é "Todo o período" aqui.
+const PERIODOS_DO_ENDERECO = ["todos", "hoje", "7d", "30d", "mes", "personalizado"];
+const RECEBIMENTOS_DO_ENDERECO = ["aguardando", "conforme", "divergencia"];
+const DATA_CAMPO = /^\d{4}-\d{2}-\d{2}$/;
+
+export function enderecoDasVistorias({ periodo = "todos", de = "", ate = "", marca = "", loja = "" } = {}, recebimento = "") {
+  const p = new URLSearchParams();
+  p.set("periodo", periodo === "tudo" ? "todos" : periodo);
+  if (periodo === "personalizado") {
+    if (de) p.set("de", de);
+    if (ate) p.set("ate", ate);
+  }
+  if (marca) p.set("marca", marca);
+  if (loja) p.set("loja", loja);
+  if (recebimento) p.set("recebimento", recebimento);
+  return `#/inicio?${p}`;
+}
+
+// Filtros iniciais da aba Vistorias lidos do endereço (URLSearchParams). Só entram
+// valores conhecidos; marca e loja vão como texto (a tela trata as que não existem).
+export function filtrosDoEndereco(busca) {
+  const f = {};
+  if (!busca?.get) return f;
+  const periodo = busca.get("periodo");
+  if (PERIODOS_DO_ENDERECO.includes(periodo)) f.periodo = periodo;
+  if (f.periodo === "personalizado") {
+    for (const campo of ["de", "ate"]) if (DATA_CAMPO.test(busca.get(campo) ?? "")) f[campo] = busca.get(campo);
+  }
+  for (const campo of ["marca", "loja"]) {
+    const valor = String(busca.get(campo) ?? "").trim();
+    if (valor) f[campo] = valor;
+  }
+  if (RECEBIMENTOS_DO_ENDERECO.includes(busca.get("recebimento"))) f.recebimento = busca.get("recebimento");
+  return f;
+}
