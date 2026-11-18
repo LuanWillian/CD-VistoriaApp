@@ -52,7 +52,7 @@ export function htmlCardRecebimentoComputador(v, fontes = new Map()) {
   if (!s) return "";
   const r = v.recebimento;
   const corpo = !r
-    ? `<p class="cb-receb-texto">Aguardando recebimento na <strong>${esc(v.loja)}</strong>.</p>`
+    ? `<p class="cb-receb-texto cb-receb-aguardando">Aguardando recebimento na <strong>${esc(v.loja)}</strong>.</p>`
     : `<p class="cb-receb-texto">Recebido por <strong>${esc(r.recebedorNome)}</strong> — ${esc(r.loja)} · <span class="cb-cinza">${formatarDataHora(r.recebidoEm)}</span></p>
       ${r.status === "divergencia" && r.descricao ? `<p class="cb-receb-divergencia"><strong>O que está diferente:</strong> ${esc(r.descricao)}</p>` : ""}
       <div class="cb-receb-arquivos">

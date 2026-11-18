@@ -1,27 +1,42 @@
 // Painel do navegador do computador (#/inicio quando ctx.desktop): saudação,
-// resumo, busca, filtros, seleção (PDF de várias vistorias), relatório de carros
-// enviados (mensagem do WhatsApp) e tabela de vistorias. Só consulta: não existe iniciar vistoria aqui. Os dados são
+// título do atalho escolhido na barra lateral, busca, filtros, seleção (PDF de
+// várias vistorias), relatório de carros enviados (mensagem do WhatsApp) e tabela
+// de vistorias. Só consulta: não existe iniciar vistoria aqui. Os dados são
 // os da tela Vistorias (servidor quando há conexão, senão o que está guardado no aparelho).
+// As contagens por situação ficam na barra lateral (views/lateral.js).
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
-import { calcularMetricas, filtrarVistorias, filtrosDoEndereco, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
+import {
+  calcularMetricas, enderecoDasVistorias, filtrarVistorias, filtrosDoEndereco, juntarComServidor, maisRecentesPrimeiro,
+  numerosDePagina, paginar, primeiroNome,
+} from "../painel-dados.js";
 import { contarRecebimentos } from "../recebimento-dados.js";
 import { baixarBlob, qtdAvarias } from "../exportar.js";
 import { criarObterImagem, vistoriaParaPdf } from "../vistoria-completa.js";
 import { gerarPdf } from "../pdf.js";
-import { $, $$, esc, icone } from "../ui.js";
+import { $, $$, icone } from "../ui.js";
 import { seloRecebimento } from "./card-recebimento.js";
 import { abrirRelatorioEnvios } from "./relatorio-envios.js";
 import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
+import { atalhoAtivo, atualizarLateral, filtrosDoAtalho, tituloDoAtalho } from "./lateral.js";
 
 // Mesmos períodos do dashboard, mais "Todo o período" (o padrão da lista).
 const PERIODOS = [["todos", "Todo o período"], ["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["mes", "Este mês"], ["personalizado", "Personalizado"]];
-const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Recebimento: Aguardando"], ["conforme", "Recebimento: Nenhuma divergência"], ["divergencia", "Recebimento: Com divergência"]];
 const hojeCampo = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const semPrefixo = (loja) => String(loja ?? "").replace(/^PG Prime /, "");
 const num = (n) => Number(n).toLocaleString("pt-BR");
 const hora = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+// Ordem da lista filtrada, para o Anterior/Próxima do detalhe (views/detalhe.js).
+export const CHAVE_ORDEM = "cd-vistoria:ordem-da-lista";
+
+// Situação na lista: a vistoria ainda não enviada mostra o envio; a enviada, o recebimento na loja.
+function seloSituacao(v) {
+  if (v.status === "erro") return `<span class="selo selo-erro">${icone("alerta")} Erro ao enviar</span>`;
+  if (v.status !== "sincronizada") return `<span class="selo selo-pendente">${icone("nuvemEnviar")} Pendente de envio</span>`;
+  return seloRecebimento(v, { curto: true });
+}
 
 function el(tag, classe, texto) {
   const e = document.createElement(tag);
@@ -44,60 +59,58 @@ export async function montar(raiz, ctx, params = {}) {
     <div class="cb-painel dashboard-desktop">
       <div class="cb-pagina-cabeca">
         <div>
-          <h1 class="cb-h1" id="dash-saudacao"></h1>
+          <p class="cb-ola" id="dash-saudacao"></p>
+          <h1 class="cb-h1 cb-h1-grande" id="dash-titulo">Todas as vistorias</h1>
           <p class="cb-sub" id="dash-status" role="status"></p>
         </div>
         <div class="cb-acoes">
-          <button type="button" class="cb-btn" id="dash-atualizar">${icone("recarregar")} Atualizar</button>
+          <button type="button" class="cb-btn cb-btn-alto" id="dash-atualizar">${icone("recarregar")} Atualizar</button>
           <!-- Botão "Relatório de carros enviados" escondido para um teste do usuário (18/11/2026); volta depois. -->
         </div>
       </div>
-      <section class="cb-cartao cb-resumo" aria-label="Resumo das vistorias">
-        <p class="cb-resumo-item">${icone("pranchetaLista", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Vistorias hoje</span><strong id="dash-r-hoje">—</strong></p>
-        <button type="button" class="cb-resumo-item" data-receb="aguardando" title="Mostrar só as que aguardam recebimento">${icone("relogio", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Aguardando recebimento</span><strong id="dash-r-aguardando">—</strong></button>
-        <button type="button" class="cb-resumo-item" data-receb="divergencia" title="Mostrar só as recebidas com divergência">${icone("alertaCirculo", "ic cb-ic-erro")}<span class="cb-resumo-rot">Recebido com divergência</span><strong id="dash-r-divergencia">—</strong></button>
-        <p class="cb-resumo-item">${icone("nuvemEnviar", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Pendentes de envio</span><strong id="dash-r-pendentes">—</strong></p>
-        <p class="cb-resumo-item">${icone("banco", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Total no período · <span class="cb-kpi-periodo" id="dash-r-periodo">Tudo</span></span><strong id="dash-r-total">—</strong></p>
-      </section>
-      <section class="cb-cartao cb-tabela-cartao" aria-labelledby="dash-titulo-tabela">
-        <h2 class="sr-only" id="dash-titulo-tabela">Vistorias</h2>
+      <section class="cb-cartao cb-tabela-cartao" aria-labelledby="dash-titulo">
         <div class="cb-ferramentas">
-          <div class="cb-busca">${icone("busca")}<input id="dash-busca" type="search" placeholder="Buscar por chassi, marca, modelo…" aria-label="Buscar vistorias" autocomplete="off"></div>
+          <div class="cb-busca">${icone("busca")}<input id="dash-busca" type="search" placeholder="Buscar por chassi, marca ou modelo" aria-label="Buscar vistorias" autocomplete="off"></div>
           <span class="cb-divisor" aria-hidden="true"></span>
           ${pilulaSelect({ id: "dash-periodo", rotulo: "Período", opcoes: PERIODOS, valor: "todos", iconeNome: "calendario", sempreAtiva: true })}
-          ${pilulaSelect({ id: "dash-marca", rotulo: "Marca", opcoes: [["", "Marca"]] })}
-          ${pilulaSelect({ id: "dash-loja", rotulo: "Loja de destino", opcoes: [["", "Loja de destino"], ...LOJAS.map((l) => [l, l]), [SEM_LOJA, SEM_LOJA]] })}
-          ${pilulaSelect({ id: "dash-recebimento", rotulo: "Recebimento na loja", opcoes: RECEBIMENTOS, fechar: true })}
-          <button type="button" class="cb-link cb-limpar" data-limpar>Limpar filtros</button>
+          ${pilulaSelect({ id: "dash-marca", rotulo: "Marca", opcoes: [["", "Marca"]], fechar: true })}
+          ${pilulaSelect({ id: "dash-loja", rotulo: "Loja de destino", opcoes: [["", "Loja de destino"], ...LOJAS.map((l) => [l, l]), [SEM_LOJA, SEM_LOJA]], fechar: true })}
+          <button type="button" class="cb-link cb-limpar" data-limpar hidden>Limpar filtros</button>
+          <span class="cb-ordem">Mais recentes primeiro</span>
         </div>
         <div class="cb-datas" id="dash-datas" hidden>
           <label>De <input class="cb-data" type="date" id="dash-de"></label>
           <label>Até <input class="cb-data" type="date" id="dash-ate"></label>
         </div>
-        <div class="cb-selecao" id="dash-selecao" hidden>
-          <span id="dash-selecionadas"></span>
-          <button type="button" class="cb-link" id="dash-pdf-lote">Baixar PDF</button>
-        </div>
+        <div class="cb-rolagem-lista">
         <table class="cb-tabela cb-tabela-vistorias">
           <thead>
             <tr>
               <th scope="col" class="cb-col-sel"><input type="checkbox" id="dash-sel-pagina" aria-label="Selecionar as vistorias desta página"></th>
-              <th scope="col">ID</th><th scope="col">Data/Hora ↓</th><th scope="col">Veículo</th><th scope="col">Chassi</th>
-              <th scope="col">Loja de destino</th><th scope="col" class="cb-centro">Avarias</th><th scope="col">Recebimento</th>
+              <th scope="col">Vistoria</th><th scope="col">Data e hora</th><th scope="col">Veículo</th><th scope="col">Chassi</th>
+              <th scope="col">Loja de destino</th><th scope="col">Avarias</th><th scope="col">Situação</th>
               <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
           </thead>
           <tbody id="dash-corpo"></tbody>
         </table>
+        </div>
         <div class="cb-vazio" id="dash-vazio" hidden></div>
         <nav class="cb-paginacao" id="dash-paginacao" aria-label="Paginação" hidden>
           <span id="dash-contador" role="status"></span>
-          <span class="cb-acoes">
-            <button type="button" class="cb-btn" id="dash-anterior">${icone("voltar")} Anterior</button>
-            <button type="button" class="cb-btn" id="dash-proxima">${icone("avancar")} Próxima</button>
+          <span class="cb-paginas">
+            <button type="button" class="cb-pag" id="dash-anterior" aria-label="Página anterior">${icone("voltar")}</button>
+            <span class="cb-paginas" id="dash-numeros"></span>
+            <button type="button" class="cb-pag" id="dash-proxima" aria-label="Próxima página">${icone("avancar")}</button>
           </span>
         </nav>
       </section>
+      <div class="cb-selecao" id="dash-selecao" role="region" aria-label="Vistorias selecionadas" hidden>
+        <span id="dash-selecionadas"></span>
+        <span class="cb-selecao-div" aria-hidden="true"></span>
+        <button type="button" class="cb-selecao-pdf" id="dash-pdf-lote">${icone("pdf")}<span id="dash-pdf-texto">Baixar PDF</span></button>
+        <button type="button" class="cb-selecao-limpar" id="dash-limpar-sel">Limpar</button>
+      </div>
     </div>`;
 
   ligarPilulas(raiz);
@@ -153,20 +166,29 @@ export async function montar(raiz, ctx, params = {}) {
     rotulo.append(caixa);
     sel.append(rotulo);
 
-    const id = el("td", "cb-mono cb-cinza-escuro", nomeVistoria(v));
-    const data = el("td", "cb-tnum", formatarDataHora(v.realizadaEm));
-    const veiculo = el("td");
+    const id = el("td", `cb-mono cb-col-id ${v.status === "sincronizada" ? "cb-cinza-escuro" : "cb-pendente-texto"}`, nomeVistoria(v));
+    // Data forte e hora em cinza.
+    const data = el("td", "cb-tnum cb-col-data");
+    const [dia, horaTexto] = formatarDataHora(v.realizadaEm).split(" ");
+    data.append(el("span", "", dia), " ", el("span", "cb-cinza", horaTexto));
+    const veiculo = el("td", "cb-col-veiculo");
     const marca = formatarMarca(v.marca ?? "");
     if (marca) veiculo.append(el("strong", "", marca));
     if (v.modelo) veiculo.append(marca ? " " : "", el("span", "cb-cinza-escuro", v.modelo));
     if (!marca && !v.modelo) veiculo.textContent = "—";
     veiculo.title = veiculo.textContent;
-    const chassi = el("td", "cb-mono", v.chassi || "—");
-    const loja = el("td", "", semPrefixo(v.loja) || "—");
+    // Chassi: os 6 últimos em destaque (os mesmos da mensagem de carros enviados).
+    const chassi = el("td", "cb-mono cb-col-chassi");
+    const c = String(v.chassi ?? "");
+    if (c) chassi.append(el("span", "cb-cinza", c.slice(0, -6)), el("strong", "cb-chassi-fim", c.slice(-6)));
+    else chassi.textContent = "—";
+    const loja = el("td", "cb-col-loja", semPrefixo(v.loja) || "—");
     const n = qtdAvarias(v);
-    const avarias = el("td", `cb-centro cb-tnum${n ? "" : " cb-apagado"}`, String(n));
-    const receb = el("td");
-    receb.insertAdjacentHTML("beforeend", seloRecebimento(v, { curto: true }) || '<span class="cb-cinza">—</span>'); // texto fixo do app
+    const avarias = el("td", "cb-tnum");
+    if (n) avarias.append(el("strong", "cb-avarias-n", String(n)));
+    else avarias.append(el("span", "cb-apagado", "—"));
+    const situacao = el("td");
+    situacao.insertAdjacentHTML("beforeend", seloSituacao(v) || '<span class="cb-cinza">—</span>'); // texto fixo do app
     const acoes = el("td", "cb-col-acao");
     const ver = el("a", "cb-abrir");
     ver.href = `#/vistoria/${encodeURIComponent(v.id)}`;
@@ -174,37 +196,27 @@ export async function montar(raiz, ctx, params = {}) {
     ver.setAttribute("aria-label", `Abrir a vistoria ${nomeVistoria(v)}`);
     ver.insertAdjacentHTML("beforeend", icone("avancar"));
     acoes.append(ver);
-    tr.append(sel, id, data, veiculo, chassi, loja, avarias, receb, acoes);
+    tr.append(sel, id, data, veiculo, chassi, loja, avarias, situacao, acoes);
     return tr;
   }
 
-  // Nome do período ao lado do total: "7 dias", "Hoje"…; "Tudo" sem filtro; no personalizado, as datas.
-  const dataCurta = (aaaaMmDd) => (aaaaMmDd ? aaaaMmDd.split("-").reverse().slice(0, 2).join("/") : "");
-  function nomeDoPeriodo() {
-    if (estado.periodo === "todos") return "Tudo";
-    if (estado.periodo === "personalizado") {
-      return estado.de && estado.ate ? `${dataCurta(estado.de)} a ${dataCurta(estado.ate)}` : "Personalizado";
-    }
-    return PERIODOS.find(([v]) => v === estado.periodo)?.[1] ?? "";
-  }
-
-  // Resumo acima da tabela: contas de todas as vistorias carregadas; o total
-  // respeita só o período escolhido.
-  function desenharResumo() {
+  // Barra lateral: contagens de todas as vistorias carregadas e o atalho dos filtros atuais.
+  function desenharLateral() {
     const m = calcularMetricas(estado.itens);
     const r = contarRecebimentos(estado.itens);
-    const total = filtrarVistorias(estado.itens, { periodo: estado.periodo, de: estado.de, ate: estado.ate }).length;
-    $("#dash-r-hoje", raiz).textContent = num(m.hoje);
-    $("#dash-r-aguardando", raiz).textContent = num(r.aguardando);
-    $("#dash-r-divergencia", raiz).textContent = num(r.divergencia);
-    $("#dash-r-pendentes", raiz).textContent = num(m.pendentes);
-    $("#dash-r-total", raiz).textContent = num(total);
-    $("#dash-r-periodo", raiz).textContent = nomeDoPeriodo();
-    $$("[data-receb]", raiz).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.receb === estado.recebimento)));
+    const atalho = atalhoAtivo(estado);
+    atualizarLateral({
+      contagens: estado.carregando && !estado.itens.length ? null : { todas: estado.itens.length, hoje: m.hoje, ...r },
+      ativo: atalho,
+    });
+    $("#dash-titulo", raiz).textContent = tituloDoAtalho(atalho);
   }
 
   function desenharSubtitulo() {
-    const base = "Todas as vistorias registradas no CD";
+    const m = calcularMetricas(estado.itens);
+    const base = estado.itens.length
+      ? `${num(estado.itens.length)} ${estado.itens.length === 1 ? "vistoria registrada" : "vistorias registradas"} no CD · ${num(m.hoje)} hoje`
+      : "Todas as vistorias registradas no CD";
     $("#dash-status", raiz).textContent = !ctx.online()
       ? `${base} · offline: mostrando as guardadas neste aparelho`
       : estado.atualizadoEm ? `${base} · atualizado às ${hora(estado.atualizadoEm)}` : base;
@@ -220,16 +232,34 @@ export async function montar(raiz, ctx, params = {}) {
     const todas = $("#dash-sel-pagina", raiz);
     todas.checked = caixas.length > 0 && marcadas === caixas.length;
     todas.indeterminate = marcadas > 0 && marcadas < caixas.length;
-    const lote = $("#dash-pdf-lote", raiz);
-    if (!estado.gerandoPdf) lote.textContent = n === 1 ? "Baixar PDF" : `Baixar ${num(n)} PDFs`;
+    if (!estado.gerandoPdf) $("#dash-pdf-texto", raiz).textContent = n === 1 ? "Baixar PDF" : `Baixar ${num(n)} PDFs`;
   }
+
+  // "Limpar filtros" só aparece com algum filtro além do atalho da barra lateral.
+  const temFiltroExtra = () => Boolean(estado.busca.trim() || estado.marca || estado.loja || (estado.recebimento && estado.periodo !== "todos"));
 
   const filtrados = () => maisRecentesPrimeiro(filtrarVistorias(estado.itens, estado));
 
+  function desenharPaginas(p) {
+    const numeros = $("#dash-numeros", raiz);
+    numeros.replaceChildren(...numerosDePagina(p.pagina, p.paginas).map((i) => {
+      if (i === null) return el("span", "cb-pag-salto", "…");
+      const b = el("button", "cb-pag", num(i + 1));
+      b.type = "button";
+      b.dataset.pagina = String(i);
+      if (i === p.pagina) b.setAttribute("aria-current", "page");
+      b.setAttribute("aria-label", `Página ${i + 1}`);
+      return b;
+    }));
+  }
+
   function desenharTabela() {
-    const p = paginar(filtrados(), estado.pagina, ITENS_POR_PAGINA_PAINEL);
+    const lista = filtrados();
+    const p = paginar(lista, estado.pagina, ITENS_POR_PAGINA_PAINEL);
     estado.pagina = p.pagina;
     corpo.replaceChildren(...p.itens.map(linha));
+    // Ordem da lista para o Anterior/Próxima do detalhe.
+    try { sessionStorage.setItem(CHAVE_ORDEM, JSON.stringify(lista.map((v) => v.id))); } catch { /* sem sessionStorage */ }
 
     const vazio = $("#dash-vazio", raiz);
     vazio.replaceChildren();
@@ -254,7 +284,9 @@ export async function montar(raiz, ctx, params = {}) {
     $("#dash-contador", raiz).textContent = `${p.de}–${p.ate} de ${num(p.total)} · ${ITENS_POR_PAGINA_PAINEL} por página`;
     $("#dash-anterior", raiz).disabled = p.pagina <= 0;
     $("#dash-proxima", raiz).disabled = p.pagina >= p.paginas - 1;
-    desenharResumo();
+    desenharPaginas(p);
+    $("[data-limpar]", raiz).hidden = !temFiltroExtra();
+    desenharLateral();
     desenharSubtitulo();
     desenharSelecao();
   }
@@ -296,12 +328,13 @@ export async function montar(raiz, ctx, params = {}) {
     if (estado.gerandoPdf || !estado.selecionadas.size) return;
     const ids = maisRecentesPrimeiro(estado.itens.filter((v) => estado.selecionadas.has(v.id))).map((v) => v.id);
     const botao = $("#dash-pdf-lote", raiz);
+    const texto = $("#dash-pdf-texto", raiz);
     estado.gerandoPdf = true;
     botao.disabled = true;
     const falhas = [];
     let feitos = 0;
     for (const [i, id] of ids.entries()) {
-      botao.textContent = `Gerando PDF ${i + 1} de ${ids.length}…`;
+      texto.textContent = `Gerando PDF ${i + 1} de ${ids.length}…`;
       try {
         let atual = await vistoriaParaPdf(ctx, id, usuario.id);
         const pdf = await gerarPdf(atual, criarObterImagem(ctx, id, () => atual));
@@ -323,8 +356,15 @@ export async function montar(raiz, ctx, params = {}) {
   }
 
   // ---------- Eventos ----------
+  // O endereço acompanha os filtros (recarregar a página ou voltar do detalhe mantém a lista igual).
+  function guardarEndereco() {
+    if (!ctx.desktop || !/^#\/inicio(\?|$)/.test(location.hash)) return;
+    const destino = enderecoDasVistorias(estado, estado.recebimento);
+    if (location.hash !== destino) history.replaceState(history.state, "", destino);
+  }
   const recomecar = () => {
     estado.pagina = 0;
+    guardarEndereco();
     desenharTabela();
   };
   let espera = null;
@@ -356,22 +396,27 @@ export async function montar(raiz, ctx, params = {}) {
   const definirFiltro = (campo, valor) => {
     estado[campo] = valor;
     const sel = $(`#dash-${campo}`, raiz);
+    if (!sel) return; // recebimento: só pela barra lateral
     sel.value = valor;
     atualizarPilula(sel);
   };
-  for (const campo of ["marca", "loja", "recebimento"]) {
+  for (const campo of ["marca", "loja"]) {
     $(`#dash-${campo}`, raiz).addEventListener("change", (e) => {
       definirFiltro(campo, e.target.value);
       recomecar();
     });
   }
-  // Aguardando / Com divergência no resumo ligam (ou desligam) o filtro de recebimento.
-  $(".cb-resumo", raiz).addEventListener("click", (e) => {
-    const b = e.target.closest("[data-receb]");
-    if (!b) return;
-    definirFiltro("recebimento", estado.recebimento === b.dataset.receb ? "" : b.dataset.receb);
+  // Atalhos da barra lateral: na lista, filtram sem recarregar (os outros filtros ficam).
+  const aoClicarLateral = (e) => {
+    const a = e.target.closest?.("[data-lat]");
+    if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const f = filtrosDoAtalho(a.dataset.lat);
+    definirPeriodo(f.periodo);
+    definirFiltro("recebimento", f.recebimento);
     recomecar();
-  });
+  };
+  document.addEventListener("click", aoClicarLateral);
   function limparFiltros() {
     clearTimeout(espera);
     estado.busca = "";
@@ -382,6 +427,11 @@ export async function montar(raiz, ctx, params = {}) {
   }
   raiz.addEventListener("click", (e) => {
     if (e.target.closest("[data-limpar]")) limparFiltros();
+    const pagina = e.target.closest("[data-pagina]");
+    if (pagina) {
+      estado.pagina = Number(pagina.dataset.pagina);
+      desenharTabela();
+    }
   });
   $("#dash-atualizar", raiz).addEventListener("click", async () => {
     $("#dash-atualizar", raiz).disabled = true;
@@ -392,6 +442,14 @@ export async function montar(raiz, ctx, params = {}) {
   // Botão tirado por enquanto (teste do usuário); a janela continua pronta para voltar.
   $("#dash-relatorio", raiz)?.addEventListener("click", () => abrirRelatorioEnvios(estado.itens, { avisar: ctx.avisar }));
   $("#dash-pdf-lote", raiz).addEventListener("click", baixarPdfs);
+  $("#dash-limpar-sel", raiz).addEventListener("click", () => {
+    estado.selecionadas.clear();
+    for (const caixa of $$("[data-sel]", corpo)) {
+      caixa.checked = false;
+      caixa.closest("tr").classList.remove("cb-marcada");
+    }
+    desenharSelecao();
+  });
   $("#dash-anterior", raiz).addEventListener("click", () => { estado.pagina -= 1; desenharTabela(); });
   $("#dash-proxima", raiz).addEventListener("click", () => { estado.pagina += 1; desenharTabela(); });
 
@@ -442,12 +500,13 @@ export async function montar(raiz, ctx, params = {}) {
     $(`#dash-${campo}`, raiz).value = inicial[campo];
   }
   if (inicial.periodo) definirPeriodo(inicial.periodo);
-  for (const campo of ["marca", "loja", "recebimento"]) {
+  for (const campo of ["marca", "loja"]) {
     if (!inicial[campo]) continue;
     const sel = $(`#dash-${campo}`, raiz);
     if (![...sel.options].some((o) => o.value === inicial[campo])) sel.add(new Option(inicial[campo], inicial[campo]));
     definirFiltro(campo, inicial[campo]);
   }
+  if (inicial.recebimento) definirFiltro("recebimento", inicial.recebimento);
 
   desenharTabela(); // mostra "Carregando…" enquanto lê
   await atualizarDados(); // offline ou local: já aparece o que está guardado
@@ -457,6 +516,7 @@ export async function montar(raiz, ctx, params = {}) {
     desmontar() {
       ativo = false;
       clearTimeout(espera);
+      document.removeEventListener("click", aoClicarLateral);
       ctx.sync.eventos.removeEventListener("mudou", aoMudar);
     },
   };

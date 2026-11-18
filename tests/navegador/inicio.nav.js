@@ -3,6 +3,7 @@ import * as storage from "../../storage.js";
 import { novoRascunho } from "../../formatos.js";
 import * as inicio from "../../views/inicio.js";
 import * as vistorias from "../../views/vistorias.js";
+import { htmlLateral } from "../../views/lateral.js";
 
 const EU = { id: "u-eu", email: "eu@teste" };
 
@@ -163,33 +164,46 @@ teste("lista do celular: cada cartão mostra o selo do recebimento na loja", asy
   }
 });
 
-teste("painel (computador): coluna Recebimento e filtro de recebimento", async () => {
+teste("painel (computador): coluna Situação e filtro de recebimento pela barra lateral", async () => {
   await storage.apagarBanco();
-  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, "2026-11-08T10:00:00.000Z"), id, userId: EU.id, realizadaEm: "2026-11-08T10:00:00.000Z", status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
+  const v = (id, extra) => ({ ...novoRascunho(EU.id, id, "2026-11-08T10:00:00.000Z"), id, userId: EU.id, realizadaEm: "2026-11-08T10:00:00.000Z", status: "sincronizada", numero: "VIS-00000" + id, chassi: "98867511XRK204517", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
   await storage.salvarVistoria(v("1", { recebimento: null }));
   await storage.salvarVistoria(v("2", { recebimento: { id: "r", userId: "u", status: "divergencia", recebedorNome: "D", loja: "PG Prime BMW Natal", recebidoEm: "2026-11-09T10:00:00.000Z", descricao: "x", assinatura: "p", fotos: [] } }));
+  await storage.salvarVistoria(v("3", { status: "pendente", realizadaEm: "2026-11-07T10:00:00.000Z" }));
   const ctx = {
     desktop: true, storage, auth: { usuarioAtual: () => EU }, online: () => false, navegar: () => {},
     sync: { eventos: new EventTarget(), sincronizar: async () => ({}) }, remoto: {},
   };
+  const lateral = document.createElement("div");
+  lateral.innerHTML = htmlLateral();
+  document.getElementById("palco").append(lateral);
   const el = document.createElement("div");
   document.getElementById("palco").append(el);
   const tela = await inicio.montar(el, ctx);
   await esperar(150);
   try {
-    ok([...el.querySelectorAll(".cb-tabela-vistorias th")].some((th) => th.textContent.trim() === "Recebimento"), "falta a coluna Recebimento");
-    igual([...el.querySelectorAll(".cb-tabela-vistorias th")].some((th) => th.textContent.trim() === "Status"), false, "a coluna Status foi removida");
-    igual(el.querySelector("#dash-corpo .selo-sincronizada"), null);
+    const titulos = [...el.querySelectorAll(".cb-tabela-vistorias th")].map((th) => th.textContent.trim());
+    ok(titulos.includes("Situação"), "falta a coluna Situação");
+    igual(el.querySelector("#dash-recebimento"), null, "o filtro de recebimento fica na barra lateral");
     ok(el.querySelector("#dash-corpo .selo-receb-aguardando"), "falta o selo Aguardando");
     ok(el.querySelector("#dash-corpo .selo-receb-divergencia"), "falta o selo Com divergência");
-    const sel = el.querySelector("#dash-recebimento");
-    igual([...sel.options].map((o) => o.text), ["Recebimento", "Recebimento: Aguardando", "Recebimento: Nenhuma divergência", "Recebimento: Com divergência"]);
-    sel.value = "divergencia";
-    sel.dispatchEvent(new Event("change"));
+    ok(el.querySelector("#dash-corpo .selo-pendente").textContent.includes("Pendente de envio"), "a não enviada mostra o envio");
+    igual(el.querySelector('#dash-corpo tr[data-id="1"] .cb-chassi-fim').textContent, "204517", "os 6 últimos do chassi em destaque");
+    // Contagens da barra lateral e o atalho ativo.
+    const n = (chave) => lateral.querySelector(`[data-lat-n="${chave}"]`).textContent;
+    igual([n("todas"), n("aguardando"), n("divergencia"), n("conforme")], ["3", "2", "1", "0"]);
+    igual(lateral.querySelector('[aria-current="page"]').dataset.lat, "todas");
+    igual(el.querySelector("#dash-titulo").textContent, "Todas as vistorias");
+    lateral.querySelector('[data-lat="divergencia"]').click();
     igual(el.querySelectorAll("#dash-corpo tr").length, 1);
+    igual(lateral.querySelector('[aria-current="page"]').dataset.lat, "divergencia");
+    igual(el.querySelector("#dash-titulo").textContent, "Recebidas com divergência");
+    lateral.querySelector('[data-lat="todas"]').click();
+    igual(el.querySelectorAll("#dash-corpo tr").length, 3);
   } finally {
     tela?.desmontar?.();
     el.remove();
+    lateral.remove();
   }
 });
 
@@ -209,7 +223,7 @@ teste("painel (computador): abre já filtrado pelo endereço (#/inicio?recebimen
   const tela = await inicio.montar(el, ctx, { busca });
   await esperar(150);
   try {
-    igual(el.querySelector("#dash-recebimento").value, "aguardando");
+    igual(el.querySelector("#dash-titulo").textContent, "Aguardando recebimento");
     igual(el.querySelector("#dash-loja").value, "PG Prime BMW Natal");
     igual(el.querySelector("#dash-periodo").value, "todos");
     igual(el.querySelectorAll("#dash-corpo tr").length, 1, "só a da BMW Natal aguardando");
@@ -219,12 +233,12 @@ teste("painel (computador): abre já filtrado pelo endereço (#/inicio?recebimen
   }
 });
 
-teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção de linhas", async () => {
+teste("painel (computador): subtítulo, X da pílula, páginas numeradas e seleção de linhas", async () => {
   await storage.apagarBanco();
   const agora = new Date().toISOString();
   const v = (id, extra) => ({ ...novoRascunho(EU.id, id, agora), id, userId: EU.id, realizadaEm: agora, status: "sincronizada", numero: "VIS-00000" + id, chassi: "AB123C", marca: "Jeep", modelo: "Compass", loja: "PG Prime BMW Natal", ...extra });
   await storage.salvarVistoria(v("1", { recebimento: null }));
-  await storage.salvarVistoria(v("2", { recebimento: { id: "r", userId: "u", status: "divergencia", recebedorNome: "D", loja: "PG Prime BMW Natal", recebidoEm: agora, descricao: "x", assinatura: "p", fotos: [] } }));
+  await storage.salvarVistoria(v("2", { recebimento: null, loja: "PG Prime Jeep Natal" }));
   await storage.salvarVistoria(v("3", { status: "pendente", loja: "" }));
   const ctx = {
     desktop: true, storage, auth: { usuarioAtual: () => EU }, online: () => false, navegar: () => {},
@@ -236,30 +250,22 @@ teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção
   await esperar(150);
   const texto = (id) => el.querySelector(id).textContent;
   try {
-    igual([texto("#dash-r-hoje"), texto("#dash-r-aguardando"), texto("#dash-r-divergencia"), texto("#dash-r-pendentes"), texto("#dash-r-total")], ["3", "1", "1", "1", "3"]);
-    // O período escolhido aparece ao lado de "Total no período".
-    const rotuloTotal = () => el.querySelector("#dash-r-total").closest(".cb-resumo-item").querySelector(".cb-resumo-rot").textContent.replace(/\s+/g, " ").trim();
-    igual(rotuloTotal(), "Total no período · Tudo");
-    const seletor = el.querySelector("#dash-periodo");
-    for (const [valor, texto2] of [["7d", "7 dias"], ["hoje", "Hoje"], ["mes", "Este mês"], ["30d", "30 dias"], ["todos", "Tudo"]]) {
-      seletor.value = valor;
-      seletor.dispatchEvent(new Event("change"));
-      await esperar(120);
-      igual(rotuloTotal(), `Total no período · ${texto2}`);
-    }
-    // Resumo "Com divergência" liga o filtro; a pílula mostra o filtro e fica ativa.
-    el.querySelector('[data-receb="divergencia"]').click();
-    igual(el.querySelector("#dash-recebimento").value, "divergencia");
-    const pilula = el.querySelector("#dash-recebimento").closest("[data-pilula]");
+    ok(texto("#dash-status").startsWith("3 vistorias registradas no CD · 3 hoje"), `subtítulo: ${texto("#dash-status")}`);
+    igual([...el.querySelectorAll("#dash-numeros [data-pagina]")].map((b) => b.textContent), ["1"]);
+    // Loja escolhida: a pílula fica ativa, aparece Limpar filtros, e o X limpa.
+    ok(el.querySelector("[data-limpar]").hidden, "sem filtro, sem Limpar filtros");
+    const loja = el.querySelector("#dash-loja");
+    loja.value = "PG Prime Jeep Natal";
+    loja.dispatchEvent(new Event("change"));
+    const pilula = loja.closest("[data-pilula]");
     ok(pilula.hasAttribute("data-ativa"), "a pílula deveria ficar ativa");
-    igual(pilula.querySelector(".cb-pilula-texto").textContent, "Recebimento: Com divergência");
     igual(el.querySelectorAll("#dash-corpo tr").length, 1);
-    // O X da pílula limpa o filtro.
+    igual(el.querySelector("[data-limpar]").hidden, false);
     pilula.querySelector("[data-fechar-pilula]").click();
-    igual(el.querySelector("#dash-recebimento").value, "");
+    igual(loja.value, "");
     igual(pilula.hasAttribute("data-ativa"), false);
     igual(el.querySelectorAll("#dash-corpo tr").length, 3);
-    // Seleção: barra aparece com a contagem; a caixa do cabeçalho marca a página toda.
+    // Seleção: barra aparece com a contagem; a caixa do cabeçalho marca a página toda; Limpar desmarca.
     ok(el.querySelector("#dash-selecao").hidden, "barra de seleção deveria começar escondida");
     const caixa = el.querySelector("#dash-corpo [data-sel]");
     caixa.checked = true;
@@ -272,6 +278,9 @@ teste("painel (computador): resumo, filtro pelo resumo, X da pílula e seleção
     todas.dispatchEvent(new Event("change"));
     igual(texto("#dash-selecionadas"), "3 selecionadas");
     igual(texto("#dash-pdf-lote"), "Baixar 3 PDFs");
+    el.querySelector("#dash-limpar-sel").click();
+    ok(el.querySelector("#dash-selecao").hidden, "Limpar esconde a barra");
+    igual(el.querySelectorAll("#dash-corpo [data-sel]:checked").length, 0);
   } finally {
     tela?.desmontar?.();
     el.remove();

@@ -12,6 +12,8 @@ import { situacaoRecebimento } from "../recebimento-dados.js";
 import { $, $$, esc, icone, carregandoHtml } from "../ui.js";
 import { gerarPdf } from "../pdf.js";
 import { emDesktop, ligarAmpliar, miniaturaHtml } from "../photos.js";
+import { vizinhasNaLista } from "../painel-dados.js";
+import { CHAVE_ORDEM } from "./painel.js";
 
 const SELO = {
   sincronizada: ["selo-sincronizada", "check", "Sincronizada"],
@@ -253,6 +255,18 @@ export async function montar(el, ctx, params) {
     : `<div class="miniatura"><span class="sem-foto" role="img" aria-label="${esc(legenda)}: foto indisponível"></span></div>`);
   const GRAVIDADES_ORDEM = ["Leve", "Moderada", "Grave"];
 
+  // Anterior/Próxima: as vizinhas na ordem da lista do painel (guardada por views/painel.js).
+  function htmlVizinhas() {
+    let ids = null;
+    try { ids = JSON.parse(sessionStorage.getItem(CHAVE_ORDEM) || "null"); } catch { ids = null; }
+    const { anterior, proxima } = vizinhasNaLista(ids, id);
+    if (!anterior && !proxima) return "";
+    const botao = (alvo, texto, ic, depois) => (alvo
+      ? `<a class="cb-btn cb-btn-baixo" href="#/vistoria/${encodeURIComponent(alvo)}">${depois ? "" : icone(ic)}${texto}${depois ? icone(ic) : ""}</a>`
+      : `<span class="cb-btn cb-btn-baixo" aria-disabled="true">${depois ? "" : icone(ic)}${texto}${depois ? icone(ic) : ""}</span>`);
+    return `<span class="cb-vizinhas">${botao(anterior, "Anterior", "voltar", false)}${botao(proxima, "Próxima", "avancar", true)}</span>`;
+  }
+
   function desenharComputador() {
     const podeReceber = modoLoja && situacaoRecebimento(v) === "aguardando";
     const veiculo = [formatarMarca(v.marca ?? ""), v.modelo].filter(Boolean).join(" ") || "Veículo";
@@ -272,14 +286,13 @@ export async function montar(el, ctx, params) {
             ${nAvarias ? `<div class="cb-legenda">${GRAVIDADES_ORDEM.map((g) => `<span><span class="cb-ponto cb-${g.toLowerCase()}"></span>${g} ${avarias.filter((a) => a.gravidade === g).length}</span>`).join("")}</div>` : ""}
           </div>
           ${nAvarias ? `<table class="cb-tabela cb-avarias">
-            <thead><tr><th scope="col">#</th><th scope="col"><span class="sr-only">Cor da gravidade</span></th><th scope="col">Área</th><th scope="col">Tipo</th><th scope="col">Gravidade</th><th scope="col">Descrição</th><th scope="col">Fotos</th></tr></thead>
+            <thead><tr><th scope="col">#</th><th scope="col"><span class="sr-only">Cor da gravidade</span></th><th scope="col">Área e descrição</th><th scope="col">Tipo</th><th scope="col">Gravidade</th><th scope="col">Fotos</th></tr></thead>
             <tbody>${avarias.map((a, i) => `<tr>
               <td class="cb-num">${i + 1}</td>
               <td><span class="cb-faixa cb-${a.gravidade.toLowerCase()}"></span></td>
-              <td class="cb-forte">${esc(a.area)}</td>
+              <td class="cb-desc"><p class="cb-forte">${esc(a.area)}</p>${a.descricao ? `<p class="cb-desc-texto">${esc(a.descricao)}</p>` : ""}</td>
               <td>${esc(a.tipo)}</td>
               <td><span class="selo selo-${a.gravidade.toLowerCase()}">${esc(a.gravidade)}</span></td>
-              <td class="cb-desc">${a.descricao ? esc(a.descricao) : '<span class="cb-cinza">—</span>'}</td>
               <td><div class="cb-miniaturas">${a.fotos.length ? a.fotos.map((f, j) => fotoPequena(arquivoAvaria(f), `Avaria ${i + 1}, foto ${j + 1}`)).join("") : '<span class="cb-cinza">Sem foto</span>'}</div></td>
             </tr>`).join("")}</tbody>
           </table>` : '<div class="cb-cartao-corpo cb-sem-avarias"><p>Veículo sem avarias registradas.</p></div>'}
@@ -301,11 +314,11 @@ export async function montar(el, ctx, params) {
           </dl>`);
 
     const okQtd = itens.filter((i) => v.checklist?.[i] === "presente").length;
-    const estadoItem = (i) => ({ presente: '<span class="cb-ok">Ok</span>', ausente: '<span class="cb-ausente">Ausente</span>' })[v.checklist?.[i]] || '<span class="cb-cinza">—</span>';
+    const estadoItem = (i) => ({ presente: `<span class="cb-ok">${icone("check")}Ok</span>`, ausente: `<span class="cb-ausente">${icone("x")}Ausente</span>` })[v.checklist?.[i]] || '<span class="cb-cinza">—</span>';
     const secChecklist = cartao("det-checklist", "h-checklist", "Checklist",
       `<ul class="cb-checklist">${itens.map((i) => `<li><span>${esc(i)}</span>${estadoItem(i)}</li>`).join("")}</ul>
           ${v.checklistObs ? `<p class="cb-obs"><strong>Observação:</strong> ${esc(v.checklistObs)}</p>` : ""}`,
-      `<span class="cb-nota cb-tnum">${okQtd}/${itens.length} ok</span>`);
+      `<span class="cb-nota cb-tnum">${okQtd} de ${itens.length} ok</span>`);
 
 
     el.innerHTML = `
@@ -314,6 +327,7 @@ export async function montar(el, ctx, params) {
           <a class="cb-link" href="${modoLoja ? "#/recebimentos" : "#/inicio"}">${icone("setaEsquerda")}${modoLoja ? "Recebimentos" : "Vistorias"}</a>
           <span aria-hidden="true">/</span>
           <span class="cb-mono" id="detalhe-numero">${esc(nomeVistoria(v))}</span>
+          ${modoLoja ? "" : htmlVizinhas()}
         </nav>
         <div id="faixa-nova" role="status" aria-live="polite"></div>
         <header class="cb-cartao cb-cabecalho">

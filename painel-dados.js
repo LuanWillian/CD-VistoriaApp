@@ -48,6 +48,30 @@ export function paginar(itens, pagina, tamanho) {
   return { itens: fatia, pagina: atual, paginas, de: fatia.length ? inicio + 1 : 0, ate: inicio + fatia.length, total: itens.length };
 }
 
+// Botões numerados da paginação (páginas começam em 0): a primeira, a última e as
+// vizinhas da atual; null marca um salto ("…"). Até 7 páginas, todas aparecem.
+export function numerosDePagina(atual, total) {
+  if (total <= 7) return [...Array(Math.max(total, 0)).keys()];
+  const s = new Set([0, total - 1, atual - 1, atual, atual + 1]);
+  if (atual <= 3) [1, 2, 3, 4].forEach((p) => s.add(p));
+  if (atual >= total - 4) [total - 5, total - 4, total - 3, total - 2].forEach((p) => s.add(p));
+  const paginas = [...s].filter((p) => p >= 0 && p < total).sort((a, b) => a - b);
+  const saida = [];
+  paginas.forEach((p, i) => {
+    if (i && p - paginas[i - 1] > 1) saida.push(null);
+    saida.push(p);
+  });
+  return saida;
+}
+
+// Anterior/Próxima no detalhe da vistoria: as vizinhas na ordem da lista (ids).
+// Fora da lista, nenhuma das duas.
+export function vizinhasNaLista(ids, id) {
+  const i = Array.isArray(ids) ? ids.indexOf(id) : -1;
+  if (i < 0) return { anterior: null, proxima: null };
+  return { anterior: ids[i - 1] ?? null, proxima: ids[i + 1] ?? null };
+}
+
 export const primeiroNome = (nome) => String(nome ?? "").trim().split(/\s+/)[0] || "";
 
 // Junta a vistoria do servidor com a cópia do aparelho (a do aparelho manda no
