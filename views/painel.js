@@ -5,8 +5,7 @@
 import { ITENS_POR_PAGINA_PAINEL, LOJAS, NOME_PADRAO_PAINEL } from "../config.js";
 import { SEM_LOJA, marcasDisponiveis } from "../dashboard-dados.js";
 import { formatarDataHora, formatarMarca, nomeVistoria } from "../formatos.js";
-import { calcularMetricas, filtrarVistorias, filtrosDoEndereco, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
-import { contarRecebimentos } from "../recebimento-dados.js";
+import { filtrarVistorias, filtrosDoEndereco, juntarComServidor, maisRecentesPrimeiro, paginar, primeiroNome } from "../painel-dados.js";
 import { baixarBlob, qtdAvarias } from "../exportar.js";
 import { criarObterImagem, vistoriaParaPdf } from "../vistoria-completa.js";
 import { gerarPdf } from "../pdf.js";
@@ -52,13 +51,6 @@ export async function montar(raiz, ctx, params = {}) {
           <!-- Botão "Relatório de carros enviados" escondido para um teste do usuário (18/11/2026); volta depois. -->
         </div>
       </div>
-      <section class="cb-cartao cb-resumo" aria-label="Resumo das vistorias">
-        <p class="cb-resumo-item">${icone("pranchetaLista", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Vistorias hoje</span><strong id="dash-r-hoje">—</strong></p>
-        <button type="button" class="cb-resumo-item" data-receb="aguardando" title="Mostrar só as que aguardam recebimento">${icone("relogio", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Aguardando recebimento</span><strong id="dash-r-aguardando">—</strong></button>
-        <button type="button" class="cb-resumo-item" data-receb="divergencia" title="Mostrar só as recebidas com divergência">${icone("alertaCirculo", "ic cb-ic-erro")}<span class="cb-resumo-rot">Recebido com divergência</span><strong id="dash-r-divergencia">—</strong></button>
-        <p class="cb-resumo-item">${icone("nuvemEnviar", "ic cb-ic-pendente")}<span class="cb-resumo-rot">Pendentes de envio</span><strong id="dash-r-pendentes">—</strong></p>
-        <p class="cb-resumo-item">${icone("banco", "ic cb-ic-escuro")}<span class="cb-resumo-rot">Total no período · <span class="cb-kpi-periodo" id="dash-r-periodo">Tudo</span></span><strong id="dash-r-total">—</strong></p>
-      </section>
       <section class="cb-cartao cb-tabela-cartao" aria-labelledby="dash-titulo-tabela">
         <h2 class="sr-only" id="dash-titulo-tabela">Vistorias</h2>
         <div class="cb-ferramentas">
@@ -178,31 +170,6 @@ export async function montar(raiz, ctx, params = {}) {
     return tr;
   }
 
-  // Nome do período ao lado do total: "7 dias", "Hoje"…; "Tudo" sem filtro; no personalizado, as datas.
-  const dataCurta = (aaaaMmDd) => (aaaaMmDd ? aaaaMmDd.split("-").reverse().slice(0, 2).join("/") : "");
-  function nomeDoPeriodo() {
-    if (estado.periodo === "todos") return "Tudo";
-    if (estado.periodo === "personalizado") {
-      return estado.de && estado.ate ? `${dataCurta(estado.de)} a ${dataCurta(estado.ate)}` : "Personalizado";
-    }
-    return PERIODOS.find(([v]) => v === estado.periodo)?.[1] ?? "";
-  }
-
-  // Resumo acima da tabela: contas de todas as vistorias carregadas; o total
-  // respeita só o período escolhido.
-  function desenharResumo() {
-    const m = calcularMetricas(estado.itens);
-    const r = contarRecebimentos(estado.itens);
-    const total = filtrarVistorias(estado.itens, { periodo: estado.periodo, de: estado.de, ate: estado.ate }).length;
-    $("#dash-r-hoje", raiz).textContent = num(m.hoje);
-    $("#dash-r-aguardando", raiz).textContent = num(r.aguardando);
-    $("#dash-r-divergencia", raiz).textContent = num(r.divergencia);
-    $("#dash-r-pendentes", raiz).textContent = num(m.pendentes);
-    $("#dash-r-total", raiz).textContent = num(total);
-    $("#dash-r-periodo", raiz).textContent = nomeDoPeriodo();
-    $$("[data-receb]", raiz).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.receb === estado.recebimento)));
-  }
-
   function desenharSubtitulo() {
     const base = "Todas as vistorias registradas no CD";
     $("#dash-status", raiz).textContent = !ctx.online()
@@ -254,7 +221,6 @@ export async function montar(raiz, ctx, params = {}) {
     $("#dash-contador", raiz).textContent = `${p.de}–${p.ate} de ${num(p.total)} · ${ITENS_POR_PAGINA_PAINEL} por página`;
     $("#dash-anterior", raiz).disabled = p.pagina <= 0;
     $("#dash-proxima", raiz).disabled = p.pagina >= p.paginas - 1;
-    desenharResumo();
     desenharSubtitulo();
     desenharSelecao();
   }
@@ -365,13 +331,6 @@ export async function montar(raiz, ctx, params = {}) {
       recomecar();
     });
   }
-  // Aguardando / Com divergência no resumo ligam (ou desligam) o filtro de recebimento.
-  $(".cb-resumo", raiz).addEventListener("click", (e) => {
-    const b = e.target.closest("[data-receb]");
-    if (!b) return;
-    definirFiltro("recebimento", estado.recebimento === b.dataset.receb ? "" : b.dataset.receb);
-    recomecar();
-  });
   function limparFiltros() {
     clearTimeout(espera);
     estado.busca = "";
