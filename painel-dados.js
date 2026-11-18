@@ -94,3 +94,41 @@ export function filtrosDoEndereco(busca) {
   if (RECEBIMENTOS_DO_ENDERECO.includes(busca.get("recebimento"))) f.recebimento = busca.get("recebimento");
   return f;
 }
+
+// ---------- Relatório de carros enviados (mensagem do WhatsApp do gerente) ----------
+// Todo dia o gerente manda no grupo do WhatsApp a lista dos carros que saíram:
+//   Carros enviados;
+//
+//   GWM:
+//   Poer - 603799
+//   ...
+// Marcas em ordem alfabética; dentro da marca, na ordem em que os carros saíram.
+const dois = (n) => String(n).padStart(2, "0");
+export const diaDoCampo = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}`; };
+
+// Vistorias feitas no dia "aaaa-mm-dd" (no fuso do navegador), mais antigas primeiro.
+export function carrosDoDia(itens, dia) {
+  if (!dia) return [];
+  return itens.filter((v) => v.status !== "excluindo" && v.realizadaEm && diaDoCampo(v.realizadaEm) === dia)
+    .sort((a, b) => a.realizadaEm.localeCompare(b.realizadaEm));
+}
+
+const porMarcaDoDia = (carros) => {
+  const grupos = new Map();
+  for (const v of carros) {
+    const m = marcaDe(v);
+    if (!grupos.has(m)) grupos.set(m, []);
+    grupos.get(m).push(v);
+  }
+  return [...grupos].sort(([a], [b]) => a.localeCompare(b, "pt-BR"));
+};
+
+export const marcasDosCarros = (carros) => porMarcaDoDia(carros).map(([nome, lista]) => ({ nome, qtd: lista.length }));
+
+// marcas: lista das marcas escolhidas (null = todas). Sem carros, texto vazio.
+export function textoCarrosEnviados(carros, marcas = null) {
+  const grupos = porMarcaDoDia(carros).filter(([nome]) => !marcas || marcas.includes(nome));
+  if (!grupos.length) return "";
+  const linha = (v) => `${String(v.modelo ?? "").trim() || "(sem modelo)"} - ${String(v.chassi ?? "").trim() || "(sem chassi)"}`;
+  return ["Carros enviados;", ...grupos.map(([nome, lista]) => `\n${nome}:\n${lista.map(linha).join("\n")}`)].join("\n");
+}

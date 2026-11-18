@@ -13,5 +13,6 @@ import "./inicio.nav.js";
 import "./recebimentos.nav.js";
 import "./recebimento.nav.js";
 import "./pdf.nav.js";
+import "./relatorio-envios.nav.js";
 
 rodar();

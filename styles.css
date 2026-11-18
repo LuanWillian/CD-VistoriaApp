@@ -694,6 +694,40 @@ html.computador :is(.cb-ponto, .cb-faixa).cb-leve { background: var(--leve); }
 html.computador :is(.cb-ponto, .cb-faixa).cb-moderada { background: var(--moderada); }
 html.computador :is(.cb-ponto, .cb-faixa).cb-grave { background: var(--grave); }
 
+/* ---------- Relatório de carros enviados (views/relatorio-envios.js) ---------- */
+html.computador dialog.re-dialogo { width: 560px; max-width: calc(100vw - 32px); border-radius: 12px; box-shadow: 0 20px 50px rgba(17, 24, 39, 0.25); }
+html.computador dialog.re-dialogo::backdrop { background: rgba(17, 24, 39, 0.45); }
+html.computador .re-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 0; }
+html.computador .re-topo h2 { margin: 0; font-size: 17px; font-weight: 600; }
+html.computador .re-sub { margin-top: 2px; color: var(--texto-2); font-size: 13px; }
+html.computador .re-fechar { display: grid; place-items: center; width: 32px; height: 32px; margin-right: -8px; border: 0; border-radius: 8px; background: none; color: var(--cinza); cursor: pointer; }
+html.computador .re-fechar .ic { width: 18px; height: 18px; }
+html.computador .re-fechar:hover { background: var(--fundo); color: var(--texto); }
+html.computador .re-linha { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 0 24px; font-size: 13px; font-weight: 500; }
+html.computador .re-linha + .re-linha { margin-top: 12px; }
+html.computador .re-linha > :first-child { flex-shrink: 0; width: 64px; }
+html.computador .re-linha .cb-data { height: 36px; padding: 0 10px; border-color: var(--linha-forte); }
+html.computador .re-marcas { display: flex; flex-wrap: wrap; gap: 8px; }
+html.computador .re-marca {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--linha); border-radius: 999px;
+  background: #fff; color: #374151; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer;
+}
+html.computador .re-marca:hover { border-color: var(--linha-forte); }
+html.computador .re-marca[aria-pressed="true"] { border-color: var(--principal); background: var(--principal); color: #fff; }
+html.computador .re-marca .ic { width: 14px; height: 14px; }
+html.computador .re-sem { color: var(--cinza); font-weight: 400; }
+html.computador .re-meio { margin-top: 16px; padding: 0 24px; }
+html.computador .re-texto {
+  display: block; box-sizing: border-box; width: 100%; min-height: 220px; padding: 14px 16px; border: 1px solid var(--linha); border-radius: 10px;
+  background: #F9FAFB; color: var(--texto); font: inherit; font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums; resize: vertical;
+}
+html.computador .re-texto:focus { background: #fff; outline: 2px solid var(--acento); outline-offset: 1px; }
+html.computador .re-nota { margin-top: 8px; color: var(--cinza); font-size: 12px; line-height: 1.4; }
+html.computador .re-nota strong { color: var(--texto); font-weight: 600; }
+html.computador .re-acoes { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; padding: 16px 24px; border-top: 1px solid var(--linha); background: #FCFCFD; }
+html.computador .re-acoes .cb-btn { height: 40px; padding: 0 16px; font-size: 14px; }
+html.computador .re-acoes .cb-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* ---------- Vistoria do veículo (views/detalhe.js, desenharComputador) ---------- */
 html.computador .cb-migalhas { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--texto-2); font-size: 13px; }
 html.computador #faixa-nova:empty { display: none; }

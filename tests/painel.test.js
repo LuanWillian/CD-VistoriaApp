@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calcularMetricas, filtrarVistorias, juntarComServidor, paginar, primeiroNome, semAcento, enderecoDasVistorias, filtrosDoEndereco } from "../painel-dados.js";
+import { calcularMetricas, filtrarVistorias, juntarComServidor, paginar, primeiroNome, semAcento, enderecoDasVistorias, filtrosDoEndereco, carrosDoDia, marcasDosCarros, textoCarrosEnviados } from "../painel-dados.js";
 
 const AGORA = new Date(2026, 10, 9, 15, 0); // 09/11/2026 15:00 (fuso local)
 const em = (diasAtras, hora = 10) => new Date(2026, 10, 9 - diasAtras, hora, 0).toISOString();
@@ -109,4 +109,42 @@ test("filtros vindos do endereço: só valores conhecidos; o resto é ignorado",
   assert.deepEqual(ida("#/inicio?periodo=personalizado&de=2026-11-01&ate=2026-11-10"), { periodo: "personalizado", de: "2026-11-01", ate: "2026-11-10" });
   assert.deepEqual(ida("#/inicio?periodo=ontem&recebimento=talvez&de=xx"), {});
   assert.deepEqual(filtrosDoEndereco(undefined), {});
+});
+
+// ---------- Relatório de carros enviados (mensagem do WhatsApp do gerente) ----------
+const carro = (id, marca, modelo, chassi, dia, hora) => ({ id, marca, modelo, chassi, realizadaEm: new Date(2026, 10, dia, hora, 0).toISOString(), status: "sincronizada" });
+const doDia = [
+  carro("1", "GWM", "Tank 400", "603985", 17, 10),
+  carro("2", "jeep", "Renegade", "741485", 17, 9),
+  carro("3", "GWM", "Poer", "603799", 17, 8),
+  carro("4", "Leapmotor", "B10", "063374", 17, 15),
+  carro("5", "GWM", "Ora 05", "604893", 17, 11),
+  carro("6", "BMW", "X1", "111111", 16, 17),
+];
+
+test("relatório de carros enviados: só os carros do dia escolhido (no fuso do navegador)", () => {
+  assert.deepEqual(carrosDoDia(doDia, "2026-11-17").map((v) => v.id).sort(), ["1", "2", "3", "4", "5"]);
+  assert.deepEqual(carrosDoDia(doDia, "2026-11-16").map((v) => v.id), ["6"]);
+  assert.deepEqual(carrosDoDia(doDia, ""), []);
+  assert.deepEqual(carrosDoDia([{ ...doDia[0], status: "excluindo" }], "2026-11-17"), [], "vistoria sendo excluída não entra");
+});
+
+test("relatório de carros enviados: marcas do dia em ordem alfabética, com a quantidade", () => {
+  assert.deepEqual(marcasDosCarros(carrosDoDia(doDia, "2026-11-17")), [
+    { nome: "GWM", qtd: 3 }, { nome: "Jeep", qtd: 1 }, { nome: "Leapmotor", qtd: 1 },
+  ]);
+});
+
+test("relatório de carros enviados: texto no formato da mensagem do WhatsApp", () => {
+  const carros = carrosDoDia(doDia, "2026-11-17");
+  assert.equal(textoCarrosEnviados(carros), [
+    "Carros enviados;", "",
+    "GWM:", "Poer - 603799", "Tank 400 - 603985", "Ora 05 - 604893", "",
+    "Jeep:", "Renegade - 741485", "",
+    "Leapmotor:", "B10 - 063374",
+  ].join("\n"));
+  assert.equal(textoCarrosEnviados(carros, ["GWM"]), "Carros enviados;\n\nGWM:\nPoer - 603799\nTank 400 - 603985\nOra 05 - 604893", "só a GWM");
+  assert.equal(textoCarrosEnviados(carros, []), "", "nenhuma marca escolhida: texto vazio");
+  assert.equal(textoCarrosEnviados([]), "", "dia sem carros: texto vazio");
+  assert.equal(textoCarrosEnviados([carro("x", "GWM", "", "", 17, 9)]), "Carros enviados;\n\nGWM:\n(sem modelo) - (sem chassi)");
 });

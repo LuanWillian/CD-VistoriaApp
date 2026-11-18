@@ -12,6 +12,7 @@ import { criarObterImagem, vistoriaParaPdf } from "../vistoria-completa.js";
 import { gerarPdf } from "../pdf.js";
 import { $, $$, esc, icone } from "../ui.js";
 import { seloRecebimento } from "./card-recebimento.js";
+import { abrirRelatorioEnvios } from "./relatorio-envios.js";
 import { atualizarPilula, ligarPilulas, pilulaSelect } from "./pilulas.js";
 
 // Mesmos períodos do dashboard, mais "Todo o período" (o padrão da lista).
@@ -47,6 +48,7 @@ export async function montar(raiz, ctx, params = {}) {
           <p class="cb-sub" id="dash-status" role="status"></p>
         </div>
         <div class="cb-acoes">
+          <button type="button" class="cb-btn cb-btn-primario" id="dash-relatorio">${icone("mensagem")} Relatório de carros enviados</button>
           <button type="button" class="cb-btn" id="dash-atualizar">${icone("recarregar")} Atualizar</button>
           <button type="button" class="cb-btn" id="dash-exportar">${icone("baixar")} Exportar CSV</button>
         </div>
@@ -396,6 +398,8 @@ export async function montar(raiz, ctx, params = {}) {
     recarregar();
   });
   $("#dash-exportar", raiz).addEventListener("click", exportarCsv);
+  // Mensagem do WhatsApp do gerente com os carros do dia (views/relatorio-envios.js).
+  $("#dash-relatorio", raiz).addEventListener("click", () => abrirRelatorioEnvios(estado.itens, { avisar: ctx.avisar }));
   $("#dash-pdf-lote", raiz).addEventListener("click", baixarPdfs);
   $("#dash-anterior", raiz).addEventListener("click", () => { estado.pagina -= 1; desenharTabela(); });
   $("#dash-proxima", raiz).addEventListener("click", () => { estado.pagina += 1; desenharTabela(); });
