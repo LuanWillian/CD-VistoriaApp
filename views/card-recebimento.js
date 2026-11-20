@@ -1,6 +1,6 @@
 // Card "Recebimento na loja" (detalhe da vistoria) e selo do recebimento (listas).
 // Usado pelo CD e pela conta de loja. Só HTML; os dados vêm escapados.
-import { arquivoReceb, ARQUIVO, formatarDataHora } from "../formatos.js";
+import { arquivoAssinaturaReceb, arquivoReceb, formatarDataHora } from "../formatos.js";
 import { STATUS_RECEBIMENTO, situacaoRecebimento } from "../recebimento-dados.js";
 import { esc, icone } from "../ui.js";
 import { miniaturaHtml } from "../photos.js";
@@ -36,8 +36,8 @@ export function htmlCardRecebimento(v, fontes = new Map()) {
           const src = fontes.get(arquivoReceb(f));
           return src ? miniaturaHtml(src, `Divergência, foto ${i + 1}`) : "";
         }).join("")}
-        <div class="cm-receb-assinatura">${fontes.get(ARQUIVO.recebAssinatura)
-          ? `<img src="${fontes.get(ARQUIVO.recebAssinatura)}" alt="Assinatura: ${esc(r.recebedorNome)}">` : ""}</div>
+        <div class="cm-receb-assinatura">${fontes.get(arquivoAssinaturaReceb(r))
+          ? `<img src="${fontes.get(arquivoAssinaturaReceb(r))}" alt="Assinatura: ${esc(r.recebedorNome)}">` : ""}</div>
       </div>`;
   return `<section class="secao cm-cartao det-receb" aria-labelledby="h-receb">
       <div class="cm-cartao-cabeca"><h2 id="h-receb">Recebimento na loja</h2>${seloRecebimento(v)}</div>
@@ -60,8 +60,8 @@ export function htmlCardRecebimentoComputador(v, fontes = new Map()) {
           const src = fontes.get(arquivoReceb(f));
           return src ? miniaturaHtml(src, `Divergência, foto ${i + 1}`, "") : "";
         }).join("")}
-        <div class="cb-receb-assinatura">${fontes.get(ARQUIVO.recebAssinatura)
-          ? `<img src="${fontes.get(ARQUIVO.recebAssinatura)}" alt="Assinatura: ${esc(r.recebedorNome)}">` : ""}</div>
+        <div class="cb-receb-assinatura">${fontes.get(arquivoAssinaturaReceb(r))
+          ? `<img src="${fontes.get(arquivoAssinaturaReceb(r))}" alt="Assinatura: ${esc(r.recebedorNome)}">` : ""}</div>
       </div>`;
   return `<section class="secao cb-cartao det-receb" aria-labelledby="h-receb">
       <div class="cb-cartao-cabeca"><h2 id="h-receb">Recebimento na loja</h2>${seloRecebimento(v, { curto: true })}</div>

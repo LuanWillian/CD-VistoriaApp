@@ -173,33 +173,38 @@ begin
   end;
 end $$;
 
--- ---------- Campos imutáveis no update ----------
-reset role;
-alter table public.inspections disable trigger inspections_antes_atualizar;
-update public.inspections set updated_at = '2000-01-01' where id = '11111111-1111-4111-8111-111111111111';
-alter table public.inspections enable trigger inspections_antes_atualizar;
-
-set local role authenticated;
+-- ---------- Vistoria enviada não muda (migration 0007) ----------
+-- Nem o dono altera a vistoria, as avarias ou as fotos de avaria depois de
+-- enviadas; arquivos só podem ser substituídos ANTES de a vistoria existir no
+-- servidor (reenvio depois de uma queda de conexão).
 set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}';
 
 do $$
 declare
-  antes record;
-  depois record;
+  c int;
 begin
-  select numero, realizada_em, created_at into antes from public.inspections where id = '11111111-1111-4111-8111-111111111111';
-  update public.inspections
-     set numero = 'VIS-000999', realizada_em = '2000-01-01', created_at = '2000-01-01', marca = 'Fiat 2',
-         vistoriador_nome = 'Outro Nome'
-   where id = '11111111-1111-4111-8111-111111111111';
-  select numero, realizada_em, created_at, updated_at, marca, vistoriador_nome into depois
-    from public.inspections where id = '11111111-1111-4111-8111-111111111111';
-  if depois.numero <> antes.numero then raise exception 'numero mudou no update'; end if;
-  if depois.realizada_em <> antes.realizada_em then raise exception 'realizada_em mudou no update'; end if;
-  if depois.created_at <> antes.created_at then raise exception 'created_at mudou no update'; end if;
-  if depois.updated_at < '2001-01-01' then raise exception 'updated_at não foi atualizado'; end if;
-  if depois.vistoriador_nome <> 'Ana Perfil' then raise exception 'vistoriador_nome mudou no update'; end if;
-  if depois.marca <> 'Fiat 2' then raise exception 'o update normal não foi aplicado'; end if;
+  update public.inspections set marca = 'Fiat 2', km = 1 where id = '11111111-1111-4111-8111-111111111111';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'o dono alterou a vistoria já enviada'; end if;
+  update public.damages set descricao = 'trocada' where id = '44444444-4444-4444-8444-444444444444';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'o dono alterou a avaria já enviada'; end if;
+  update public.damage_photos set path = 'x' where id = '55555555-5555-4555-8555-555555555555';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'o dono alterou a foto de avaria já enviada'; end if;
+
+  -- Storage: a foto da vistoria 1111 (já enviada) não pode ser substituída...
+  update storage.objects set metadata = '{"trocada":true}'
+   where bucket_id = 'vistorias' and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/11111111-1111-4111-8111-111111111111/frente.jpg';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'o dono substituiu a foto de uma vistoria já enviada'; end if;
+  -- ...mas a de uma vistoria que ainda não chegou ao servidor pode (reenvio).
+  insert into storage.objects (bucket_id, name)
+  values ('vistorias', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/abababab-abab-4bab-8bab-abababababab/frente.jpg');
+  update storage.objects set metadata = '{"reenvio":true}'
+   where bucket_id = 'vistorias' and name = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/abababab-abab-4bab-8bab-abababababab/frente.jpg';
+  get diagnostics c = row_count;
+  if c <> 1 then raise exception 'o reenvio de um arquivo antes de a vistoria chegar foi recusado'; end if;
 end $$;
 
 -- ---------- Recebimento na loja (migration 0006) ----------
@@ -336,6 +341,14 @@ begin
   -- foto do próprio recebimento
   insert into public.recebimento_fotos (id, recebimento_id, path)
   values (gen_random_uuid(), '99999999-9999-4999-8999-999999999999', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd/x/receb_1.jpg');
+
+  -- Storage (migration 0007): depois de registrado, a assinatura do recebimento não pode ser substituída
+  insert into storage.objects (bucket_id, name)
+  values ('vistorias', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd/66666666-6666-4666-8666-666666666666/receb_assinatura.png');
+  update storage.objects set metadata = '{"trocada":true}'
+   where bucket_id = 'vistorias' and name = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd/66666666-6666-4666-8666-666666666666/receb_assinatura.png';
+  get diagnostics c = row_count;
+  if c <> 0 then raise exception 'D substituiu a assinatura de um recebimento já registrado'; end if;
 end $$;
 
 -- ---------- E (loja PG Prime Audi Natal) ----------

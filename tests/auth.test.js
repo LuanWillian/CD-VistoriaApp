@@ -151,6 +151,13 @@ test("servidor inacessível ao entrar", async () => {
   await assert.rejects(a.entrar("a@teste", "x"), { message: "Sem internet: o primeiro acesso precisa de conexão." });
 });
 
+test("muitos logins da mesma rede (429): avisa para esperar, não diz que está sem internet", async () => {
+  const remoto = remotoFalso({ entrar: async () => { throw { status: 429, code: "over_request_rate_limit", message: "Request rate limit reached" }; } });
+  const a = criarAuth({ remoto, storage: storageFalso(), estaOnline: () => true });
+  await assert.rejects(a.entrar("a@teste", "x"),
+    { message: "Muitas tentativas de entrar agora nesta rede. Aguarde alguns minutos e tente de novo." });
+});
+
 test("outro erro ao entrar", async () => {
   const remoto = remotoFalso({ entrar: async () => { throw { status: 422, code: "email_provider_disabled" }; } });
   const a = criarAuth({ remoto, storage: storageFalso(), estaOnline: () => true });

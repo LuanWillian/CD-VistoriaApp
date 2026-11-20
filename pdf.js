@@ -6,7 +6,7 @@
 // assinaturas; rodapé com empresa, número, chassi e página.
 import { CHECKLIST_ITENS, EMPRESA, FOTOS_VEICULO, GRAVIDADES, PDF_FOTO } from "./config.js";
 import {
-  ARQUIVO, arquivoAvaria, arquivoReceb, formatarDataHora, formatarKm, formatarMarca, nomeArquivoPdf, nomeVistoria, textoPdf,
+  ARQUIVO, arquivoAssinaturaReceb, arquivoAvaria, arquivoReceb, formatarDataHora, formatarKm, formatarMarca, nomeArquivoPdf, nomeVistoria, textoPdf,
 } from "./formatos.js";
 import { STATUS_RECEBIMENTO } from "./recebimento-dados.js";
 import { carregarScript } from "./ui.js";
@@ -470,7 +470,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
       }
     }
     garantir(caixaH + 18);
-    const img = await imagem(ARQUIVO.recebAssinatura, { tipo: "PNG", lado: 900 });
+    const img = await imagem(arquivoAssinaturaReceb(rec), { tipo: "PNG", lado: 900 });
     const centro = M + LARG / 4;
     const p = encaixar(img, centro - caixaW / 2, y + 2, caixaW, caixaH);
     doc.addImage(img.dados, "PNG", p.x, p.y, p.w, p.h, undefined, "FAST");

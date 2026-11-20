@@ -5,6 +5,7 @@
 // administrador) e fica no mesmo cache, para a etapa de assinaturas offline.
 
 const SEM_INTERNET = "Sem internet: o primeiro acesso precisa de conexão.";
+const MUITAS_TENTATIVAS = "Muitas tentativas de entrar agora nesta rede. Aguarde alguns minutos e tente de novo.";
 // Ao abrir o app, quanto esperar o servidor antes de seguir com os dados guardados.
 // Com sinal fraco o pedido pode nunca responder (nem com erro); sem limite, a tela
 // ficava em branco. Mesmo valor do limite do env.js no sw.js.
@@ -73,6 +74,8 @@ export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine
       if (e?.code === "invalid_credentials" || /invalid login credentials/i.test(e?.message ?? "")) {
         throw new Error("E-mail ou senha incorretos.");
       }
+      // Limite do Supabase: logins por endereço de internet (todo o Wi-Fi do CD conta como um).
+      if (e?.status === 429 || e?.code === "over_request_rate_limit") throw new Error(MUITAS_TENTATIVAS);
       if (remoto.classificarErro(e, estaOnline()).tipo === "rede") throw new Error(SEM_INTERNET);
       throw new Error("Não foi possível entrar. Tente novamente em instantes.");
     }

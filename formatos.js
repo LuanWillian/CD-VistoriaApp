@@ -113,11 +113,21 @@ export function rotuloArquivo(nome) {
   return nome.startsWith("avaria_") ? "Foto de avaria" : nome;
 }
 
+// Assinatura do recebimento. Recebimentos novos gravam com o id no nome, para que
+// dois aparelhos da mesma conta recebendo o mesmo carro ao mesmo tempo não
+// sobrescrevam a assinatura um do outro. Os antigos usam o nome fixo
+// ARQUIVO.recebAssinatura. Quem lê pega o nome do caminho gravado no banco.
+export const arquivoAssinaturaRecebNova = (recebimentoId) => `receb_assinatura_${recebimentoId}.png`;
+export function arquivoAssinaturaReceb(recebimento) {
+  const nome = String(recebimento?.assinatura ?? "").split("/").pop();
+  return /^receb_assinatura(_[A-Za-z0-9-]+)?\.png$/.test(nome) ? nome : ARQUIVO.recebAssinatura;
+}
+
 // Arquivos do recebimento na loja (assinatura e fotos da divergência); ficam na
 // pasta da conta da loja (caminhoDoArquivo). Não entram no envio da vistoria.
 export function arquivosDoRecebimento(v) {
   if (!v.recebimento) return [];
-  return [ARQUIVO.recebAssinatura, ...(v.recebimento.fotos || []).map(arquivoReceb)];
+  return [arquivoAssinaturaReceb(v.recebimento), ...(v.recebimento.fotos || []).map(arquivoReceb)];
 }
 
 export function arquivosDaVistoria(v) {

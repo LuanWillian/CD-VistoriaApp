@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   capitalizar, formatarMarca, formatarDataHora, formatarData, dataArquivo, formatarKm, lerKm, normalizarChassi, idProvisorio, nomeVistoria,
   nomeArquivoPdf, chaveLocal, caminhoRemoto, ARQUIVO, arquivoAvaria, arquivoReceb, caminhoDoArquivo, rotuloArquivo, arquivosDaVistoria, textoPdf,
+  arquivoAssinaturaReceb, arquivosDoRecebimento,
   periodo, periodoPersonalizado, novoRascunho, vistoriaDoRascunho,
 } from "../formatos.js";
 
@@ -112,6 +113,18 @@ test("formatarMarca: capitaliza e deixa GWM em maiúsculas", () => {
   assert.equal(formatarMarca("GWM"), "GWM");
   assert.equal(formatarMarca("gwm haval"), "GWM Haval");
   assert.equal(formatarMarca("gw"), "Gw", "só vira GWM com a palavra completa");
+});
+
+test("assinatura do recebimento: nome vem do caminho gravado no banco (novo com id, antigo fixo)", () => {
+  assert.equal(arquivoAssinaturaReceb({ assinatura: "uL/v1/receb_assinatura_r1.png" }), "receb_assinatura_r1.png");
+  assert.equal(arquivoAssinaturaReceb({ assinatura: "uL/v1/receb_assinatura.png" }), "receb_assinatura.png");
+  // Caminho estranho ou vazio: volta para o nome antigo (nunca sai da pasta da loja).
+  assert.equal(arquivoAssinaturaReceb({ assinatura: "uL/v1/../frente.jpg" }), "receb_assinatura.png");
+  assert.equal(arquivoAssinaturaReceb({ assinatura: null }), "receb_assinatura.png");
+  assert.equal(arquivoAssinaturaReceb(null), "receb_assinatura.png");
+  const v = { id: "v1", userId: "uV", recebimento: { userId: "uL", assinatura: "uL/v1/receb_assinatura_r1.png", fotos: ["f1"] } };
+  assert.deepEqual(arquivosDoRecebimento(v), ["receb_assinatura_r1.png", "receb_f1.jpg"]);
+  assert.equal(caminhoDoArquivo(v, "receb_assinatura_r1.png"), "uL/v1/receb_assinatura_r1.png");
 });
 
 test("arquivos do recebimento: nomes e caminho na pasta da conta da loja", () => {

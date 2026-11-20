@@ -42,9 +42,11 @@ test("caminho feliz: arquivos, recebimento, fotos e rascunho apagado, nessa orde
   const r = await enviarRecebimento({ remoto, storage, usuario: USUARIO, vistoria: VISTORIA, rascunho: RASCUNHO });
   assert.deepEqual(remoto.chamadas, [
     "obter v1",
-    "arquivo uL/v1/receb_assinatura.png ASS",
+    // A assinatura leva o id do recebimento no nome: dois aparelhos da mesma conta
+    // recebendo o mesmo carro ao mesmo tempo não sobrescrevem a assinatura um do outro.
+    "arquivo uL/v1/receb_assinatura_r1.png ASS",
     "arquivo uL/v1/receb_f1.jpg FOTO",
-    "inserir r1 v1 divergencia uL/v1/receb_assinatura.png",
+    "inserir r1 v1 divergencia uL/v1/receb_assinatura_r1.png",
     "fotos f1 v1 uL",
     "obter v1",
   ]);
@@ -68,6 +70,15 @@ test("se o insert gravou mas a resposta se perdeu, o reenvio não insere de novo
   const r = await enviarRecebimento({ remoto, storage: storageFalso(), usuario: USUARIO, vistoria: VISTORIA, rascunho: RASCUNHO });
   assert.equal(remoto.chamadas.filter((c) => c.startsWith("inserir")).length, 0);
   assert.equal(r.id, "r1");
+});
+
+test("se o insert gravou, o reenvio não manda os arquivos de novo (o servidor recusa substituir depois de gravado)", async () => {
+  const remoto = remotoFalso({ existente: { id: "r1", userId: "uL", status: "divergencia", fotos: [] } });
+  const storage = storageFalso();
+  await enviarRecebimento({ remoto, storage, usuario: USUARIO, vistoria: VISTORIA, rascunho: RASCUNHO });
+  assert.deepEqual(remoto.chamadas.filter((c) => c.startsWith("arquivo")), [], "os arquivos sobem antes do insert");
+  assert.ok(remoto.chamadas.includes("fotos f1 v1 uL"), "as linhas das fotos ainda são gravadas (idempotente)");
+  assert.deepEqual(storage.chamadas, ["excluirRascunho v1"]);
 });
 
 test("já recebido por outra pessoa: JaRecebidoError com o recebimento, sem enviar nada", async () => {

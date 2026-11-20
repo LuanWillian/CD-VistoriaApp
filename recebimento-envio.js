@@ -1,7 +1,7 @@
 // Envio do recebimento na loja. Idempotente: o id vem do rascunho guardado no
 // aparelho, então "Tentar de novo" depois de uma queda não duplica nada.
 // Ordem: confere se já existe → arquivos → recebimento → fotos → apaga o rascunho.
-import { ARQUIVO, arquivoReceb, caminhoRemoto, chaveLocal } from "./formatos.js";
+import { ARQUIVO, arquivoAssinaturaRecebNova, arquivoReceb, caminhoRemoto, chaveLocal } from "./formatos.js";
 
 export class JaRecebidoError extends Error {
   constructor(recebimento) {
@@ -27,15 +27,20 @@ export async function enviarRecebimento({ remoto, storage, usuario, vistoria, ra
   }
 
   const caminho = (nome) => caminhoRemoto(usuario.id, vistoria.id, nome);
-  await remoto.enviarArquivo(caminho(ARQUIVO.recebAssinatura), assinatura);
-  for (const [fotoId, blob] of fotos) await remoto.enviarArquivo(caminho(arquivoReceb(fotoId)), blob);
+  const caminhoAssinatura = caminho(arquivoAssinaturaRecebNova(rascunho.id));
+  // Já gravado (a resposta se perdeu): os arquivos subiram antes do insert, e o
+  // servidor não deixa substituí-los depois de gravado (migration 0007).
+  if (!existente) {
+    await remoto.enviarArquivo(caminhoAssinatura, assinatura);
+    for (const [fotoId, blob] of fotos) await remoto.enviarArquivo(caminho(arquivoReceb(fotoId)), blob);
+  }
 
   const r = {
     id: rascunho.id,
     userId: usuario.id,
     status: rascunho.status,
     descricao: rascunho.status === "divergencia" ? rascunho.descricao : "",
-    assinatura: caminho(ARQUIVO.recebAssinatura),
+    assinatura: caminhoAssinatura,
     fotos: rascunho.status === "divergencia" ? fotos.map(([id]) => id) : [],
   };
   if (!existente) {
