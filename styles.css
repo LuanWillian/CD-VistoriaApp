@@ -774,7 +774,12 @@ html.computador .db-vazio { padding: 24px 0 12px; font-size: 13px; color: var(--
 /* Gráfico: colunas empilhadas (sem avaria embaixo, com avaria em cima), linhas de média e dica */
 html.computador .db-volume { display: flex; flex-direction: column; min-width: 0; }
 html.computador .db-plot-area { display: flex; flex-direction: column; margin-top: 28px; padding: 0 8px 0 28px; }
-html.computador .db-plot { position: relative; height: clamp(260px, calc(100vh - 450px), 420px); }
+/* O dashboard cabe na janela sem rolagem: a página tem a altura da janela e o
+   gráfico ocupa o espaço que sobra (cresce até 560 px; abaixo de 180 px aparece a rolagem). */
+html.computador .conteudo:has(.cb-dash) { display: flex; flex-direction: column; box-sizing: border-box; height: calc(100dvh - var(--topo-h)); padding-bottom: 20px; }
+html.computador .conteudo:has(.cb-dash) > div, html.computador .cb-dash, html.computador #db-conteudo, html.computador .db-corpo { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+html.computador .db-volume, html.computador .db-plot-area { flex: 1; min-height: 0; }
+html.computador .db-plot { position: relative; flex: 1; min-height: 180px; max-height: 560px; }
 html.computador .db-grade-linha { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--linha); }
 html.computador .db-grade-base { border-top: 1.5px solid #C7CDD6; }
 html.computador .db-grade-linha span { position: absolute; right: calc(100% + 8px); top: -8px; font-size: 11px; color: var(--cinza); font-variant-numeric: tabular-nums; }
