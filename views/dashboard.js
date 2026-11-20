@@ -3,6 +3,7 @@
 // e, ao lado, o recebimento nas lojas.
 // Lê direto do servidor (precisa de internet); as contas ficam em dashboard-dados.js.
 import { LOJAS } from "../config.js";
+import { capitalizar } from "../formatos.js";
 import {
   SEM_LOJA, dentro, diasUteis, filtrarDashboard, formatarPct, intervaloDoDashboard, maisAntigoAguardando, marcasDisponiveis,
   mediasDaSerie, resumo, serie, topoDoEixo,
@@ -77,8 +78,11 @@ function graficoVolume(s, { semAnterior, rotuloDia }) {
         ${dica}
       </div>`;
   }).join("");
-  const rotulos = s.rotulos.map((r, i) => (i === pico && s.atual[i] ? `<span><b class="db-rot-pico">${esc(r)}</b></span>`
-    : `<span>${i % passo === 0 && (passo === 1 || Math.abs(i - pico) > 1) ? esc(r) : ""}</span>`)).join("");
+  // Por dia, o rótulo leva o dia da semana em cima da data ("Qui" / "13/11").
+  const texto = (r, i) => (s.unidade === "dia"
+    ? `<small class="db-rot-semana">${capitalizar(SEMANA[rotuloDia(i).getDay()])}</small>${esc(r)}` : esc(r));
+  const rotulos = s.rotulos.map((r, i) => (i === pico && s.atual[i] ? `<span><b class="db-rot-pico">${texto(r, i)}</b></span>`
+    : `<span>${i % passo === 0 && (passo === 1 || Math.abs(i - pico) > 1) ? texto(r, i) : ""}</span>`)).join("");
   return `<div class="db-plot-area">
       <div class="db-plot" role="img" aria-label="Veículos enviados por ${NOME_UNIDADE[s.unidade]}; pico em ${esc(s.rotulos[pico])}, com ${num(s.atual[pico])}">${grade}<div class="db-colunas">${colunas}</div></div>
       <div class="db-rotulos" aria-hidden="true">${rotulos}</div>
