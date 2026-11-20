@@ -17,12 +17,12 @@ function storageFalso(meta = {}) {
   };
 }
 
-function remotoFalso({ sessao = null, erro = null, entrar, sair, obterPerfil } = {}) {
+function remotoFalso({ sessao = null, erro = null, entrar, sair, obterPerfil, obterSessao } = {}) {
   const chamadas = [];
   return {
     chamadas,
     classificarErro,
-    obterSessao: async () => ({ sessao, erro }),
+    obterSessao: obterSessao || (async () => ({ sessao, erro })),
     entrar: entrar || (async () => U),
     sair: sair || (async () => { chamadas.push("sair"); }),
     aoMudarSessao: () => () => {},
@@ -82,6 +82,35 @@ test("perfil inacessível: não usa o nome guardado de outro usuário", async ()
   const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => { throw new TypeError("Failed to fetch"); } });
   const a = criarAuth({ remoto, storage: storageFalso({ usuario: { id: "outro", email: "b@teste", nome: "Bia" } }), estaOnline: () => true });
   assert.equal((await a.iniciar()).nome, null);
+});
+
+// Sinal fraco: o pedido sai, mas a resposta nunca chega (nem erro).
+const nuncaResponde = () => new Promise(() => {});
+
+test("sinal fraco: perfil que não responde não trava a abertura (usa o guardado do mesmo usuário)", async () => {
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: nuncaResponde });
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: UN }), estaOnline: () => true, limiteRedeMs: 20 });
+  assert.deepEqual(await a.iniciar(), UN);
+});
+
+test("sinal fraco: perfil que não responde e nada guardado abre sem nome", async () => {
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: nuncaResponde });
+  const a = criarAuth({ remoto, storage: storageFalso(), estaOnline: () => true, limiteRedeMs: 20 });
+  assert.deepEqual(await a.iniciar(), { ...U, nome: null, papel: "vistoriador", loja: null });
+});
+
+test("sinal fraco: sessão que não responde (renovação do token travada) usa o usuário em cache", async () => {
+  const remoto = remotoFalso({ obterSessao: nuncaResponde });
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: UN }), estaOnline: () => true, limiteRedeMs: 20 });
+  assert.deepEqual(await a.iniciar(), UN);
+});
+
+test("sem internet (aparelho offline): não pede o perfil e abre na hora com o guardado", async () => {
+  let pediu = false;
+  const remoto = remotoFalso({ sessao: { usuario: U }, obterPerfil: async () => { pediu = true; throw new TypeError("Failed to fetch"); } });
+  const a = criarAuth({ remoto, storage: storageFalso({ usuario: UN }), estaOnline: () => false });
+  assert.deepEqual(await a.iniciar(), UN);
+  assert.equal(pediu, false);
 });
 
 test("offline com token vencido usa o usuário em cache", async () => {

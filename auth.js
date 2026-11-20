@@ -5,8 +5,21 @@
 // administrador) e fica no mesmo cache, para a etapa de assinaturas offline.
 
 const SEM_INTERNET = "Sem internet: o primeiro acesso precisa de conexão.";
+// Ao abrir o app, quanto esperar o servidor antes de seguir com os dados guardados.
+// Com sinal fraco o pedido pode nunca responder (nem com erro); sem limite, a tela
+// ficava em branco. Mesmo valor do limite do env.js no sw.js.
+const LIMITE_REDE_MS = 3000;
 
-export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine }) {
+// Rejeita como falha de rede (TypeError) se a promessa não responder a tempo.
+function comLimite(promessa, ms) {
+  let relogio;
+  const limite = new Promise((_, rejeitar) => {
+    relogio = setTimeout(() => rejeitar(new TypeError("Failed to fetch: o servidor não respondeu a tempo")), ms);
+  });
+  return Promise.race([promessa, limite]).finally(() => clearTimeout(relogio));
+}
+
+export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine, limiteRedeMs = LIMITE_REDE_MS }) {
   let usuario = null;
   const ouvintes = new Set();
   const notificar = (u) => ouvintes.forEach((cb) => cb(u));
@@ -24,7 +37,8 @@ export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine
   async function comNome(u) {
     let perfil;
     try {
-      perfil = (await remoto.obterPerfil(u.id)) ?? null;
+      if (!estaOnline()) throw new TypeError("offline"); // sem rede: nem tenta
+      perfil = (await comLimite(remoto.obterPerfil(u.id), limiteRedeMs)) ?? null;
     } catch {
       const emCache = await storage.obterMeta("usuario");
       perfil = emCache?.id === u.id ? emCache : null;
@@ -33,7 +47,7 @@ export function criarAuth({ remoto, storage, estaOnline = () => navigator.onLine
   }
 
   async function iniciar() {
-    const { sessao, erro } = await remoto.obterSessao().catch((e) => ({ sessao: null, erro: e }));
+    const { sessao, erro } = await comLimite(remoto.obterSessao(), limiteRedeMs).catch((e) => ({ sessao: null, erro: e }));
     if (sessao) {
       usuario = await comNome(sessao.usuario);
       await storage.salvarMeta("usuario", usuario);
