@@ -45,8 +45,9 @@ teste("dashboard: faixa de números, gráfico, recebimento e sem HTML vindo dos 
     igual(numeros(t), ["2", "50%", "1", "1", "0"]);
     ok(t.el.textContent.includes("vs. 1 no período anterior"), "falta a comparação com o período anterior");
     igual(t.el.querySelectorAll(".db-coluna").length, 30);
-    igual(t.el.querySelectorAll(".db-seg-avaria").length, 1, "uma coluna com veículo com avaria");
-    ok(t.el.querySelector(".db-media"), "falta a linha da média");
+    igual(t.el.querySelectorAll(".db-barra").length, 2, "uma barra por dia com veículo enviado");
+    igual(t.el.querySelectorAll(".db-barra-pico").length, 1, "uma barra de pico destacada");
+    igual(t.el.querySelector(".db-media"), null, "o gráfico novo não tem linha de média");
     igual(t.el.querySelector(".db-marcas"), null, "o cartão Por marca foi removido");
     ok([...t.el.querySelector("#db-marca").options].some((o) => o.value === "Jeep"), "o filtro de marca continua");
     ok(!t.el.querySelector("i"), "marca com HTML não pode virar tag");
@@ -87,7 +88,6 @@ teste("dashboard: trocar o período consulta de novo; Hoje mostra 24 colunas e n
     t.el.querySelector('[data-periodo="hoje"]').click();
     await esperarAte(() => t.chamadas.length === 2 && t.el.querySelectorAll(".db-coluna").length === 24);
     igual(numeros(t)[0], "1");
-    igual(t.el.querySelector(".db-media"), null, "gráfico por hora não tem média");
     t.el.querySelector('[data-periodo="personalizado"]').click();
     ok(!t.el.querySelector("#db-datas").hidden, "datas do período personalizado não apareceram");
   } finally {
@@ -137,18 +137,16 @@ teste("dashboard: Recebimento nas lojas, o mais antigo aguardando e links para a
   }
 });
 
-teste("dashboard: número só no pico; uma linha de média só; no Tudo não há comparação", async () => {
+teste("dashboard: número em cima de cada barra, pico destacado; no Tudo não há comparação", async () => {
   const t = await montarDashboard();
   try {
     t.el.querySelector('[data-periodo="7d"]').click();
     await esperarAte(() => t.el.querySelectorAll(".db-coluna").length === 7);
-    igual([...t.el.querySelectorAll(".db-valor")].map((b) => b.textContent), ["1"], "só o dia de pico mostra o número");
-    igual(t.el.querySelectorAll(".db-media").length, 1, "uma linha de média só");
-    igual(t.el.querySelector(".db-media-anterior"), null, "sem a linha da média anterior");
-    igual([...t.el.querySelectorAll(".db-legenda > span")].map((s) => s.textContent.trim()), ["Sem avaria", "Com avaria"]);
+    igual([...t.el.querySelectorAll(".db-valor")].map((b) => b.textContent), ["1", "1"], "cada dia com envio mostra o número");
+    igual(t.el.querySelectorAll(".db-valor-pico").length, 1, "o número do pico é destacado");
+    igual([...t.el.querySelectorAll(".db-legenda > span")].map((s) => s.textContent.trim()), ["Dia de pico", "Demais dias"]);
     t.el.querySelector('[data-periodo="tudo"]').click();
     await esperarAte(() => t.el.querySelector("#db-subtitulo").textContent.includes("desde"));
-    igual(t.el.querySelector(".db-media-anterior"), null, "Tudo não tem média anterior");
     ok(t.el.querySelector(".db-faixa").textContent.includes("todas as vistorias"), "Tudo não compara com o anterior");
     igual(t.el.querySelector(".db-ind-link").getAttribute("href").split("&")[0], "#/inicio?periodo=todos");
   } finally {

@@ -49,35 +49,38 @@ function comparacao(diferenca, texto, { bomQuandoCai = false } = {}) {
 }
 
 // ---------- Gráfico: veículos enviados por hora, dia, semana ou mês ----------
-// Cada coluna empilha sem avaria (preto) e com avaria (laranja). Linhas tracejadas:
-// média do período e do período anterior (não existem no gráfico por hora nem, a
-// anterior, no "Tudo"). Passando o mouse, a dica mostra os números da coluna.
-function graficoVolume(s, medias, { semAnterior, rotuloDia }) {
+// Uma barra por coluna, cinza-claro, com o número em cima; o dia de pico em preto
+// (a cor da marca) e com o rótulo destacado embaixo. Grade tracejada ao fundo.
+// Passando o mouse, a dica mostra enviados, com avaria e o período anterior.
+// Divisões da grade: 5, 4 ou 2 partes, a que der números inteiros.
+function divisoesDaGrade(topo) {
+  const partes = [5, 4, 2].find((d) => topo % d === 0) || 1;
+  return Array.from({ length: partes + 1 }, (_, k) => (topo / partes) * k);
+}
+function graficoVolume(s, { semAnterior, rotuloDia }) {
   const n = s.atual.length;
-  const topo = topoDoEixo(Math.max(...s.atual, medias?.atual ?? 0, 1));
-  // Só o dia de pico mostra o número em cima da barra; os outros aparecem na dica (passar o mouse).
+  const topo = topoDoEixo(Math.max(...s.atual, 1));
   const pico = s.atual.indexOf(Math.max(...s.atual));
   const passo = Math.max(1, Math.ceil(n / 11));
-  const grade = [0, topo / 2, topo].filter((k) => Number.isInteger(k))
-    .map((k) => `<div class="db-grade-linha" data-baixo="${pctDe(k, topo)}"><span>${num(k)}</span></div>`).join("");
-  const linhas = !medias ? "" : `<div class="db-media" data-baixo="${pctDe(medias.atual, topo)}"><span>média ${dec(medias.atual)}</span></div>`;
+  const grade = divisoesDaGrade(topo)
+    .map((k) => `<div class="db-grade-linha${k ? "" : " db-grade-base"}" data-baixo="${pctDe(k, topo)}"><span>${num(k)}</span></div>`).join("");
   const colunas = s.atual.map((total, i) => {
-    const avaria = s.comAvaria[i];
     const domingo = s.unidade === "dia" && rotuloDia(i).getDay() === 0;
+    const ePico = i === pico && total > 0;
     const dica = `<span class="db-dica" aria-hidden="true"><strong>${esc(s.unidade === "dia" ? `${SEMANA[rotuloDia(i).getDay()]}, ${s.rotulos[i]}` : s.rotulos[i])}</strong>
-        <span><span>Enviados</span><b>${num(total)}</b></span><span><span>Com avaria</span><b>${num(avaria)}</b></span>
+        <span><span>Enviados</span><b>${num(total)}</b></span><span><span>Com avaria</span><b>${num(s.comAvaria[i])}</b></span>
         ${semAnterior ? "" : `<span><span>Período anterior</span><b>${num(s.anterior[i])}</b></span>`}</span>`;
     return `<div class="db-coluna${total ? "" : " db-coluna-vazia"}">
-        ${total ? `<span class="db-pilha" data-altura="${pctDe(total, topo)}">
-          ${avaria ? `<span class="db-seg-avaria" data-altura="${pctDe(avaria, total)}"></span>` : ""}<span class="db-seg-ok"></span></span>` : ""}
-        ${total && i === pico ? `<span class="db-valor" data-baixo="${pctDe(total, topo)}">${num(total)}</span>` : ""}
+        ${total ? `<span class="db-barra${ePico ? " db-barra-pico" : ""}" data-altura="${pctDe(total, topo)}"></span>
+        <span class="db-valor${ePico ? " db-valor-pico" : ""}" data-baixo="${pctDe(total, topo)}">${num(total)}</span>` : ""}
         ${domingo && !total ? '<span class="db-dom">dom</span>' : ""}
         ${dica}
       </div>`;
   }).join("");
-  const rotulos = s.rotulos.map((r, i) => `<span>${i % passo === 0 ? esc(r) : ""}</span>`).join("");
+  const rotulos = s.rotulos.map((r, i) => (i === pico && s.atual[i] ? `<span><b class="db-rot-pico">${esc(r)}</b></span>`
+    : `<span>${i % passo === 0 && (passo === 1 || Math.abs(i - pico) > 1) ? esc(r) : ""}</span>`)).join("");
   return `<div class="db-plot-area">
-      <div class="db-plot" role="img" aria-label="Veículos enviados por ${NOME_UNIDADE[s.unidade]}, sem e com avaria">${grade}${linhas}<div class="db-colunas">${colunas}</div></div>
+      <div class="db-plot" role="img" aria-label="Veículos enviados por ${NOME_UNIDADE[s.unidade]}; pico em ${esc(s.rotulos[pico])}, com ${num(s.atual[pico])}">${grade}<div class="db-colunas">${colunas}</div></div>
       <div class="db-rotulos" aria-hidden="true">${rotulos}</div>
     </div>`;
 }
@@ -275,11 +278,11 @@ export async function montar(raiz, ctx) {
       <div class="db-cartao-topo">
         <div><h2 id="db-h-volume">Veículos enviados por ${NOME_UNIDADE[s.unidade]}</h2><p class="db-cartao-sub">${subVolume}</p></div>
         <p class="db-legenda">
-          <span><span class="db-quad db-quad-sem"></span>Sem avaria</span>
-          <span><span class="db-quad db-quad-avaria"></span>Com avaria</span>
+          <span><span class="db-quad db-quad-pico"></span>Dia de pico</span>
+          <span><span class="db-quad db-quad-regular"></span>Demais dias</span>
         </p>
       </div>
-      ${r.total ? graficoVolume(s, medias, { semAnterior, rotuloDia: deDia }) : '<p class="db-vazio">Nenhum veículo enviado no período.</p>'}
+      ${r.total ? graficoVolume(s, { semAnterior, rotuloDia: deDia }) : '<p class="db-vazio">Nenhum veículo enviado no período.</p>'}
     </section>`;
 
     // ----- Recebimento nas lojas -----
