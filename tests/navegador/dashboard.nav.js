@@ -51,8 +51,8 @@ teste("dashboard: faixa de números, gráfico, recebimento e sem HTML vindo dos 
     igual(t.el.querySelector(".db-marcas"), null, "o cartão Por marca foi removido");
     ok([...t.el.querySelector("#db-marca").options].some((o) => o.value === "Jeep"), "o filtro de marca continua");
     ok(!t.el.querySelector("i"), "marca com HTML não pode virar tag");
-    const barras = [...t.el.querySelectorAll("[data-largura]")];
-    ok(barras.length && barras.every((b) => b.style.width.endsWith("%") && parseFloat(b.style.width) === Number(b.dataset.largura)), "larguras das barras não aplicadas");
+    const barras = [...t.el.querySelectorAll(".db-barra[data-altura]")];
+    ok(barras.length && barras.every((b) => b.style.height.endsWith("%") && parseFloat(b.style.height) === Number(b.dataset.altura)), "alturas das barras não aplicadas");
     ok([...t.el.querySelectorAll("[data-altura]")].every((b) => b.style.height.endsWith("%")), "alturas das barras não aplicadas");
     igual(t.el.querySelector("#db-lista"), null, "a lista de baixo foi removida");
     igual(t.el.querySelector(".db-ind-link").getAttribute("href"), "#/inicio?periodo=30d&recebimento=aguardando");
@@ -112,7 +112,7 @@ teste("dashboard: offline e erro do servidor mostram aviso", async () => {
   }
 });
 
-teste("dashboard: Recebimento nas lojas, o mais antigo aguardando e links para a aba Vistorias", async () => {
+teste("dashboard: sem o cartão Recebimento nas lojas; o mais antigo aguardando na faixa de números", async () => {
   const agora = new Date();
   const dia = (n) => new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - n, 10).toISOString();
   const rec = (status) => ({ id: `r-${status}`, userId: "uL", status, recebedorNome: "Davi", loja: "PG Prime BMW Natal", recebidoEm: dia(0), descricao: "x", assinatura: "p", fotos: [] });
@@ -124,11 +124,7 @@ teste("dashboard: Recebimento nas lojas, o mais antigo aguardando e links para a
     { ...base, id: "w4", numero: "VIS-4", realizadaEm: dia(4), loja: "", recebimento: null },
   ] });
   try {
-    const nums = [...t.el.querySelectorAll(".db-receb .db-rec-num")].map((n) => n.textContent);
-    igual(nums, ["1", "1", "1"], "sem divergência, com divergência, aguardando");
-    ok(t.el.querySelector(".db-receb").textContent.includes("3 veículos enviados para as lojas"), "a vistoria sem loja não conta");
-    const links = [...t.el.querySelectorAll(".db-receb a.db-rec-ver")].map((a) => a.getAttribute("href"));
-    igual(links, ["#/inicio?periodo=30d&recebimento=divergencia", "#/inicio?periodo=30d&recebimento=aguardando"]);
+    igual(t.el.querySelector(".db-receb"), null, "o cartão Recebimento nas lojas foi removido");
     ok(t.el.querySelector(".db-faixa").textContent.includes("mais antigo há 1 dia"), "faltou o mais antigo aguardando");
     igual(numeros(t).slice(3), ["1", "1"]);
     ok(t.el.querySelector(".db-faixa").textContent.includes("50% dos 2 recebidos"), "faltou o % dos recebidos");

@@ -1,6 +1,5 @@
 // Dashboard do gerente (#/dashboard), só no navegador do computador. Versão enxuta:
-// faixa com 5 números, gráfico de veículos enviados (sem e com avaria, com as médias)
-// e, ao lado, o recebimento nas lojas.
+// faixa com 5 números e o gráfico de veículos enviados por dia (largura toda).
 // Lê direto do servidor (precisa de internet); as contas ficam em dashboard-dados.js.
 import { LOJAS } from "../config.js";
 import { capitalizar } from "../formatos.js";
@@ -219,7 +218,6 @@ export async function montar(raiz, ctx) {
     const s = serie(itens, anteriores, intervalo);
     const medias = mediasDaSerie(s, intervalo);
     const rec = contarRecebimentos(itens);
-    const paraLojas = rec.aguardando + rec.conforme + rec.divergencia;
     const recebidos = rec.conforme + rec.divergencia;
     const antigo = maisAntigoAguardando(itens);
     const uteis = diasUteis(intervalo);
@@ -289,31 +287,9 @@ export async function montar(raiz, ctx) {
       ${r.total ? graficoVolume(s, { semAnterior, rotuloDia: deDia }) : '<p class="db-vazio">Nenhum veículo enviado no período.</p>'}
     </section>`;
 
-    // ----- Recebimento nas lojas -----
-    // Cada situação em bloco: rótulo (e "Ver veículos") em cima, número grande e % embaixo.
-    const linhaRec = (rot, n, classe, situacao) => `<li class="db-rec-linha">
-        <span class="db-quad db-quad-${classe}"></span>
-        <span class="db-rec-rot">${rot}${situacao && n ? `<a class="db-rec-ver" href="${verVeiculos(situacao)}" aria-label="Ver veículos: ${rot.toLowerCase()}">Ver veículos ${icone("setaDireita", "ic")}</a>` : ""}</span>
-        <span class="db-rec-num${classe === "divergencia" && n ? " db-erro" : ""}">${num(n)}</span>
-        <span class="db-rec-pct">${formatarPct(paraLojas ? (n / paraLojas) * 100 : 0, { casas: 0 })}</span>
-      </li>`;
-    const recebimento = `<section class="cb-cartao db-receb" aria-labelledby="db-h-receb">
-      <h2 id="db-h-receb">Recebimento nas lojas</h2>
-      ${paraLojas ? `<p class="db-cartao-sub">Situação dos ${plural(paraLojas, "veículo enviado", "veículos enviados")} para as lojas no período</p>
-      <div class="db-barra-h" aria-hidden="true">
-        ${[["conforme", rec.conforme], ["divergencia", rec.divergencia], ["aguardando", rec.aguardando]].filter(([, n]) => n)
-    .map(([c, n]) => `<span class="db-quad-${c}" data-largura="${pctDe(n, paraLojas)}"></span>`).join("")}
-      </div>
-      <ul class="db-rec-lista">
-        ${linhaRec("Recebidos sem divergência", rec.conforme, "conforme", "")}
-        ${linhaRec("Recebidos com divergência", rec.divergencia, "divergencia", "divergencia")}
-        ${linhaRec("Aguardando recebimento", rec.aguardando, "aguardando", "aguardando")}
-      </ul>` : '<p class="db-vazio">Nenhum veículo enviado para loja no período.</p>'}
-    </section>`;
-
     conteudo.innerHTML = `<div class="db-corpo${estado.carregando ? " cb-atualizando" : ""}" aria-busy="${estado.carregando}">
       ${faixa}
-      <div class="db-grade">${volume}${recebimento}</div>
+      ${volume}
     </div>`;
     aplicarMedidas(conteudo);
   }
