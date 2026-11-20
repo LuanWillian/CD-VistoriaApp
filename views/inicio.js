@@ -35,6 +35,15 @@ export function redirecionamento(hash, desktop, papel = "vistoriador") {
   return /^#\/dashboard([/?]|$)/.test(h) ? "#/inicio" : null;
 }
 
+// Frase da faixa escura de "sem internet" (embaixo do topo). A conta de loja não
+// faz vistorias e precisa de internet para ver e receber os carros.
+export function textoFaixaOffline({ papel, computador }) {
+  if (papel === "loja") return "Sem internet. Para ver os carros e registrar recebimentos, conecte-se à internet.";
+  return computador
+    ? "Sem internet. Os dados mostrados podem estar desatualizados."
+    : "Sem internet. As vistorias ficam salvas no aparelho e são enviadas quando a conexão voltar.";
+}
+
 // Histórico no app e no celular: o menu é sempre o nível 0 (primeira entrada),
 // e cada tela aberta a partir dele fica um nível acima. Assim o "voltar" do
 // Android chega ao menu e, do menu, sai do app. Entradas que já têm nível

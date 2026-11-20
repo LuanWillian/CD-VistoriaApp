@@ -164,9 +164,10 @@ function atualizarIndicadores({ pendentes = 0, erros = 0, sincronizando = false,
   $("#faixa-sessao").hidden = !sessaoExpirada;
   // Sem internet: faixa escura embaixo do topo (só com alguém logado, quando o status aparece).
   $("#faixa-offline").hidden = estado !== "offline" || status.hidden;
-  $("#faixa-offline-texto").textContent = document.documentElement.classList.contains("computador")
-    ? "Sem internet. Os dados mostrados podem estar desatualizados."
-    : "Sem internet. As vistorias ficam salvas no aparelho e são enviadas quando a conexão voltar.";
+  $("#faixa-offline-texto").textContent = viewInicio.textoFaixaOffline({
+    papel: papelAtual(),
+    computador: document.documentElement.classList.contains("computador"),
+  });
 }
 
 async function sincronizar() {

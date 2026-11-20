@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deveAbrirNoMenu, nivelDaTela, redirecionamento } from "../views/inicio.js";
+import { deveAbrirNoMenu, nivelDaTela, redirecionamento, textoFaixaOffline } from "../views/inicio.js";
 
 test("abrir pelo link ou pelo ícone (sem hash, #/ ou #/nova) vai para o menu", () => {
   for (const hash of ["", "#", "#/", "#/nova"]) assert.equal(deveAbrirNoMenu(hash, "navigate"), true, hash);
@@ -77,4 +77,15 @@ test("ao abrir o app, antes de saber o papel da conta, as telas de recebimento n
   // o resto continua igual ao vistoriador
   assert.equal(redirecionamento("#/nova", true, null), "#/inicio");
   assert.equal(redirecionamento("#/dashboard", false, null), "#/inicio");
+});
+
+test("faixa de sem internet: a loja não vê a frase das vistorias (ela só recebe carros)", () => {
+  assert.equal(textoFaixaOffline({ papel: "loja", computador: false }),
+    "Sem internet. Para ver os carros e registrar recebimentos, conecte-se à internet.");
+  assert.equal(textoFaixaOffline({ papel: "loja", computador: true }),
+    "Sem internet. Para ver os carros e registrar recebimentos, conecte-se à internet.");
+  assert.equal(textoFaixaOffline({ papel: "vistoriador", computador: false }),
+    "Sem internet. As vistorias ficam salvas no aparelho e são enviadas quando a conexão voltar.");
+  assert.equal(textoFaixaOffline({ papel: "vistoriador", computador: true }),
+    "Sem internet. Os dados mostrados podem estar desatualizados.");
 });
