@@ -139,7 +139,7 @@ export async function montar(el, ctx) {
           <div class="thumb">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : icone("imagem", "ic ic-lg")}</div>
           <div class="cartao-info">
             <span class="cm-item-topo"><span class="cm-item-titulo">${esc(veiculo)}</span>${seloDaLista(v)}</span>
-            <span class="cm-item-linha"><span class="chassi">${esc(v.chassi)}</span> · ${esc(nomeVistoria(v))} · <span class="cm-sem-quebra">${dataHoraCurta(v.realizadaEm)}</span></span>
+            <span class="cm-item-linha"><span class="chassi">${esc(v.chassi)}</span> · <span class="cm-sem-quebra">${dataHoraCurta(v.realizadaEm)}</span></span>
             <span class="cm-item-pe">
               <span class="cm-item-avarias">${qtd ? `<span class="cm-ponto" aria-hidden="true"></span>${qtd} ${qtd === 1 ? "avaria" : "avarias"}` : "Sem avarias"}</span>
               <span class="cm-item-loja${v.loja ? "" : " cm-apagado"}">${esc(v.loja || "Sem loja")}</span>
