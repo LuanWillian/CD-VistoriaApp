@@ -89,7 +89,7 @@ export async function preencherEFinalizar({ chassi, marca, modelo, cor = "Prata"
     botao("Salvar avaria", d).click();
     await esperar(600);
   } else {
-    document.getElementById("sem-avarias").click();
+    document.querySelector('[data-resposta="nao"]').click();
     await esperar(300);
   }
   document.getElementById("btn-avancar").click();

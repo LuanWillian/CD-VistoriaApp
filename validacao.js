@@ -43,7 +43,7 @@ function etapaChecklist(d) {
 
 function etapaAvarias(d) {
   if (d.semAvarias || d.avarias?.length) return [];
-  return [{ etapa: 3, campo: "sem-avarias", mensagem: "Confirme “Veículo sem avarias” ou adicione uma avaria" }];
+  return [{ etapa: 3, campo: "sem-avarias", mensagem: "Responda se o veículo tem avarias e, se tiver, adicione cada uma" }];
 }
 
 function etapaAssinaturas(d) {

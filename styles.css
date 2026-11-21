@@ -200,6 +200,11 @@ legend { padding: 0; }
 .segmentado button + button { border-left: 2px solid var(--linha-forte); }
 .segmentado button[aria-checked="true"][data-valor="presente"] { background: var(--ok); color: #fff; }
 .segmentado button[aria-checked="true"][data-valor="ausente"] { background: var(--erro); color: #fff; }
+/* Pergunta "O veículo tem avarias?" (etapa 3): Sim / Não, a resposta marcada em preto. */
+.pergunta-avarias { display: grid; gap: 10px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.pergunta-avarias legend { padding: 0; margin-bottom: 10px; font-size: 16px; font-weight: 500; }
+.pergunta-avarias .segmentado button { min-height: 48px; font-size: 16px; }
+.segmentado button[aria-checked="true"]:is([data-resposta="sim"], [data-resposta="nao"]) { background: var(--principal); color: #fff; }
 
 /* ---------- Cartões, seções e selos ---------- */
 .cartao { background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio); padding: 16px; box-shadow: var(--sombra); }

@@ -57,11 +57,13 @@ teste("etapa 3: salvar sem foto pede confirmação e cria o cartão", async () =
   }
 });
 
-teste("etapa 3: ligar 'sem avarias' remove as avarias e as fotos delas", async () => {
+teste("etapa 3: responder Não remove as avarias e as fotos delas", async () => {
   const t = await montarEtapa(etapa, { preparar: (r) => { r.dados.avarias = [avaria({ fotos: ["f1"] })]; } });
   try {
     await t.ctx.storage.salvarArquivo(`${t.editor.rascunho.id}/avaria_f1.jpg`, new Blob(["x"]));
-    t.el.querySelector("#sem-avarias").click();
+    await esperar(50);
+    igual(t.el.querySelector('[data-resposta="sim"]').getAttribute("aria-checked"), "true", "com avaria registrada o Sim vem marcado");
+    t.el.querySelector('[data-resposta="nao"]').click();
     await esperar(50);
     igual(t.editor.rascunho.dados.avarias, []);
     igual(t.editor.rascunho.dados.semAvarias, true);
@@ -71,19 +73,28 @@ teste("etapa 3: ligar 'sem avarias' remove as avarias e as fotos delas", async (
   }
 });
 
-teste("etapa 3: com 'sem avarias' ligado o botão Adicionar avaria some e volta ao desligar", async () => {
+teste("etapa 3: o botão Adicionar avaria só aparece depois de responder Sim", async () => {
   const t = await montarEtapa(etapa);
   try {
     const adicionar = () => t.el.querySelector('[data-acao="adicionar"]');
+    const sim = t.el.querySelector('[data-resposta="sim"]');
+    const nao = t.el.querySelector('[data-resposta="nao"]');
+    await esperar(50);
+    igual(adicionar().hidden, true, "sem resposta o botão fica escondido");
+    igual(getComputedStyle(adicionar()).display, "none");
+    sim.click();
     await esperar(50);
     igual(adicionar().hidden, false);
-    t.el.querySelector("#sem-avarias").click();
+    igual(sim.getAttribute("aria-checked"), "true");
+    nao.click();
     await esperar(50);
     igual(adicionar().hidden, true);
-    igual(getComputedStyle(adicionar()).display, "none");
-    t.el.querySelector("#sem-avarias").click();
+    igual(nao.getAttribute("aria-checked"), "true");
+    igual(t.editor.rascunho.dados.semAvarias, true);
+    sim.click();
     await esperar(50);
     igual(adicionar().hidden, false);
+    igual(t.editor.rascunho.dados.semAvarias, false);
   } finally {
     await t.fim();
   }

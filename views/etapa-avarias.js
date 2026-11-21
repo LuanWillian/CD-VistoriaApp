@@ -1,4 +1,4 @@
-// Etapa 3 — Avarias: toggle "Veículo sem avarias", lista de cartões e editor
+// Etapa 3 — Avarias: pergunta "O veículo tem avarias?" (Sim / Não), lista de cartões e editor
 // de avaria em tela cheia (área, tipo, gravidade, descrição e várias fotos).
 import { AREAS_AVARIA, TIPOS_AVARIA, GRAVIDADES } from "../config.js";
 import { arquivoAvaria } from "../formatos.js";
@@ -21,24 +21,33 @@ export function montar(el, editor, ctx) {
   el.innerHTML = `
     <section class="pilha" aria-labelledby="titulo-etapa">
       <h2 class="titulo" id="titulo-etapa" tabindex="-1">Avarias</h2>
-      <button type="button" class="toggle" id="sem-avarias" role="switch" aria-checked="false">
-        <span>Veículo sem avarias</span><span class="toggle-trilho" aria-hidden="true"></span>
-      </button>
+      <fieldset class="pergunta-avarias" id="sem-avarias" tabindex="-1">
+        <legend>O veículo tem avarias?</legend>
+        <div class="segmentado" role="radiogroup" aria-label="O veículo tem avarias?">
+          <button type="button" role="radio" aria-checked="false" data-resposta="sim">Sim</button>
+          <button type="button" role="radio" aria-checked="false" data-resposta="nao">Não</button>
+        </div>
+      </fieldset>
       <div class="lista" id="avarias-lista"></div>
       <button type="button" class="btn btn-primario btn-bloco" data-acao="adicionar">${icone("mais")} Adicionar avaria</button>
     </section>`;
 
   const lista = $("#avarias-lista", el);
-  const toggle = $("#sem-avarias", el);
+  const simBtn = $('[data-resposta="sim"]', el);
+  const naoBtn = $('[data-resposta="nao"]', el);
+  // "Sim" sem nenhuma avaria ainda só existe na tela (no rascunho vira "tem avarias" ao salvar a primeira).
+  let respondeuSim = false;
   let editorAberto = null; // { dialog, podeFechar() }
 
   async function desenhar() {
     const d = editor.rascunho.dados;
-    toggle.setAttribute("aria-checked", String(Boolean(d.semAvarias)));
-    // Com "Veículo sem avarias" ligado não faz sentido adicionar avaria: o botão some.
-    $('[data-acao="adicionar"]', el).hidden = Boolean(d.semAvarias);
+    const tem = !d.semAvarias && (respondeuSim || d.avarias.length > 0);
+    simBtn.setAttribute("aria-checked", String(tem));
+    naoBtn.setAttribute("aria-checked", String(Boolean(d.semAvarias)));
+    // Só com "Sim" aparecem a lista e o botão de adicionar.
+    $('[data-acao="adicionar"]', el).hidden = !tem;
     if (!d.avarias.length) {
-      lista.innerHTML = d.semAvarias ? "" : '<p class="texto-2">Nenhuma avaria registrada. Adicione as avarias encontradas ou marque “Veículo sem avarias”.</p>';
+      lista.innerHTML = tem ? '<p class="texto-2">Nenhuma avaria registrada ainda. Toque em “Adicionar avaria” para cada uma.</p>' : "";
       return;
     }
     const cartoes = await Promise.all(d.avarias.map(async (a, i) => {
@@ -261,9 +270,17 @@ export function montar(el, editor, ctx) {
   // ---------- Ações da etapa ----------
   el.addEventListener("click", async (e) => {
     const acao = e.target.closest("[data-acao]")?.dataset.acao;
-    if (e.target.closest("#sem-avarias")) {
+    const resposta = e.target.closest("[data-resposta]")?.dataset.resposta;
+    if (resposta === "sim") {
+      respondeuSim = true;
+      if (editor.rascunho.dados.semAvarias) await editor.alterar((dd) => { dd.semAvarias = false; }, { imediato: true });
+      await desenhar();
+      return;
+    }
+    if (resposta === "nao") {
       const d = editor.rascunho.dados;
-      const ligar = !d.semAvarias;
+      if (d.semAvarias) return;
+      const ligar = true;
       if (ligar && d.avarias.length) {
         const n = d.avarias.length;
         if (!(await ctx.confirmar({ titulo: `Remover ${n === 1 ? "a avaria registrada" : `as ${n} avarias registradas`}?`, texto: "Para marcar “Veículo sem avarias”, as avarias e as fotos delas serão apagadas.", ok: "Remover", perigo: true }))) return;
@@ -273,6 +290,7 @@ export function montar(el, editor, ctx) {
         dd.semAvarias = ligar;
         if (ligar) dd.avarias = [];
       }, { imediato: true });
+      respondeuSim = false;
       await desenhar();
       return;
     }

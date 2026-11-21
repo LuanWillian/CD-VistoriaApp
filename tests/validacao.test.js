@@ -63,7 +63,7 @@ test("checklist sem marcação vira uma linha agrupada", () => {
 test("avarias exigem o toggle ou ao menos uma avaria", () => {
   const a = completo();
   a.dados.semAvarias = false;
-  assert.deepEqual(faltandoParaFinalizar(a), [{ etapa: 3, campo: "sem-avarias", mensagem: "Confirme “Veículo sem avarias” ou adicione uma avaria" }]);
+  assert.deepEqual(faltandoParaFinalizar(a), [{ etapa: 3, campo: "sem-avarias", mensagem: "Responda se o veículo tem avarias e, se tiver, adicione cada uma" }]);
   a.dados.avarias = [{ id: "d1", area: "Capô", tipo: "Risco", gravidade: "Leve", descricao: "", fotos: [] }];
   assert.deepEqual(faltandoParaFinalizar(a), []);
 });
