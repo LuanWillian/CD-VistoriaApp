@@ -92,7 +92,7 @@ function montarCelular(el, ctx) {
         <p class="cm-sub">O que você quer fazer agora?</p>
       </div>
       <button class="cm-cartao cm-acao" id="btn-iniciar" type="button">
-        <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("carro")}</span>
+        <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("vistoriaLupa")}</span>
         <span class="cm-acao-texto"><span class="cm-acao-titulo">Iniciar vistoria</span><span class="cm-acao-sub">Registrar vistoria de saída</span></span>
         <span class="cm-acao-botao" aria-hidden="true">${icone("mais")}Nova</span>
       </button>

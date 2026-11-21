@@ -31,6 +31,7 @@ const ICONES = {
   imagem: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
   borracha: '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21M22 21H7M5 11l9 9"/>',
   busca: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  vistoriaLupa: '<circle cx="10.5" cy="10.5" r="7.5"/><path d="m21 21-5.2-5.2"/><path d="m7.2 10.6 2.3 2.3 4.3-4.6"/>',
   calendario: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   baixar: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
   carregando: '<path d="M21 12a9 9 0 1 1-6.2-8.6"/>',
