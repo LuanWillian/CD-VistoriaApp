@@ -14,7 +14,7 @@ const dataHoraCurta = (iso) => formatarDataHora(iso).replace(/^(\d{2}\/\d{2}\/)\
 
 export function seloDaLista(v) {
   if (v.status !== "sincronizada") return seloStatus(v.status);
-  return seloRecebimento(v, { curto: true }) || seloStatus(v.status);
+  return seloRecebimento(v, { soIcone: true }) || seloStatus(v.status);
 }
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["todos", "Todos"], ["personalizado", "Personalizado"]];

@@ -57,7 +57,7 @@ export async function montar(el, ctx) {
         <a class="cartao-vistoria-link" href="#/recebimento/${esc(v.id)}">
           <div class="thumb">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : icone("imagem", "ic ic-lg")}</div>
           <div class="cartao-info">
-            <span class="cm-item-topo"><span class="cm-item-titulo">${esc(veiculo)}</span>${seloRecebimento(v, { curto: true })}</span>
+            <span class="cm-item-topo"><span class="cm-item-titulo">${esc(veiculo)}</span>${seloRecebimento(v, { soIcone: true })}</span>
             <span class="cm-item-linha"><span class="chassi">${esc(v.chassi)}</span> · ${esc(nomeVistoria(v))}</span>
             <span class="cm-item-linha">${r ? `Recebido por ${esc(r.recebedorNome)} · ${formatarDataHora(r.recebidoEm)}` : `Enviada em ${formatarDataHora(v.realizadaEm)}`}</span>
           </div>

@@ -1030,6 +1030,8 @@ html:not(.computador) .sem-foto { color: #B8BEC7; }
 .cm-item-topo .selo { flex-shrink: 0; padding: 1px 8px; }
 html:not(.computador) .cm-item-topo .selo { gap: 3px; padding: 1px 6px; font-size: 11px; line-height: 16px; letter-spacing: -0.01em; }
 html:not(.computador) .cm-item-topo .selo .ic { width: 12px; height: 12px; }
+html:not(.computador) .cm-item-topo .selo.selo-so-icone { width: 26px; height: 26px; padding: 0; justify-content: center; border-radius: 999px; }
+html:not(.computador) .cm-item-topo .selo.selo-so-icone .ic { width: 16px; height: 16px; }
 .cm-item-titulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
 .cm-item-linha { font-size: 12px; color: var(--cinza); }
 .cm-linhas .chassi { font-family: var(--mono); font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--principal); }

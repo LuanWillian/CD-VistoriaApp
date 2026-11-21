@@ -11,9 +11,11 @@ const ICONE = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "a
 const ICONE_CURTO = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "alertaCirculo" };
 const TEXTO_CURTO = { aguardando: "Aguardando", conforme: "Nenhuma divergência", divergencia: "Com divergência" };
 
-export function seloRecebimento(v, { curto = false } = {}) {
+// soIcone: só o ícone, para as listas do celular (o modelo do carro precisa do espaço).
+export function seloRecebimento(v, { curto = false, soIcone = false } = {}) {
   const s = situacaoRecebimento(v);
   if (!s) return "";
+  if (soIcone) return `<span class="selo selo-receb-${s} selo-so-icone" role="img" aria-label="${STATUS_RECEBIMENTO[s]}" title="${STATUS_RECEBIMENTO[s]}">${icone(ICONE[s])}</span>`;
   return curto
     ? `<span class="selo selo-receb-${s}">${icone(ICONE_CURTO[s])} ${TEXTO_CURTO[s]}</span>`
     : `<span class="selo selo-receb-${s}">${icone(ICONE[s])} ${STATUS_RECEBIMENTO[s]}</span>`;
