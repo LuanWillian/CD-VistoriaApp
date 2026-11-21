@@ -1,7 +1,7 @@
 // Service Worker do CD Vistoria: guarda o app inteiro para abrir sem
 // internet. Troque CACHE_VERSION a cada deploy (o scripts/gerar-env.js faz isso
 // sozinho quando usado como comando de build no Netlify).
-const CACHE_VERSION = "v117";
+const CACHE_VERSION = "v118";
 const CACHE = `vistoria-${CACHE_VERSION}`;
 const LIMITE_ENV_MS = 3000;
 
@@ -62,6 +62,9 @@ const ARQUIVOS = [
   "vendor/fontes/IBMPlexSans-5.1.1-500.woff2",
   "vendor/fontes/IBMPlexSans-5.1.1-600.woff2",
   "vendor/fontes/IBMPlexSans-5.1.1-700.woff2",
+  "vendor/fontes/Satoshi-400.woff2",
+  "vendor/fontes/Satoshi-500.woff2",
+  "vendor/fontes/Satoshi-700.woff2",
   "icons/logo-32.png",
   "icons/logo-192.png",
   "icons/logo-512.png",
