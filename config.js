@@ -50,7 +50,7 @@ export const FOTO = { maxLado: 1280, qualidade: 0.7, miniLado: 320 };
 export const EMPRESA = {
   nome: "PG Prime",
   endereco: "Rodovia BR 101 KM 120 | Areia Branca, São José de Mipibu - RN",
-  rodape: "CD Vistoria",
+  rodape: "PG Prime Expedição",
 };
 // Fotos dentro do PDF
 export const PDF_FOTO = { maxLado: 1000, maxLadoMuitas: 800, limiteMuitas: 20, qualidade: 0.75 };

@@ -84,7 +84,7 @@ teste("pdf: sem avarias, número provisório e rodapé", async () => {
   const r = await gerarPdf(v, obter, { depurar: true });
   ok(r.paginas >= 1);
   for (const t of ["Vistoria de veículo para expedição do CD", "Veículo sem avarias registradas",
-    "CD Vistoria | Provisório 8F3A (aguardando sincronização) | Chassi AB123C", `Página ${r.paginas} de ${r.paginas}`]) {
+    "PG Prime Expedição | Provisório 8F3A (aguardando sincronização) | Chassi AB123C", `Página ${r.paginas} de ${r.paginas}`]) {
     ok(r.textos.some((x) => x.includes(t)), `faltou o texto: ${t}`);
   }
 });
@@ -92,7 +92,7 @@ teste("pdf: sem avarias, número provisório e rodapé", async () => {
 teste("pdf: número oficial no rodapé", async () => {
   const { v, obter } = await cenario({ avarias: 1, fotosPorAvaria: 1, numero: "VIS-000123" });
   const r = await gerarPdf(v, obter, { depurar: true });
-  ok(r.textos.includes("CD Vistoria | VIS-000123 | Chassi AB123C"), "rodapé com número oficial ausente");
+  ok(r.textos.includes("PG Prime Expedição | VIS-000123 | Chassi AB123C"), "rodapé com número oficial ausente");
   ok(r.textos.includes(`Página 1 de ${r.paginas}`), "numeração de página ausente");
 });
 
@@ -132,12 +132,12 @@ teste("pdf: visual do modelo — cabeçalho, dados na ordem pedida, checklist e 
   ok(!t.some((x) => x.includes("Laudo de Vistoria Veicular")), "título antigo ainda aparece");
 });
 
-teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorida e rodapé CD Vistoria", async () => {
+teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorida e rodapé PG Prime Expedição", async () => {
   const { v, obter } = await cenario({ avarias: 3, fotosPorAvaria: 1, numero: "VIS-000009" });
   const r = await gerarPdf(v, obter, { depurar: true });
   ok(r.familias.includes("Barlow") && r.familias.includes("BarlowSC"), `fontes registradas: ${r.familias}`);
   igual(r.fonteTitulo, "BarlowSC");
-  ok(r.textos.includes("CD Vistoria | VIS-000009 | Chassi AB123C"), "rodapé deveria dizer CD Vistoria");
+  ok(r.textos.includes("PG Prime Expedição | VIS-000009 | Chassi AB123C"), "rodapé deveria dizer PG Prime Expedição");
   ok(!r.textos.some((t) => t.includes("PG Prime Vistoria")), "ainda aparece PG Prime Vistoria");
   const cor = (nome) => r.selos.find((s) => s.texto === nome)?.fundo.join();
   igual(cor("Leve"), "245,196,0");
