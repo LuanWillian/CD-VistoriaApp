@@ -1,18 +1,33 @@
 // Quadro de assinatura com dedo, caneta ou mouse (Pointer Events).
 // O canvas usa a densidade de pixels da tela para o traço não ficar borrado
-// e devolve um PNG a cada traço concluído.
+// e devolve um PNG a cada traço concluído (exportarPng). aoTracar(temTraco) avisa
+// na hora, sem esperar o PNG: gerar a imagem da tela inteira é lento no celular.
+// limites() devolve a caixa do traço em pixels do canvas, para recortar sem ler a tela toda.
 
-export function montarAssinatura(canvas, { aoMudar }) {
+export function montarAssinatura(canvas, { aoMudar = () => {}, aoTracar = () => {}, exportarPng = true } = {}) {
   const g = canvas.getContext("2d");
   let desenhando = false;
   let temTraco = false;
   let copia = null; // ImageBitmap do conteúdo atual, para redesenhar ao redimensionar
   let ultimo = null;
+  let caixa = null; // { x0, y0, x1, y1 } em pixels do canvas
+  let caixaPerdida = false; // depois de redimensionar ou carregar, não dá mais para confiar na caixa
+
+  const LARGURA = 2.5;
+  function marcar([x, y]) {
+    if (caixaPerdida) return;
+    const dpr = window.devicePixelRatio || 1;
+    const folga = LARGURA / 2 + 1;
+    const x0 = Math.floor((x - folga) * dpr), y0 = Math.floor((y - folga) * dpr);
+    const x1 = Math.ceil((x + folga) * dpr), y1 = Math.ceil((y + folga) * dpr);
+    if (!caixa) caixa = { x0, y0, x1, y1 };
+    else caixa = { x0: Math.min(caixa.x0, x0), y0: Math.min(caixa.y0, y0), x1: Math.max(caixa.x1, x1), y1: Math.max(caixa.y1, y1) };
+  }
 
   canvas.classList.add("toque-livre");
 
   const estilo = () => {
-    g.lineWidth = 2.5;
+    g.lineWidth = LARGURA;
     g.lineCap = "round";
     g.lineJoin = "round";
     g.strokeStyle = "#111111";
@@ -43,6 +58,8 @@ export function montarAssinatura(canvas, { aoMudar }) {
     if (canvas.width === largura && canvas.height === altura) return;
     canvas.width = largura;
     canvas.height = altura;
+    caixa = null; // o desenho foi esticado para o novo tamanho: recorte volta a ler os pixels
+    caixaPerdida = temTraco;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     estilo();
     desenharCopia();
@@ -55,7 +72,7 @@ export function montarAssinatura(canvas, { aoMudar }) {
 
   function exportar() {
     createImageBitmap(canvas).then((b) => { copia = b; }).catch(() => {});
-    canvas.toBlob((blob) => aoMudar(blob), "image/png");
+    if (exportarPng) canvas.toBlob((blob) => aoMudar(blob), "image/png");
   }
 
   function aoDescer(e) {
@@ -64,6 +81,7 @@ export function montarAssinatura(canvas, { aoMudar }) {
     try { canvas.setPointerCapture(e.pointerId); } catch { /* evento sintético */ }
     desenhando = true;
     ultimo = ponto(e);
+    marcar(ultimo);
     g.beginPath();
     g.moveTo(...ultimo);
     g.lineTo(ultimo[0] + 0.01, ultimo[1]);
@@ -80,6 +98,7 @@ export function montarAssinatura(canvas, { aoMudar }) {
     g.quadraticCurveTo(ultimo[0], ultimo[1], meio[0], meio[1]);
     g.lineTo(...p);
     g.stroke();
+    marcar(p);
     ultimo = p;
   }
 
@@ -87,6 +106,7 @@ export function montarAssinatura(canvas, { aoMudar }) {
     if (!desenhando) return;
     desenhando = false;
     temTraco = true;
+    aoTracar(true);
     exportar();
   }
 
@@ -103,6 +123,9 @@ export function montarAssinatura(canvas, { aoMudar }) {
       limparPixels();
       temTraco = false;
       copia = null;
+      caixa = null;
+      caixaPerdida = false;
+      aoTracar(false);
       aoMudar(null);
     },
     async carregar(blob) {
@@ -111,8 +134,17 @@ export function montarAssinatura(canvas, { aoMudar }) {
       limparPixels();
       desenharCopia();
       temTraco = true;
+      caixa = null;
+      caixaPerdida = true;
     },
     vazio: () => !temTraco,
+    limites() {
+      if (!temTraco || !caixa || caixaPerdida) return null;
+      return {
+        x0: Math.max(0, caixa.x0), y0: Math.max(0, caixa.y0),
+        x1: Math.min(canvas.width - 1, caixa.x1), y1: Math.min(canvas.height - 1, caixa.y1),
+      };
+    },
     destruir() {
       observador?.disconnect();
       canvas.removeEventListener("pointerdown", aoDescer);

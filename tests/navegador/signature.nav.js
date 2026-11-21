@@ -82,3 +82,57 @@ teste("assinatura deitada: recorta em volta do traço e gira para ficar na horiz
   vazio.width = vazio.height = 50;
   igual(imagemFinal(vazio, { deitada: false }), null);
 });
+
+teste("assinatura: avisa na hora que tem traço e guarda os limites, sem gerar PNG a cada traço", async () => {
+  const original = Object.getOwnPropertyDescriptor(window, "devicePixelRatio");
+  Object.defineProperty(window, "devicePixelRatio", { configurable: true, get: () => 2 });
+  const { caixa, canvas } = quadro();
+  const tracos = [];
+  const pngs = [];
+  try {
+    const a = montarAssinatura(canvas, { aoTracar: (tem) => tracos.push(tem), aoMudar: (b) => pngs.push(b), exportarPng: false });
+    igual(a.limites(), null);
+    riscar(canvas);
+    igual(tracos, [true], "aoTracar deveria ser chamado no mesmo instante do pointerup");
+    const l = a.limites();
+    ok(l.x0 <= 40 && l.y0 <= 40 && l.x1 >= 440 && l.y1 >= 200, `limites errados: ${JSON.stringify(l)}`);
+    await new Promise((r) => setTimeout(r, 150));
+    igual(pngs.length, 0, "não deveria gerar PNG a cada traço");
+    a.limpar();
+    igual(tracos, [true, false]);
+    igual(a.limites(), null);
+    a.destruir();
+  } finally {
+    if (original) Object.defineProperty(window, "devicePixelRatio", original);
+    else delete window.devicePixelRatio;
+    caixa.remove();
+  }
+});
+
+teste("assinatura: com os limites do traço o recorte não precisa ler a tela inteira", async () => {
+  const { imagemFinal } = await import("../../assinatura-tela.js");
+  const c = document.createElement("canvas");
+  c.width = c.height = 400;
+  const m = Math.round(16 * (window.devicePixelRatio || 1));
+  const final = imagemFinal(c, { deitada: false, limites: { x0: 100, y0: 200, x1: 109, y1: 279 } });
+  igual(final.width, 10 + 2 * m);
+  igual(final.height, 80 + 2 * m);
+});
+
+teste("tela de assinatura: Confirmar libera no fim do traço e fecha na hora", async () => {
+  const { abrirTelaAssinatura } = await import("../../assinatura-tela.js");
+  const promessa = abrirTelaAssinatura({ titulo: "Teste" });
+  const d = document.querySelector("dialog.assinar");
+  try {
+    const confirmar = d.querySelector('[data-acao="confirmar"]');
+    igual(confirmar.disabled, true);
+    riscar(d.querySelector("canvas"));
+    igual(confirmar.disabled, false, "Confirmar deveria liberar no mesmo instante");
+    confirmar.click();
+    igual(d.open, false, "a tela deveria fechar no mesmo instante");
+    const blob = await promessa;
+    ok(blob instanceof Blob && blob.type === "image/png", "deveria devolver o PNG");
+  } finally {
+    if (d.isConnected) d.close();
+  }
+});

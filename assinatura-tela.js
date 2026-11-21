@@ -8,9 +8,8 @@ import { esc } from "./ui.js";
 
 const MARGEM = 16; // px de folga em volta do traço, na imagem final
 
-// Recorta em volta do traço e, se o quadro estava em pé (celular girado para a
-// esquerda), gira 90° no sentido anti-horário. Devolve um canvas ou null se vazio.
-export function imagemFinal(canvas, { deitada }) {
+// Caixa do traço lendo os pixels (lento no celular: só quando não há limites guardados).
+function caixaPelosPixels(canvas) {
   const { width: w, height: h } = canvas;
   const px = canvas.getContext("2d").getImageData(0, 0, w, h).data;
   let x0 = w, y0 = h, x1 = -1, y1 = -1;
@@ -23,7 +22,17 @@ export function imagemFinal(canvas, { deitada }) {
       if (y > y1) y1 = y;
     }
   }
-  if (x1 < 0) return null;
+  return x1 < 0 ? null : { x0, y0, x1, y1 };
+}
+
+// Recorta em volta do traço e, se o quadro estava em pé (celular girado para a
+// esquerda), gira 90° no sentido anti-horário. Devolve um canvas ou null se vazio.
+// limites: caixa do traço guardada enquanto a pessoa desenhava (evita ler a tela inteira).
+export function imagemFinal(canvas, { deitada, limites = null }) {
+  const { width: w, height: h } = canvas;
+  const caixa = limites || caixaPelosPixels(canvas);
+  if (!caixa) return null;
+  let { x0, y0, x1, y1 } = caixa;
   const m = Math.round(MARGEM * (window.devicePixelRatio || 1));
   x0 = Math.max(0, x0 - m);
   y0 = Math.max(0, y0 - m);
@@ -137,13 +146,12 @@ export function abrirTelaAssinatura({ titulo }) {
       if (acao === "cancelar") d.close();
       if (acao === "limpar") pad.limpar();
       if (acao === "confirmar" && !pad.vazio()) {
-        const final = imagemFinal(canvas, { deitada: d.classList.contains("deitada") });
+        const final = imagemFinal(canvas, { deitada: d.classList.contains("deitada"), limites: pad.limites() });
         if (!final) return;
         confirmar.disabled = true;
-        final.toBlob((blob) => {
-          resultado = blob;
-          d.close();
-        }, "image/png");
+        // Fecha na hora; o PNG (só do recorte, pequeno) termina em segundo plano.
+        resultado = new Promise((r) => final.toBlob(r, "image/png"));
+        d.close();
       }
     });
     d.addEventListener("close", () => {
@@ -157,7 +165,8 @@ export function abrirTelaAssinatura({ titulo }) {
     d.classList.toggle("deitada", innerHeight > innerWidth);
     document.body.append(d);
     d.showModal();
-    const pad = montarAssinatura(canvas, { aoMudar: (blob) => { confirmar.disabled = !blob; } });
+    // Confirmar libera no fim do traço; o PNG só é gerado ao confirmar.
+    const pad = montarAssinatura(canvas, { aoTracar: (tem) => { confirmar.disabled = !tem; }, exportarPng: false });
     addEventListener("resize", atualizarPosicao);
     trava.iniciar().then(() => { if (d.isConnected) atualizarPosicao(); });
   });
