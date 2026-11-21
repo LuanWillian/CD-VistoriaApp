@@ -1156,7 +1156,7 @@ html:not(.computador) .item-checklist legend { font-weight: 500; }
 html:not(.computador) .toggle { border: 1px solid var(--linha); border-radius: 10px; font-weight: 500; }
 html:not(.computador) .toggle[aria-checked="true"] { border-color: var(--ok); }
 html:not(.computador) .avaria-cartao { box-shadow: none; }
-html:not(.computador) .gravidade { border-width: 2px; border-radius: 8px; font-weight: 600; }
+html:not(.computador) .gravidade { border-width: 2px; border-radius: 14px; font-weight: 600; }
 html:not(.computador) .nome-da-conta { border: 1px solid var(--linha); border-radius: 8px; background: #F9FAFB; font-weight: 500; }
 html:not(.computador) .assinatura-previa { border: 1px dashed #D1D5DB; border-radius: 8px; }
 
