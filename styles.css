@@ -1362,3 +1362,9 @@ html:not(.computador) .status-rede[data-estado="offline"]::before, html.computad
 html:not(.computador) .btn-usuario-avatar, html.computador .btn-usuario-avatar { background: #0F172A; font-weight: 700; }
 html.computador .topo-nav { border-radius: 12px; }
 html.computador .topo-nav a { border-radius: 9px; }
+
+/* Linha "chassi · número · data hora" da lista: letras um pouco mais juntas (a Satoshi é
+   mais larga) e a data com a hora nunca se separam. */
+.cm-item-linha { letter-spacing: -0.01em; }
+.cm-linhas .cartao-vistoria .cm-item-linha:has(.cm-sem-quebra) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-sem-quebra { white-space: nowrap; }
