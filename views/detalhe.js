@@ -195,7 +195,6 @@ export async function montar(el, ctx, params) {
         <div id="faixa-nova" role="status" aria-live="polite"></div>
         <header class="cm-cartao cm-cabecalho">
           <div class="cm-cabecalho-linha">
-            <span class="cm-carro" aria-hidden="true">${icone("carro")}</span>
             <div class="cm-cabecalho-info">
               <div class="cm-titulo-linha">
                 <h1 class="cm-titulo">${esc(veiculo)}</h1>
@@ -318,7 +317,6 @@ export async function montar(el, ctx, params) {
         <div id="faixa-nova" role="status" aria-live="polite"></div>
         <header class="cb-cartao cb-cabecalho">
           <div class="cb-cabecalho-linha">
-            <div class="cb-carro" aria-hidden="true">${icone("carro")}</div>
             <div class="cb-cabecalho-info">
               <div class="cb-titulo-linha">
                 <h1 class="cb-titulo">${esc(veiculo)}</h1>

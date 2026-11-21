@@ -809,8 +809,6 @@ html.computador .db-rotulos span { flex: 1; min-width: 0; color: var(--cinza); f
 html.computador .cb-migalhas { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--texto-2); font-size: 13px; }
 html.computador #faixa-nova:empty { display: none; }
 html.computador .cb-cabecalho-linha { display: flex; align-items: center; gap: 24px; padding: 16px 20px; }
-html.computador .cb-carro { display: grid; place-items: center; flex-shrink: 0; width: 56px; height: 56px; border-radius: 10px; background: var(--fundo); color: var(--cinza); }
-html.computador .cb-carro .ic { width: 28px; height: 28px; }
 html.computador .cb-cabecalho-info { flex: 1; min-width: 0; }
 html.computador .cb-titulo-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 html.computador .cb-titulo { margin: 0; font-size: 22px; font-weight: 600; }
@@ -1060,8 +1058,6 @@ html:not(.computador) .periodo-personalizado .entrada { min-height: 40px; font-s
 html:not(.computador) #detalhe-numero { color: var(--principal); }
 html:not(.computador) #faixa-nova:empty { display: none; }
 .cm-cabecalho-linha { display: flex; gap: 12px; padding: 16px; }
-.cm-carro { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 10px; background: var(--fundo); color: var(--cinza); }
-.cm-carro .ic { width: 24px; height: 24px; }
 .cm-cabecalho-info { flex: 1; min-width: 0; }
 .cm-titulo-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .cm-titulo { font-size: 20px; font-weight: 600; line-height: 1.25; }
@@ -1340,8 +1336,8 @@ html:not(.computador) .topo-titulo, html.computador .topo-titulo { font-weight: 
 html:not(.computador) #etapa-conteudo > section > h2.titulo { font-weight: 700; letter-spacing: -0.01em; }
 
 /* Ícones em quadrado: canto de 16 px; o escuro com sombra, o claro cinza com borda */
-.cm-acao-ic, .cm-carro, html.computador .cb-carro { border-radius: 16px; }
-.cm-acao-ic:not(.cm-acao-escuro), .cm-carro, html.computador .cb-carro { border: 1px solid #F1F2F4; background: #F9FAFB; color: #4B5563; }
+.cm-acao-ic { border-radius: 16px; }
+.cm-acao-ic:not(.cm-acao-escuro) { border: 1px solid #F1F2F4; background: #F9FAFB; color: #4B5563; }
 .cm-acao-escuro { background: #0F172A; color: #fff; box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.35); }
 
 /* Botões: canto de 12 px, texto mais forte e efeito de "apertar" */
