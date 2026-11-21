@@ -218,7 +218,7 @@ function marcarNavTopo(nome) {
   }
 }
 
-// O título "PG Prime Expedição" vira o caminho de volta ao menu (em todos os ambientes).
+// O título "PG Prime Expedição CD" vira o caminho de volta ao menu (em todos os ambientes).
 function tituloComoLinkDoMenu(ligar) {
   const titulo = $(".topo-titulo");
   titulo.innerHTML = ligar
@@ -227,10 +227,10 @@ function tituloComoLinkDoMenu(ligar) {
     ? (() => {
       // Computador: o logo já é o link (sem seta). Conta de loja vai ao início dela.
       const loja = papelAtual() === "loja";
-      const rotulo = !desktop ? "PG Prime Expedição — voltar ao menu" : loja ? "PG Prime Expedição — ir para o início" : "PG Prime Expedição — ir para Vistorias";
-      return `<a class="topo-link" href="#/inicio" aria-label="${rotulo}">${desktop ? "" : icone("voltar", "ic topo-voltar")}<span>PG Prime Expedição</span></a>`;
+      const rotulo = !desktop ? "PG Prime Expedição CD — voltar ao menu" : loja ? "PG Prime Expedição CD — ir para o início" : "PG Prime Expedição CD — ir para Vistorias";
+      return `<a class="topo-link" href="#/inicio" aria-label="${rotulo}">${desktop ? "" : icone("voltar", "ic topo-voltar")}<span>PG Prime Expedição CD</span></a>`;
     })()
-    : "PG Prime Expedição";
+    : "PG Prime Expedição CD";
 }
 
 // App e celular: voltar ao menu pelo título volta no próprio histórico até o menu
