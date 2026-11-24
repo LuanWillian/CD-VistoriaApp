@@ -1550,3 +1550,81 @@ html.computador .login .rotulo { margin-bottom: 0; color: var(--mn-cinza); font-
 html.computador .login .campo + .campo { margin-top: 20px; }
 html.computador .login form .btn { height: 40px; min-height: 40px; margin-top: 24px; border-radius: 6px; font-size: 14px; font-weight: 500; }
 html.computador .login form .btn:active:not(:disabled) { transform: none; }
+
+
+/* =====================================================================
+   Computador — movimentos leves (24/11/2026)
+   Só para dar vida: entrada suave das partes, barras crescendo e
+   ícones que respondem ao mouse. Tudo curto (≤ 0,5 s) e sem exagero.
+   Quem pede "menos movimento" no sistema não vê nada disso (regra global).
+   ===================================================================== */
+@keyframes mn-surgir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes mn-aparecer { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mn-crescer { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
+@keyframes mn-pulso { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); } 70%, 100% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); } }
+
+/* Entrada: cabeçalho e cartões sobem 6 px e aparecem, um logo depois do outro */
+html.computador :is(.cb-pagina-cabeca, .cb-migalhas) { animation: mn-surgir 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+html.computador .cb-cartao { animation: mn-surgir 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) 0.05s both; }
+html.computador :is(.db-corpo, .cb-principal, .cb-lateral) > :nth-child(2) { animation-delay: 0.1s; }
+html.computador :is(.db-corpo, .cb-principal, .cb-lateral) > :nth-child(3) { animation-delay: 0.15s; }
+html.computador .cb-lateral > :nth-child(1) { animation-delay: 0.08s; }
+
+/* Linhas da tabela aparecem juntas, sem pular */
+html.computador .cb-tabela-vistorias tbody tr { animation: mn-aparecer 0.25s ease-out both; transition: background-color 0.15s; }
+
+/* Gráfico: as barras crescem de baixo para cima, uma depois da outra; os números aparecem no fim */
+html.computador .db-barra { transform-origin: bottom; animation: mn-crescer 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+html.computador .db-coluna:nth-child(1) .db-barra { animation-delay: 40ms; }
+html.computador .db-coluna:nth-child(2) .db-barra { animation-delay: 62ms; }
+html.computador .db-coluna:nth-child(3) .db-barra { animation-delay: 84ms; }
+html.computador .db-coluna:nth-child(4) .db-barra { animation-delay: 106ms; }
+html.computador .db-coluna:nth-child(5) .db-barra { animation-delay: 128ms; }
+html.computador .db-coluna:nth-child(6) .db-barra { animation-delay: 150ms; }
+html.computador .db-coluna:nth-child(7) .db-barra { animation-delay: 172ms; }
+html.computador .db-coluna:nth-child(8) .db-barra { animation-delay: 194ms; }
+html.computador .db-coluna:nth-child(9) .db-barra { animation-delay: 216ms; }
+html.computador .db-coluna:nth-child(10) .db-barra { animation-delay: 238ms; }
+html.computador .db-coluna:nth-child(11) .db-barra { animation-delay: 260ms; }
+html.computador .db-coluna:nth-child(12) .db-barra { animation-delay: 282ms; }
+html.computador .db-coluna:nth-child(13) .db-barra { animation-delay: 304ms; }
+html.computador .db-coluna:nth-child(14) .db-barra { animation-delay: 326ms; }
+html.computador .db-coluna:nth-child(15) .db-barra { animation-delay: 348ms; }
+html.computador .db-coluna:nth-child(16) .db-barra { animation-delay: 370ms; }
+html.computador .db-coluna:nth-child(17) .db-barra { animation-delay: 392ms; }
+html.computador .db-coluna:nth-child(18) .db-barra { animation-delay: 414ms; }
+html.computador .db-coluna:nth-child(19) .db-barra { animation-delay: 436ms; }
+html.computador .db-coluna:nth-child(20) .db-barra { animation-delay: 458ms; }
+html.computador .db-coluna:nth-child(21) .db-barra { animation-delay: 480ms; }
+html.computador .db-coluna:nth-child(22) .db-barra { animation-delay: 502ms; }
+html.computador .db-coluna:nth-child(23) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(24) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(25) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(26) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(27) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(28) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(29) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(30) .db-barra { animation-delay: 520ms; }
+html.computador .db-coluna:nth-child(31) .db-barra { animation-delay: 520ms; }
+html.computador .db-valor { animation: mn-aparecer 0.3s ease-out 0.45s both; }
+
+/* Ícones que respondem ao mouse */
+html.computador .cb-btn .ic, html.computador .cb-abrir .ic, html.computador .db-ind-ver .ic,
+html.computador .cb-migalhas .ic, html.computador .cb-pilula-seta, html.computador .db-ind-ic,
+html.computador .btn-usuario-seta { transition: transform 0.2s ease, color 0.15s; }
+html.computador #dash-atualizar:hover:not(:disabled) .ic { transform: rotate(-60deg); }
+html.computador #dash-atualizar:disabled .ic { animation: gira 0.9s linear infinite; }
+html.computador .cb-tabela-vistorias tbody tr:hover .cb-abrir .ic { transform: translateX(3px); }
+html.computador .db-ind-link:hover .db-ind-ver .ic { transform: translateX(3px); }
+html.computador .db-ind:hover .db-ind-ic { transform: translateY(-2px); color: var(--mn-texto); }
+html.computador .cb-migalhas a:hover .ic { transform: translateX(-3px); }
+html.computador .cb-pilula:hover .cb-pilula-seta { transform: translateY(1px); }
+html.computador .btn-usuario:hover .btn-usuario-seta { transform: translateY(1px); }
+html.computador #btn-baixar:hover:not(:disabled) .ic { transform: translateY(-1px); }
+
+/* Botões, abas e cartões com transição suave */
+html.computador :is(.cb-btn, .topo-nav a, .cb-pilula, .cb-segmentos button, .btn-usuario) { transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s; }
+html.computador .cb-cartao { transition: box-shadow 0.2s ease; }
+
+/* "Online": a bolinha pulsa devagar */
+html.computador .status-rede[data-estado="online"]::before { animation: mn-pulso 2.4s ease-out infinite; }
