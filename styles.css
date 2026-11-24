@@ -1391,7 +1391,7 @@ html.computador {
   --mn-texto-2: #4B5563;
   --mn-cinza: #6B7280;
 }
-html.computador body { background: #fff; color: var(--mn-texto); }
+html.computador body { background: #F6F7F9; color: var(--mn-texto); }
 html.computador .conteudo { max-width: 1440px; margin: 0 auto; padding: 40px 40px 56px; }
 
 /* ---------- Topo fino: nome, abas à esquerda; conexão e conta à direita ---------- */
@@ -1410,7 +1410,11 @@ html.computador .btn-usuario-avatar { width: 26px; height: 26px; border: 1px sol
 html.computador .btn-usuario-seta { color: #9CA3AF; }
 
 /* ---------- Peças comuns: sem cartões, botões finos ---------- */
-html.computador .cb-cartao, html.computador .cb-corpo .cb-cartao { background: none; border: 0; border-radius: 0; box-shadow: none; }
+/* Profundidade (24/11): fundo cinza claro e cada parte num cartão branco com sombra suave */
+html.computador .cb-cartao, html.computador .cb-corpo .cb-cartao {
+  background: #fff; border: 1px solid #EEF0F3; border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.05);
+}
 html.computador .cb-pagina-cabeca { align-items: flex-end; margin-bottom: 28px; }
 html.computador .cb-h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
 html.computador .cb-sub { margin-top: 4px; color: var(--mn-cinza); font-size: 13px; }
@@ -1449,7 +1453,7 @@ html.computador .cb-link:hover { text-decoration: underline; text-underline-offs
 html.computador .cb-data { height: 30px; border: 1px solid var(--mn-linha); border-radius: 6px; }
 
 /* ---------- Vistorias (views/painel.js) ---------- */
-html.computador .cb-tabela-cartao { margin-top: 0; }
+html.computador .cb-tabela-cartao { margin-top: 0; padding: 18px 20px 16px; }
 html.computador .cb-ferramentas { gap: 6px; padding: 0 0 14px; border-bottom: 1px solid var(--mn-linha); }
 html.computador .cb-busca { width: 300px; margin-right: 12px; }
 html.computador .cb-busca .ic { left: 0; color: #9CA3AF; }
@@ -1462,6 +1466,7 @@ html.computador .cb-tabela { font-size: 13px; }
 html.computador .cb-tabela th { color: var(--mn-cinza); font-size: 12px; font-weight: 500; }
 html.computador .cb-tabela td { border-top: 1px solid var(--mn-suave); }
 html.computador .cb-tabela-vistorias thead th { top: 56px; padding: 14px 8px; border-bottom: 1px solid var(--mn-linha); background: #fff; }
+html.computador .cb-btn:not(.cb-btn-primario) { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }
 html.computador .cb-tabela-vistorias td { height: 56px; padding: 0 8px; }
 html.computador .cb-tabela-vistorias tbody tr:first-child td { border-top: 0; }
 html.computador .cb-tabela-vistorias :is(th, td).cb-col-sel { padding-left: 4px; }
@@ -1474,8 +1479,8 @@ html.computador .cb-abrir:hover { background: var(--mn-ativo); color: var(--mn-t
 html.computador .cb-paginacao { padding: 16px 4px 0; border-top: 1px solid var(--mn-linha); color: var(--mn-cinza); }
 
 /* ---------- Dashboard (views/dashboard.js) ---------- */
-html.computador .db-corpo { gap: 40px; }
-html.computador .db-faixa { gap: 0; padding: 28px 0; border-top: 1px solid var(--mn-linha); border-bottom: 1px solid var(--mn-linha); background: none; }
+html.computador .db-corpo { gap: 16px; }
+html.computador .db-faixa { gap: 0; padding: 24px; background: #fff; }
 html.computador .db-ind { padding: 0 24px; border-left: 1px solid var(--mn-linha); background: none; }
 html.computador .db-ind:first-child { padding-left: 0; border-left: 0; }
 html.computador .db-ind-link:hover { background: none; }
@@ -1485,7 +1490,7 @@ html.computador .db-ind-num { margin-top: 10px; font-size: 30px; font-weight: 60
 html.computador .db-ind-linha { color: var(--mn-cinza); }
 html.computador .db-ind-ver { color: var(--mn-texto); text-decoration: none; }
 html.computador .db-ind-link:hover .db-ind-ver { text-decoration: underline; text-underline-offset: 3px; }
-html.computador .db-volume { padding: 0; }
+html.computador .db-volume { padding: 22px 24px 18px; }
 html.computador .db-volume h2 { font-size: 15px; }
 html.computador .db-barra { border-radius: 2px 2px 0 0; background: #E5E7EB; }
 html.computador .db-coluna:hover .db-barra:not(.db-barra-pico) { background: #D1D5DB; }
@@ -1493,12 +1498,14 @@ html.computador .db-barra-pico { background: var(--mn-texto); }
 
 /* ---------- Vistoria do veículo (views/detalhe.js) ---------- */
 html.computador .cb-migalhas { margin-bottom: 20px; color: var(--mn-cinza); }
-html.computador .cb-cabecalho-linha { padding: 0 0 28px; }
+html.computador .cb-cabecalho-linha { padding: 20px 24px; }
+html.computador .cb-cabecalho { margin-bottom: 16px; }
 html.computador .cb-titulo { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
 html.computador .cb-titulo-linha { gap: 8px 16px; }
 html.computador .cb-meta { margin-top: 8px; gap: 4px 16px; color: var(--mn-cinza); }
-html.computador .cb-corpo { column-gap: 48px; row-gap: 0; }
-html.computador .cb-principal, html.computador .cb-lateral { gap: 40px; }
+html.computador .cb-corpo { column-gap: 16px; row-gap: 16px; }
+html.computador .cb-principal, html.computador .cb-lateral { gap: 16px; }
+html.computador .cb-corpo .cb-cartao { padding: 18px 20px 20px; }
 html.computador .cb-cartao-cabeca { padding: 0 0 12px; border-bottom: 0; }
 html.computador .cb-cartao-cabeca h2 { color: var(--mn-texto); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 html.computador .cb-titulo-extra { letter-spacing: 0.06em; }
