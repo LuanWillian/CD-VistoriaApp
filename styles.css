@@ -1403,7 +1403,7 @@ html.computador .topo-nav a { height: 28px; min-height: 28px; padding: 0 12px; b
 html.computador .topo-nav a[aria-current="page"] { background: var(--mn-ativo); color: var(--mn-texto); }
 @media (hover: hover) { html.computador .topo-nav a:not([aria-current="page"]):hover { background: none; color: var(--mn-texto); } }
 html.computador .topo-nav-ic { display: none; }
-html.computador .status-rede { gap: 6px; padding-right: 20px; border-right: 1px solid var(--mn-linha); color: var(--mn-cinza); font-size: 12px; line-height: 16px; }
+html.computador .status-rede { gap: 6px; padding-right: 20px; border-right: 1px solid var(--mn-linha); border-radius: 0; color: var(--mn-cinza); font-size: 12px; line-height: 16px; }
 html.computador .btn-usuario { height: 32px; min-height: 32px; padding: 0 4px; gap: 8px; border: 0; border-radius: 6px; background: none; color: var(--mn-texto-2); font-size: 13px; font-weight: 500; }
 html.computador .btn-usuario:active, html.computador .btn-usuario:hover { background: var(--mn-hover); }
 html.computador .btn-usuario-avatar { width: 26px; height: 26px; border: 1px solid var(--mn-linha); background: var(--mn-ativo); color: var(--mn-texto-2); font-size: 10px; font-weight: 600; }
