@@ -1703,3 +1703,198 @@ html.computador .db-coluna:not(.db-coluna-vazia):hover .db-barra { transform: tr
 html.computador .db-coluna:not(.db-coluna-vazia):hover .db-barra:not(.db-barra-pico) { background: #9CA3AF; }
 html.computador .db-coluna:not(.db-coluna-vazia):hover .db-valor { transform: translate(-50%, -6px) scale(1.15); color: var(--mn-texto); font-weight: 700; }
 html.computador .db-colunas:has(.db-coluna:not(.db-coluna-vazia):hover) .db-coluna:not(:hover) :is(.db-barra, .db-valor) { opacity: 0.4; }
+
+/* =====================================================================
+   Celular — estilo minimalista "lista limpa" (Opção 3 do Superdesign, 24/11/2026)
+   Página branca sem cartões soltos; os blocos são grupos cinza (#F4F4F5) de canto
+   16 px com divisórias finas, como a tela de Ajustes do celular. Botões em pílula,
+   ícones em círculo, campos cinza sem borda (brancos dentro dos grupos).
+   Só preto, branco e cinza; cor só para status e gravidade. IBM Plex Sans.
+   Vale só fora do computador (html:not(.computador)), exceto .cm-grupo, que a
+   conta de loja também vê no computador.
+   ===================================================================== */
+.cm-grupo { overflow: hidden; background: #fff; border: 1px solid var(--linha); border-radius: 12px; }
+.cm-grupo > * + * { border-top: 1px solid var(--linha); }
+.cm-grupo > .cm-acao { border-radius: 0; }
+
+html:not(.computador) {
+  --cl-grupo: #F4F4F5;
+  --cl-toque: #E9EAEC;
+  --cl-linha: #E4E7EB;
+  --cl-texto: #111827;
+  --cl-2: #4B5563;
+  --cl-3: #6B7280;
+  --principal: #111827;
+  --texto: #111827;
+  --acento: #111827;
+}
+html:not(.computador) body { font-family: "IBM Plex Sans", system-ui, sans-serif; background: #fff; color: var(--cl-texto); }
+
+/* ---------- Topo: nome no centro, "Online" embaixo dele, conta em círculo à direita ---------- */
+html:not(.computador) .topo { position: sticky; justify-content: flex-end; padding-right: 8px; background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid #F1F2F4; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+html:not(.computador) .topo-titulo {
+  position: absolute; left: 64px; right: 64px; top: calc(env(safe-area-inset-top, 0px) + 6px);
+  text-align: center; font-size: 16px; font-weight: 600; line-height: 22px; letter-spacing: -0.01em;
+}
+html:not(.computador) .topo:has(.status-rede[hidden]) .topo-titulo { top: calc(env(safe-area-inset-top, 0px) + 17px); }
+html:not(.computador) .topo-link { min-height: 0; padding: 0; }
+html:not(.computador) .status-rede {
+  position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 29px); transform: translateX(-50%);
+  gap: 5px; min-height: 0; padding: 0; background: none; color: var(--cl-3); font-size: 13px; font-weight: 500; line-height: 18px;
+}
+html:not(.computador) .status-rede::before { width: 6px; height: 6px; }
+html:not(.computador) .btn-usuario:has(.btn-usuario-nome[hidden]) { width: 44px; height: 44px; min-height: 44px; }
+html:not(.computador) .btn-usuario-avatar { width: 32px; height: 32px; box-shadow: none; font-weight: 600; }
+html:not(.computador) .btn-usuario-pessoa { width: 22px; height: 22px; }
+
+/* ---------- Títulos ---------- */
+html:not(.computador) .cm-h1 { font-size: 30px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+html:not(.computador) .cm-sub { margin-top: 4px; font-size: 14px; color: var(--cl-2); }
+html:not(.computador) .titulo { font-weight: 600; letter-spacing: -0.01em; }
+html:not(.computador) .subtitulo { font-weight: 600; }
+
+/* "‹ Início" / "‹ Vistorias": pílula cinza */
+html:not(.computador) .cm-voltar,
+html:not(.computador) .cm-migalhas a {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 14px 0 10px; border-radius: 999px;
+  background: var(--cl-grupo); color: var(--cl-texto); font-size: 14px; font-weight: 500; text-decoration: none; -webkit-tap-highlight-color: transparent;
+}
+html:not(.computador) .cm-voltar:active, html:not(.computador) .cm-migalhas a:active { background: var(--cl-toque); }
+html:not(.computador) .cm-voltar + .cm-pagina-cabeca { margin-top: 16px; }
+
+/* ---------- Grupos (no lugar dos cartões brancos com borda) ---------- */
+html:not(.computador) :is(.cm-cartao, .cm-grupo, .cartao, .secao, .etapas),
+html:not(.computador) #etapa-conteudo > section {
+  border: 0; border-radius: 16px; box-shadow: none; background: var(--cl-grupo);
+}
+html:not(.computador) .cm-grupo > * + * { border-top: 1px solid var(--cl-linha); }
+html:not(.computador) .cm-cartao-cabeca { padding: 12px 16px; border-bottom: 1px solid var(--cl-linha); }
+html:not(.computador) .cm-cartao-cabeca :is(h2, h3) { color: var(--cl-2); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+/* Dentro de um grupo cinza, o que é "cartão" fica branco */
+html:not(.computador) :is(.cm-cartao:not(.cm-lista-cartao), #etapa-conteudo > section, .cheio-corpo) .cartao { background: #fff; }
+
+/* ---------- Botões em pílula ---------- */
+html:not(.computador) .btn { min-height: 48px; border-width: 1px; border-radius: 999px; font-weight: 500; }
+html:not(.computador) .btn-primario { background: var(--cl-texto); }
+html:not(.computador) .btn-secundario { background: #fff; border-color: var(--cl-linha); color: var(--cl-texto); }
+html:not(.computador) .btn-perigo { background: #fff; border-color: var(--cl-linha); }
+html:not(.computador) .cm-btn { min-height: 40px; padding: 8px 16px; border-radius: 999px; }
+html:not(.computador) :is(.barra-acoes, .cheio-rodape, .cm-acoes) { background: rgba(255, 255, 255, 0.96); border-top-color: #F1F2F4; }
+html:not(.computador) .barra-acoes .btn, html:not(.computador) .cm-acoes .btn { min-height: 48px; }
+
+/* ---------- Campos: cinza sem borda; brancos dentro dos grupos ---------- */
+html:not(.computador) .entrada { min-height: 48px; border: 1px solid transparent; border-radius: 14px; background-color: var(--cl-grupo); }
+html:not(.computador) :is(.cm-cartao:not(.cm-lista-cartao), #etapa-conteudo > section, .cartao) .entrada { background-color: #fff; }
+html:not(.computador) .entrada:focus { border-color: var(--cl-texto); background-color: #fff; box-shadow: 0 0 0 3px var(--halo); }
+html:not(.computador) .entrada[aria-invalid="true"] { border-color: var(--erro); }
+html:not(.computador) .busca-campo .entrada, html:not(.computador) .cm-ferramentas .busca-campo .entrada { min-height: 44px; border-color: transparent; border-radius: 999px; background-color: var(--cl-grupo); }
+html:not(.computador) .cm-ferramentas .busca-campo .entrada:focus { border-color: var(--cl-texto); background-color: #fff; }
+html:not(.computador) .rotulo { color: var(--cl-texto); font-size: 14px; font-weight: 500; }
+html:not(.computador) .nome-da-conta { border: 0; border-radius: 14px; background: #fff; }
+
+/* ---------- Pílulas de filtro e controles segmentados ---------- */
+html:not(.computador) .chip { border: 1px solid transparent; background: var(--cl-grupo); color: var(--cl-texto); font-weight: 500; }
+html:not(.computador) .chip:not([aria-checked="true"]):active { background: var(--cl-toque); }
+html:not(.computador) .segmentado { gap: 4px; padding: 4px; border: 0; border-radius: 999px; background: #fff; }
+html:not(.computador) .segmentado button { min-height: 40px; border-radius: 999px; background: transparent; color: var(--cl-2); }
+html:not(.computador) .segmentado button + button { border-left: 0; }
+html:not(.computador) .segmentado button[aria-checked="true"][data-valor="presente"] { background: var(--cl-texto); color: #fff; }
+html:not(.computador) .segmentado button[aria-checked="true"][data-valor="ausente"] { background: var(--erro-fundo); color: var(--erro); }
+html:not(.computador) .pergunta-avarias .segmentado { gap: 8px; padding: 0; background: transparent; }
+html:not(.computador) .pergunta-avarias .segmentado button { min-height: 48px; background: #fff; color: var(--cl-texto); }
+html:not(.computador) .pergunta-avarias .segmentado button[aria-checked="true"] { background: var(--cl-texto); color: #fff; }
+html:not(.computador) .receb-abas { gap: 4px; padding: 4px; border: 0; border-radius: 999px; background: var(--cl-grupo); box-shadow: none; }
+html:not(.computador) .receb-abas [role="tab"] { border-radius: 999px; }
+html:not(.computador) .gravidade { border-radius: 999px; }
+html:not(.computador) .toggle { border-radius: 999px; }
+
+/* ---------- Selos, avisos e faixas ---------- */
+html:not(.computador) .selo { border-radius: 999px; }
+html:not(.computador) .aviso { border-radius: 16px; }
+html:not(.computador) .faixa-status { border-radius: 14px; }
+html:not(.computador) .miniatura { border-radius: 12px; }
+html:not(.computador) dialog:not(.cheio):not(.assinar):not(.visualizador) { border-radius: 24px; }
+
+/* ---------- Início: lista agrupada, ícones em círculo ---------- */
+html:not(.computador) .cm-inicio { gap: 24px; padding-top: 8px; }
+html:not(.computador) .cm-grupo .cm-acao { min-height: 76px; gap: 14px; padding: 12px 16px; border: 0; background: transparent; }
+html:not(.computador) .cm-grupo .cm-acao + .cm-acao { border-top: 1px solid var(--cl-linha); }
+html:not(.computador) .cm-acao:active { background: var(--cl-toque); transform: none; }
+html:not(.computador) .cm-acao-ic { width: 44px; height: 44px; border: 0; border-radius: 50%; background: #fff; color: var(--cl-2); box-shadow: none; }
+html:not(.computador) .cm-acao-ic .ic { width: 22px; height: 22px; }
+html:not(.computador) .cm-acao-escuro { background: var(--cl-texto); color: #fff; box-shadow: none; }
+html:not(.computador) .cm-acao-titulo { font-size: 16px; font-weight: 500; letter-spacing: 0; }
+html:not(.computador) .cm-acao-sub { font-size: 13px; color: var(--cl-3); }
+html:not(.computador) .cm-acao-seta { color: #9CA3AF; }
+
+/* ---------- Lista de vistorias e recebimentos ---------- */
+html:not(.computador) .cm-lista-cartao { overflow: visible; background: transparent; border-radius: 0; }
+html:not(.computador) .cm-ferramentas { gap: 12px; padding: 0 0 16px; border-bottom: 0; }
+html:not(.computador) .cm-pilulas { margin: 0 -16px; padding: 0 16px; }
+html:not(.computador) .cm-pilulas .chip { min-height: 36px; }
+html:not(.computador) .cm-lista-status { padding: 0 4px 8px; }
+html:not(.computador) .cm-linhas { overflow: hidden; border-radius: 16px; background: var(--cl-grupo); }
+html:not(.computador) .cm-linhas .cartao-vistoria { padding: 12px 16px; border-radius: 0; background: transparent; }
+html:not(.computador) .cm-linhas .cartao-vistoria + .cartao-vistoria { border-top: 1px solid var(--cl-linha); }
+html:not(.computador) .cm-linhas .cartao-vistoria-link { grid-template-columns: 48px minmax(0, 1fr); gap: 14px; align-items: center; }
+html:not(.computador) .cm-linhas .thumb { width: 48px; height: 48px; border-radius: 50%; background: #fff; color: var(--cl-3); }
+html:not(.computador) .cm-linhas .thumb .ic { width: 20px; height: 20px; }
+html:not(.computador) .cm-linhas .cartao-vistoria-link:active { background: var(--cl-toque); }
+html:not(.computador) .cm-item-titulo { font-size: 15px; font-weight: 500; }
+html:not(.computador) .cm-rodape { padding: 12px 4px 0; border-top: 0; }
+html:not(.computador) .cm-rascunhos .subtitulo { color: var(--cl-2); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* ---------- Vistoria do veículo ---------- */
+html:not(.computador) .cm-detalhe { gap: 16px; }
+html:not(.computador) .cm-cabecalho { background: transparent; }
+html:not(.computador) .cm-cabecalho-linha { padding: 0; }
+html:not(.computador) .cm-titulo { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+html:not(.computador) .cm-corpo { gap: 16px; }
+html:not(.computador) .cm-dados { padding: 16px; }
+html:not(.computador) .cm-aviso-azul { border: 0; border-radius: 16px; background: var(--cl-grupo); }
+html:not(.computador) .cm-receb-divergencia { border-radius: 12px; }
+html:not(.computador) :is(.cm-assinatura, .cm-receb-assinatura) { border-color: #D1D5DB; border-radius: 12px; background: #fff; }
+html:not(.computador) .cm-checklist li { border-bottom-color: var(--cl-linha); }
+html:not(.computador) .cm-avarias > li + li { border-top-color: var(--cl-linha); }
+html:not(.computador) .cm-foto figcaption { border-radius: 999px; }
+
+/* ---------- Nova vistoria: etapas em círculos ligados por uma linha ---------- */
+html:not(.computador) .etapas { gap: 0; margin: 16px 0 20px; padding: 0; background: transparent; border-radius: 0; }
+html:not(.computador) .etapa-btn { position: relative; justify-items: center; gap: 6px; min-height: 52px; padding: 0; color: var(--cl-3); font-size: 13px; font-weight: 500; }
+html:not(.computador) .etapa-btn::before {
+  content: ""; position: absolute; top: 13px; left: -50%; right: 50%; height: 2px; border-radius: 0; background: var(--cl-linha);
+}
+html:not(.computador) .etapa-btn:first-child::before { display: none; }
+html:not(.computador) .etapa-num {
+  position: relative; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px;
+  border: 0; border-radius: 50%; background: var(--cl-linha); color: var(--cl-2); font-size: 13px; font-weight: 600; box-shadow: 0 0 0 4px #fff;
+}
+html:not(.computador) .etapa-num .ic { width: 14px; height: 14px; }
+html:not(.computador) .etapa-btn[data-situacao="completa"] { color: var(--cl-texto); }
+html:not(.computador) :is(.etapa-btn[data-situacao="completa"], .etapa-btn[aria-current="step"]) .etapa-num { background: var(--cl-texto); color: #fff; box-shadow: 0 0 0 4px #fff; }
+html:not(.computador) :is(.etapa-btn[data-situacao="completa"], .etapa-btn[aria-current="step"])::before { background: var(--cl-texto); }
+html:not(.computador) .etapa-btn[aria-current="step"] { color: var(--cl-texto); font-weight: 600; }
+html:not(.computador) #etapa-conteudo > section > :first-child { border-bottom-color: var(--cl-linha); }
+html:not(.computador) #etapa-conteudo > section .secao[data-bloco] + .secao[data-bloco] { border-top-color: var(--cl-linha); }
+html:not(.computador) #etapa-conteudo .etapa-bloco-separado { border-top: 0; }
+html:not(.computador) .item-checklist { border-bottom-color: var(--cl-linha); }
+html:not(.computador) .foto-alvo { border: 1px dashed #C7CDD6; border-radius: 14px; background: #fff; }
+html:not(.computador) .foto-alvo.cheia { border: 0; }
+html:not(.computador) .assinatura-previa { border-color: #D1D5DB; border-radius: 14px; background: #fff; }
+
+/* ---------- Janelas de tela cheia (Nova avaria, Registrar recebimento) ---------- */
+html:not(.computador) .cheio-topo { background: #fff; border-bottom-color: #F1F2F4; }
+html:not(.computador) .cheio-corpo { background: #fff; }
+html:not(.computador) .cheio-topo .btn-topo { width: 40px; height: 40px; border-radius: 50%; background: var(--cl-grupo); color: var(--cl-texto); }
+html:not(.computador) .receb-opcoes [role="radio"] { min-height: 52px; border-color: transparent; border-radius: 999px; background: #fff; }
+html:not(.computador) .cm-foto-add { border-radius: 14px; background: #fff; }
+html:not(.computador) .receb-form .assinatura-ver { border-radius: 14px; background: #fff; }
+
+/* ---------- Entrar ---------- */
+html:not(.computador) .login { max-width: 400px; margin: 10vh auto 0; }
+html:not(.computador) .login-marca { flex-direction: column; gap: 16px; margin-bottom: 28px; color: var(--cl-texto); font-size: 30px; font-weight: 600; letter-spacing: -0.02em; text-align: center; }
+html:not(.computador) .login-marca img { width: 72px; height: 72px; border-radius: 20px; }
+html:not(.computador) .login .titulo { font-size: 20px; }
+html:not(.computador) .login .texto-2 { margin-top: 2px; color: var(--cl-3); font-size: 14px; }
+html:not(.computador) .login form { margin-top: 24px; }
+html:not(.computador) .login form .btn { min-height: 52px; margin-top: 24px; }

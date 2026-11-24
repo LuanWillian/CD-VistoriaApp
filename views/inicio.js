@@ -63,11 +63,13 @@ function montarLoja(el, ctx) {
         <h1 class="cm-h1" id="home-titulo">${nome ? `Olá, ${esc(nome)}` : "Olá!"}</h1>
         <p class="cm-sub">${usuario?.loja ? `${icone("fachada")} ${esc(usuario.loja)}` : "Carros enviados pelo CD para a sua loja."}</p>
       </div>
-      <button class="cm-cartao cm-acao" id="btn-recebimentos" type="button">
-        <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("fachada")}</span>
-        <span class="cm-acao-texto"><span class="cm-acao-titulo">Recebimentos</span><span class="cm-acao-sub" id="receb-contagem">Ver os carros a receber</span></span>
-        ${icone("avancar", "ic cm-acao-seta")}
-      </button>
+      <div class="cm-grupo">
+        <button class="cm-acao" id="btn-recebimentos" type="button">
+          <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("fachada")}</span>
+          <span class="cm-acao-texto"><span class="cm-acao-titulo">Recebimentos</span><span class="cm-acao-sub" id="receb-contagem">Ver os carros a receber</span></span>
+          ${icone("avancar", "ic cm-acao-seta")}
+        </button>
+      </div>
     </section>`;
   el.querySelector("#btn-recebimentos").addEventListener("click", () => ctx.navegar("#/recebimentos"));
   let ativo = true;
@@ -91,16 +93,18 @@ function montarCelular(el, ctx) {
         <h1 class="cm-h1" id="home-titulo">${nome ? `Olá, ${esc(nome)}` : "Olá!"}</h1>
         <p class="cm-sub">O que você quer fazer agora?</p>
       </div>
-      <button class="cm-cartao cm-acao" id="btn-iniciar" type="button">
-        <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("vistoriaLupa")}</span>
-        <span class="cm-acao-texto"><span class="cm-acao-titulo">Iniciar vistoria</span><span class="cm-acao-sub">Registrar saída</span></span>
-        <span class="cm-acao-botao" aria-hidden="true">${icone("mais")}Nova</span>
-      </button>
-      <button class="cm-cartao cm-acao" id="btn-vistorias" type="button">
-        <span class="cm-acao-ic" aria-hidden="true">${icone("lista")}</span>
-        <span class="cm-acao-texto"><span class="cm-acao-titulo">Vistorias</span><span class="cm-acao-sub">Ver todas as vistorias feitas</span></span>
-        ${icone("avancar", "ic cm-acao-seta")}
-      </button>
+      <div class="cm-grupo">
+        <button class="cm-acao" id="btn-iniciar" type="button">
+          <span class="cm-acao-ic cm-acao-escuro" aria-hidden="true">${icone("vistoriaLupa")}</span>
+          <span class="cm-acao-texto"><span class="cm-acao-titulo">Iniciar vistoria</span><span class="cm-acao-sub">Registrar saída</span></span>
+          ${icone("avancar", "ic cm-acao-seta")}
+        </button>
+        <button class="cm-acao" id="btn-vistorias" type="button">
+          <span class="cm-acao-ic" aria-hidden="true">${icone("lista")}</span>
+          <span class="cm-acao-texto"><span class="cm-acao-titulo">Vistorias</span><span class="cm-acao-sub">Ver todas as vistorias feitas</span></span>
+          ${icone("avancar", "ic cm-acao-seta")}
+        </button>
+      </div>
     </section>`;
 
   el.querySelector("#btn-iniciar").addEventListener("click", () => ctx.navegar("#/nova"));
