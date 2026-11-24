@@ -300,13 +300,16 @@ function abrirMenu() {
         <button type="button" class="menu-item" data-acao="sair">${icone("sair")} Sair</button>
       </div>`;
     menu.addEventListener("click", async (e) => {
-      if (e.target === menu) { menu.close(); return; }
+      if (e.target === menu) { fecharMenu(); return; }
       const acao = e.target.closest("[data-acao]")?.dataset.acao;
       if (!acao) return;
-      menu.close();
+      await fecharMenu();
       if (acao === "sair") sairDoApp();
       if (acao === "instalar") window.dispatchEvent(new CustomEvent("vistoria:instalar"));
     });
+    // Esc também fecha com a animação.
+    menu.addEventListener("cancel", (e) => { e.preventDefault(); fecharMenu(); });
+    menu.addEventListener("close", () => $("#btn-menu").setAttribute("aria-expanded", "false"));
     document.body.append(menu);
   }
   $("#menu-nome", menu).textContent = ctx.auth.usuarioAtual()?.nome || "";
@@ -314,7 +317,32 @@ function abrirMenu() {
   $("#menu-email", menu).textContent = ctx.auth.usuarioAtual()?.email || "";
   // Navegador do computador: sem opção de instalar o app.
   $('[data-acao="instalar"]', menu).hidden = desktop || !window.__podeInstalar;
+  menu.classList.remove("fechando");
   menu.showModal();
+  $("#btn-menu").setAttribute("aria-expanded", "true");
+}
+
+// Computador: o menu da conta some com uma animação curta (styles.css, "menu da
+// conta") antes de fechar. Celular e quem pede menos movimento: fecha na hora.
+function fecharMenu() {
+  if (!menu?.open) return Promise.resolve();
+  if (!desktop || matchMedia("(prefers-reduced-motion: reduce)").matches) { menu.close(); return Promise.resolve(); }
+  if (menu.classList.contains("fechando")) return new Promise((ok) => menu.addEventListener("close", ok, { once: true }));
+  menu.classList.add("fechando");
+  return new Promise((ok) => {
+    let feito = false;
+    const aoTerminar = (e) => { if (e.target === menu) fim(); }; // ignora as animações das opções
+    const fim = () => {
+      if (feito) return;
+      feito = true;
+      menu.removeEventListener("animationend", aoTerminar);
+      menu.classList.remove("fechando");
+      menu.close();
+      ok();
+    };
+    menu.addEventListener("animationend", aoTerminar);
+    setTimeout(fim, 260);
+  });
 }
 
 async function sairDoApp() {

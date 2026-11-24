@@ -1898,3 +1898,51 @@ html:not(.computador) .login .titulo { font-size: 20px; }
 html:not(.computador) .login .texto-2 { margin-top: 2px; color: var(--cl-3); font-size: 14px; }
 html:not(.computador) .login form { margin-top: 24px; }
 html:not(.computador) .login form .btn { min-height: 52px; margin-top: 24px; }
+
+/* =====================================================================
+   Computador — menu da conta animado (24/11/2026)
+   Ao clicar no bonequinho da conta: o avatar "aperta" e solta um anel, fica
+   preto enquanto o menu está aberto e a setinha vira para cima; o menu desce
+   do botão (cresce a partir do canto de cima à direita) e as opções entram
+   uma depois da outra. Ao fechar, o menu sobe e some rápido (app.js, fecharMenu).
+   Quem pede "menos movimento" no sistema não vê nada disso (regra global).
+   ===================================================================== */
+html.computador { --mn-mola: cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes mn-conta-aperto { 0% { transform: scale(1); } 35% { transform: scale(0.84); } 100% { transform: scale(1); } }
+@keyframes mn-conta-anel { from { box-shadow: 0 0 0 0 rgba(17, 24, 39, 0.3); } to { box-shadow: 0 0 0 9px rgba(17, 24, 39, 0); } }
+@keyframes mn-menu-abrir { from { opacity: 0; transform: translateY(-8px) scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes mn-menu-fechar { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px) scale(0.96); } }
+@keyframes mn-fundo-entrar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mn-fundo-sair { from { opacity: 1; } to { opacity: 0; } }
+@keyframes mn-menu-item { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* Botão da conta */
+html.computador .btn-usuario-avatar { transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+html.computador .btn-usuario[aria-expanded="true"] { background: var(--mn-ativo); color: var(--mn-texto); }
+html.computador .btn-usuario[aria-expanded="true"] .btn-usuario-avatar {
+  border-color: var(--mn-texto); background: var(--mn-texto); color: #fff;
+  animation: mn-conta-aperto 0.4s var(--mn-mola), mn-conta-anel 0.6s ease-out;
+}
+html.computador .btn-usuario[aria-expanded="true"] .btn-usuario-pessoa { animation: mn-conta-aperto 0.4s var(--mn-mola); }
+html.computador .btn-usuario[aria-expanded="true"] .btn-usuario-seta { transform: rotate(180deg); color: var(--mn-texto); }
+
+/* Menu: cartão branco que desce do botão */
+html.computador dialog.menu {
+  min-width: 240px; margin: 60px 24px auto auto; padding: 0;
+  border: 1px solid var(--mn-linha); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.12), 0 2px 6px rgba(17, 24, 39, 0.06);
+  transform-origin: top right;
+}
+html.computador dialog.menu::backdrop { background: rgba(17, 24, 39, 0.06); }
+html.computador dialog.menu[open] { animation: mn-menu-abrir 0.28s var(--mn-suave-saida) both; }
+html.computador dialog.menu[open]::backdrop { animation: mn-fundo-entrar 0.2s ease both; }
+html.computador dialog.menu.fechando { animation: mn-menu-fechar 0.16s ease-in both; }
+html.computador dialog.menu.fechando::backdrop { animation: mn-fundo-sair 0.16s ease-in both; }
+html.computador dialog.menu[open] .menu-lista > * { animation: mn-menu-item 0.32s var(--mn-suave-saida) both; }
+html.computador dialog.menu[open] .menu-lista > :nth-child(2) { animation-delay: 50ms; }
+html.computador dialog.menu[open] .menu-lista > :nth-child(3) { animation-delay: 100ms; }
+html.computador dialog.menu.fechando .menu-lista > * { animation: none; }
+html.computador dialog.menu .menu-item { border-radius: 8px; font-size: 14px; font-weight: 500; transition: background-color 0.15s ease; }
+html.computador dialog.menu .menu-item:hover { background: var(--mn-hover); }
+html.computador dialog.menu .menu-item .ic { transition: transform 0.3s var(--mn-suave-saida); }
+html.computador dialog.menu .menu-item:hover .ic { transform: translateX(3px); }
