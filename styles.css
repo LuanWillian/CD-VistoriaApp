@@ -1603,7 +1603,7 @@ html.computador .db-ind:nth-child(4) .db-ind-num { animation-delay: 0.15s; }
 html.computador .db-ind:nth-child(5) .db-ind-num { animation-delay: 0.2s; }
 
 /* Gráfico: barras crescem da esquerda para a direita; o número aparece quando a barra chega */
-html.computador .db-barra { transform-origin: bottom; animation: mn-crescer 0.7s var(--mn-suave-saida) both; }
+html.computador .db-barra { transform-origin: bottom; animation: mn-crescer 0.7s var(--mn-suave-saida) backwards; }
 html.computador .db-coluna:nth-child(1) .db-barra { animation-delay: 60ms; }
 html.computador .db-coluna:nth-child(2) .db-barra { animation-delay: 84ms; }
 html.computador .db-coluna:nth-child(3) .db-barra { animation-delay: 108ms; }
@@ -1635,7 +1635,7 @@ html.computador .db-coluna:nth-child(28) .db-barra { animation-delay: 600ms; }
 html.computador .db-coluna:nth-child(29) .db-barra { animation-delay: 600ms; }
 html.computador .db-coluna:nth-child(30) .db-barra { animation-delay: 600ms; }
 html.computador .db-coluna:nth-child(31) .db-barra { animation-delay: 600ms; }
-html.computador .db-valor { animation: mn-valor 0.35s var(--mn-suave-saida) both; }
+html.computador .db-valor { animation: mn-valor 0.35s var(--mn-suave-saida) backwards; }
 html.computador .db-coluna:nth-child(1) .db-valor { animation-delay: 440ms; }
 html.computador .db-coluna:nth-child(2) .db-valor { animation-delay: 464ms; }
 html.computador .db-coluna:nth-child(3) .db-valor { animation-delay: 488ms; }
@@ -1708,3 +1708,20 @@ html.computador .cb-cartao:hover { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
 
 /* "Online": a bolinha pulsa devagar */
 html.computador .status-rede[data-estado="online"]::before { animation: mn-pulso 2.6s ease-out infinite; }
+
+/* ---------- Gráfico: ao passar o mouse numa barra ----------
+   A coluna ganha um fundo bem leve, a barra cresce um pouco e escurece,
+   o número sobe e aumenta, e as outras barras ficam mais apagadas.
+   (As animações de entrada usam "backwards" para o hover poder mexer no transform.) */
+html.computador .db-coluna::before {
+  content: ""; position: absolute; inset: -6px 8%; z-index: 0; border-radius: 8px;
+  background: rgba(15, 23, 42, 0.035); opacity: 0; transform: scaleY(0.96); transform-origin: bottom;
+  transition: opacity 0.25s ease, transform 0.35s var(--mn-suave-saida); pointer-events: none;
+}
+html.computador .db-coluna:not(.db-coluna-vazia):hover::before { opacity: 1; transform: none; }
+html.computador .db-barra { z-index: 1; transition: transform 0.35s var(--mn-suave-saida), background-color 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease; }
+html.computador .db-valor { transition: transform 0.35s var(--mn-suave-saida), color 0.2s ease, opacity 0.25s ease; }
+html.computador .db-coluna:not(.db-coluna-vazia):hover .db-barra { transform: translateX(-50%) scale(1.12, 1.04); box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12); }
+html.computador .db-coluna:not(.db-coluna-vazia):hover .db-barra:not(.db-barra-pico) { background: #9CA3AF; }
+html.computador .db-coluna:not(.db-coluna-vazia):hover .db-valor { transform: translate(-50%, -6px) scale(1.15); color: var(--mn-texto); font-weight: 700; }
+html.computador .db-colunas:has(.db-coluna:not(.db-coluna-vazia):hover) .db-coluna:not(:hover) :is(.db-barra, .db-valor) { opacity: 0.4; }
