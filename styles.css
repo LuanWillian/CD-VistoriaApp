@@ -1524,3 +1524,18 @@ html.computador .cb-checklist li { min-height: 0; padding: 5px 0; border-bottom:
 html.computador .cb-checklist :is(.cb-ok, .cb-ausente) { font-size: 12px; font-weight: 500; }
 html.computador .cb-checklist .cb-ausente { padding: 0; background: none; color: #B91C1C; }
 html.computador .cb-obs { margin-top: 10px; font-size: 12px; color: var(--mn-texto-2); }
+
+/* Login do navegador no mesmo estilo (fundo branco, campos e botão finos) */
+html.computador body.no-login .conteudo { padding-top: 0; }
+html.computador .login { max-width: 360px; margin: 14vh auto 0; }
+html.computador .login-marca { gap: 10px; margin-bottom: 40px; color: var(--mn-texto); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+html.computador .login-marca img { width: 32px; height: 32px; border: 1px solid var(--mn-linha); border-radius: 6px; }
+html.computador .login .titulo { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+html.computador .login .texto-2 { margin-top: 6px; color: var(--mn-cinza); font-size: 13px; }
+html.computador .login form { margin-top: 28px; }
+html.computador .login .campo + .campo { margin-top: 16px; }
+html.computador .login .rotulo { color: var(--mn-texto); font-size: 13px; font-weight: 500; }
+html.computador .login .entrada { height: 40px; min-height: 40px; padding: 0 12px; border: 1px solid var(--linha-forte); border-radius: 6px; font-size: 14px; box-shadow: none; }
+html.computador .login .entrada:focus { border-color: var(--mn-texto); box-shadow: 0 0 0 3px var(--mn-ativo); outline: none; }
+html.computador .login form .btn { height: 40px; min-height: 40px; margin-top: 24px; border-radius: 6px; font-size: 14px; font-weight: 500; }
+html.computador .login form .btn:active:not(:disabled) { transform: none; }
