@@ -1374,3 +1374,153 @@ html.computador .topo-nav a { border-radius: 9px; }
 .cm-item-linha { letter-spacing: -0.01em; }
 .cm-linhas .cartao-vistoria .cm-item-linha:has(.cm-sem-quebra) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cm-sem-quebra { white-space: nowrap; }
+
+/* =====================================================================
+   Computador — estilo minimalista e corporativo (23/11/2026)
+   Desenhos do Superdesign: Vistorias 5ce15005, Dashboard ae0345f5,
+   Vistoria do veículo 900631c3. Fundo branco, sem cartões nem sombras,
+   divisórias finas, situação como ponto colorido + texto. Só estilo:
+   o HTML das telas não muda. O topo fica sem logo (pedido do usuário).
+   ===================================================================== */
+html.computador {
+  --mn-linha: #E5E7EB;
+  --mn-suave: #F1F2F4;
+  --mn-hover: #F9FAFB;
+  --mn-ativo: #F3F4F6;
+  --mn-texto: #111827;
+  --mn-texto-2: #4B5563;
+  --mn-cinza: #6B7280;
+}
+html.computador body { background: #fff; color: var(--mn-texto); }
+html.computador .conteudo { max-width: 1440px; margin: 0 auto; padding: 40px 40px 56px; }
+
+/* ---------- Topo fino: nome, abas à esquerda; conexão e conta à direita ---------- */
+html.computador .topo { height: 56px; padding: 0 24px; gap: 28px; background: #fff; border-bottom: 1px solid var(--mn-linha); }
+html.computador .topo-titulo { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+html.computador .topo:has(.topo-nav:not([hidden])) .topo-link::after { content: none; }
+html.computador .topo-nav { position: static; transform: none; gap: 4px; padding: 0; background: none; border: 0; border-radius: 0; }
+html.computador .topo-nav a { height: 28px; min-height: 28px; padding: 0 12px; border-radius: 6px; color: var(--mn-cinza); font-size: 13px; font-weight: 500; }
+html.computador .topo-nav a[aria-current="page"] { background: var(--mn-ativo); color: var(--mn-texto); }
+@media (hover: hover) { html.computador .topo-nav a:not([aria-current="page"]):hover { background: none; color: var(--mn-texto); } }
+html.computador .topo-nav-ic { display: none; }
+html.computador .status-rede { gap: 6px; padding-right: 20px; border-right: 1px solid var(--mn-linha); color: var(--mn-cinza); font-size: 12px; line-height: 16px; }
+html.computador .btn-usuario { height: 32px; min-height: 32px; padding: 0 4px; gap: 8px; border: 0; border-radius: 6px; background: none; color: var(--mn-texto-2); font-size: 13px; font-weight: 500; }
+html.computador .btn-usuario:active, html.computador .btn-usuario:hover { background: var(--mn-hover); }
+html.computador .btn-usuario-avatar { width: 26px; height: 26px; border: 1px solid var(--mn-linha); background: var(--mn-ativo); color: var(--mn-texto-2); font-size: 10px; font-weight: 600; }
+html.computador .btn-usuario-seta { color: #9CA3AF; }
+
+/* ---------- Peças comuns: sem cartões, botões finos ---------- */
+html.computador .cb-cartao, html.computador .cb-corpo .cb-cartao { background: none; border: 0; border-radius: 0; box-shadow: none; }
+html.computador .cb-pagina-cabeca { align-items: flex-end; margin-bottom: 28px; }
+html.computador .cb-h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+html.computador .cb-sub { margin-top: 4px; color: var(--mn-cinza); font-size: 13px; }
+html.computador .cb-btn { height: 32px; padding: 0 12px; gap: 6px; border: 1px solid var(--mn-linha); border-radius: 6px; background: #fff; color: var(--mn-texto); font-size: 13px; font-weight: 500; }
+html.computador .cb-btn:active:not(:disabled) { transform: none; }
+html.computador .cb-btn:hover:not(:disabled) { background: var(--mn-hover); border-color: #D1D5DB; }
+html.computador .cb-btn-primario { border-color: var(--mn-texto); background: var(--mn-texto); color: #fff; }
+html.computador .cb-btn-primario:hover:not(:disabled) { border-color: #000; background: #000; }
+html.computador .cb-btn-perigo { color: var(--erro); }
+html.computador h2 { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+
+/* Situação: ponto colorido + texto (sem fundo). Gravidade continua em pílula. */
+html.computador .selo:not(.selo-leve, .selo-moderada, .selo-grave) { gap: 7px; padding: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 500; }
+html.computador .selo:not(.selo-leve, .selo-moderada, .selo-grave) .ic { display: none; }
+html.computador .selo:not(.selo-leve, .selo-moderada, .selo-grave)::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+html.computador .selo-receb-aguardando, html.computador .selo-pendente { color: #B45309; }
+html.computador .selo-receb-conforme, html.computador .selo-sincronizada { color: #15803D; }
+html.computador .selo-receb-divergencia, html.computador .selo-erro { color: #B91C1C; }
+html.computador :is(.selo-leve, .selo-moderada, .selo-grave) { padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+html.computador .selo-leve { background: #FEF3C7; color: #92400E; }
+html.computador .selo-moderada { background: #FFEDD5; color: #9A3412; }
+html.computador .selo-grave { background: #FEE2E2; color: #991B1B; }
+
+/* Filtros como texto: pílulas sem borda; a escolhida fica sublinhada em preto */
+html.computador .cb-pilula, html.computador .cb-pilula[data-ativa] { height: 28px; padding: 0 6px; gap: 5px; border: 0; border-radius: 0; background: none; color: var(--mn-cinza); font-size: 13px; font-weight: 500; }
+html.computador .cb-pilula[data-ativa] { color: var(--mn-texto); box-shadow: inset 0 -2px 0 var(--mn-texto); }
+html.computador .cb-pilula:hover { color: var(--mn-texto); }
+html.computador .cb-pilula-ic { color: #9CA3AF; }
+html.computador .cb-segmentos { gap: 2px; overflow: visible; border: 0; border-radius: 0; background: none; }
+html.computador .cb-segmentos button, html.computador .cb-segmentos button[aria-checked="true"] { height: 28px; padding: 0 8px; border: 0; background: none; color: var(--mn-cinza); font-size: 13px; font-weight: 500; }
+html.computador .cb-segmentos button + button { border-left: 0; }
+html.computador .cb-segmentos button[aria-checked="true"] { color: var(--mn-texto); box-shadow: inset 0 -2px 0 var(--mn-texto); }
+html.computador .cb-segmentos button:hover { color: var(--mn-texto); }
+html.computador .cb-link { color: var(--mn-texto); font-size: 13px; text-decoration: none; }
+html.computador .cb-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+html.computador .cb-data { height: 30px; border: 1px solid var(--mn-linha); border-radius: 6px; }
+
+/* ---------- Vistorias (views/painel.js) ---------- */
+html.computador .cb-tabela-cartao { margin-top: 0; }
+html.computador .cb-ferramentas { gap: 6px; padding: 0 0 14px; border-bottom: 1px solid var(--mn-linha); }
+html.computador .cb-busca { width: 300px; margin-right: 12px; }
+html.computador .cb-busca .ic { left: 0; color: #9CA3AF; }
+html.computador .cb-busca input { height: 30px; padding: 0 8px 0 26px; border: 0; border-radius: 0; background: none; font-size: 13px; }
+html.computador .cb-busca input:focus { box-shadow: inset 0 -1px 0 var(--mn-texto); }
+html.computador .cb-divisor { height: 16px; margin: 0 8px 0 0; background: var(--mn-linha); }
+html.computador .cb-datas { padding: 12px 0; border-bottom: 1px solid var(--mn-linha); }
+html.computador .cb-selecao { padding: 8px 4px; border-bottom: 1px solid var(--mn-linha); background: var(--mn-hover); }
+html.computador .cb-tabela { font-size: 13px; }
+html.computador .cb-tabela th { color: var(--mn-cinza); font-size: 12px; font-weight: 500; }
+html.computador .cb-tabela td { border-top: 1px solid var(--mn-suave); }
+html.computador .cb-tabela-vistorias thead th { top: 56px; padding: 14px 8px; border-bottom: 1px solid var(--mn-linha); background: #fff; }
+html.computador .cb-tabela-vistorias td { height: 56px; padding: 0 8px; }
+html.computador .cb-tabela-vistorias tbody tr:first-child td { border-top: 0; }
+html.computador .cb-tabela-vistorias :is(th, td).cb-col-sel { padding-left: 4px; }
+html.computador .cb-tabela-vistorias td.cb-col-acao { padding-right: 4px; }
+html.computador .cb-tabela-vistorias tbody tr:hover { background: var(--mn-hover); }
+html.computador .cb-tabela-vistorias tbody tr.cb-marcada { background: var(--mn-ativo); }
+html.computador .cb-tabela-vistorias input[type="checkbox"] { accent-color: var(--mn-texto); }
+html.computador .cb-abrir { color: #9CA3AF; }
+html.computador .cb-abrir:hover { background: var(--mn-ativo); color: var(--mn-texto); }
+html.computador .cb-paginacao { padding: 16px 4px 0; border-top: 1px solid var(--mn-linha); color: var(--mn-cinza); }
+
+/* ---------- Dashboard (views/dashboard.js) ---------- */
+html.computador .db-corpo { gap: 40px; }
+html.computador .db-faixa { gap: 0; padding: 28px 0; border-top: 1px solid var(--mn-linha); border-bottom: 1px solid var(--mn-linha); background: none; }
+html.computador .db-ind { padding: 0 24px; border-left: 1px solid var(--mn-linha); background: none; }
+html.computador .db-ind:first-child { padding-left: 0; border-left: 0; }
+html.computador .db-ind-link:hover { background: none; }
+html.computador .db-ind-rot { color: var(--mn-cinza); font-size: 12px; font-weight: 500; }
+html.computador .db-ind-ic { width: 15px; height: 15px; color: var(--mn-cinza); }
+html.computador .db-ind-num { margin-top: 10px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+html.computador .db-ind-linha { color: var(--mn-cinza); }
+html.computador .db-ind-ver { color: var(--mn-texto); text-decoration: none; }
+html.computador .db-ind-link:hover .db-ind-ver { text-decoration: underline; text-underline-offset: 3px; }
+html.computador .db-volume { padding: 0; }
+html.computador .db-volume h2 { font-size: 15px; }
+html.computador .db-barra { border-radius: 2px 2px 0 0; background: #E5E7EB; }
+html.computador .db-coluna:hover .db-barra:not(.db-barra-pico) { background: #D1D5DB; }
+html.computador .db-barra-pico { background: var(--mn-texto); }
+
+/* ---------- Vistoria do veículo (views/detalhe.js) ---------- */
+html.computador .cb-migalhas { margin-bottom: 20px; color: var(--mn-cinza); }
+html.computador .cb-cabecalho-linha { padding: 0 0 28px; }
+html.computador .cb-titulo { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+html.computador .cb-titulo-linha { gap: 8px 16px; }
+html.computador .cb-meta { margin-top: 8px; gap: 4px 16px; color: var(--mn-cinza); }
+html.computador .cb-corpo { column-gap: 48px; row-gap: 0; }
+html.computador .cb-principal, html.computador .cb-lateral { gap: 40px; }
+html.computador .cb-cartao-cabeca { padding: 0 0 12px; border-bottom: 0; }
+html.computador .cb-cartao-cabeca h2 { color: var(--mn-texto); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+html.computador .cb-titulo-extra { letter-spacing: 0.06em; }
+html.computador .cb-cartao-corpo { padding: 0; }
+html.computador .cb-foto .miniatura { height: 180px; border-radius: 4px; background: var(--mn-ativo); }
+html.computador .cb-foto figcaption { color: var(--mn-cinza); }
+html.computador .det-avarias .cb-cartao-cabeca { padding: 0 0 12px; }
+html.computador .cb-avarias { border: 1px solid var(--mn-linha); border-radius: 6px; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+html.computador .cb-avarias thead tr { background: var(--mn-hover); }
+html.computador .cb-avarias th { border-bottom: 1px solid var(--mn-linha); }
+html.computador .cb-avarias tbody tr:first-child td { border-top: 0; }
+html.computador .cb-faixa { width: 3px; border-radius: 0; }
+html.computador .cb-assinatura { height: 64px; border: 0; border-bottom: 1px solid #D1D5DB; border-radius: 0; }
+html.computador .cb-dados { grid-template-columns: 1fr; gap: 0; }
+html.computador .cb-dados > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--mn-suave); }
+html.computador .cb-dados dt { color: var(--mn-cinza); font-size: 13px; }
+html.computador .cb-dados dd { text-align: right; font-weight: 500; }
+html.computador .cb-receb-arquivos .miniatura { border-radius: 4px; }
+html.computador .cb-receb-assinatura { border: 0; border-bottom: 1px solid #D1D5DB; border-radius: 0; }
+/* Checklist compacto: duas colunas de linhas baixas (pedido: estava muito grande) */
+html.computador .cb-checklist { column-gap: 20px; font-size: 12px; line-height: 1.3; }
+html.computador .cb-checklist li { min-height: 0; padding: 5px 0; border-bottom: 1px solid var(--mn-suave); }
+html.computador .cb-checklist :is(.cb-ok, .cb-ausente) { font-size: 12px; font-weight: 500; }
+html.computador .cb-checklist .cb-ausente { padding: 0; background: none; color: #B91C1C; }
+html.computador .cb-obs { margin-top: 10px; font-size: 12px; color: var(--mn-texto-2); }
