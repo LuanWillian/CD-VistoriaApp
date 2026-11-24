@@ -260,7 +260,12 @@ export function abrirVisualizador(fotos, indice = 0, { grande = false, origem = 
     aplicar();
   }, { passive: false });
   const rolagemAntes = document.documentElement.style.overflow;
+  // Celular e app: a barra de status fica preta junto com o visualizador (volta ao fechar).
+  const corDoSistema = document.querySelector('meta[name="theme-color"]');
+  const corAntes = corDoSistema?.content;
+  if (!grande && corDoSistema) corDoSistema.content = "#000000";
   d.addEventListener("close", () => {
+    if (!grande && corDoSistema) corDoSistema.content = corAntes;
     d.remove();
     if (grande) {
       document.documentElement.style.overflow = rolagemAntes;

@@ -142,7 +142,10 @@ export async function montar(el, ctx, params) {
       if (e === n) b.setAttribute("aria-current", "step");
       else b.removeAttribute("aria-current");
       const nome = ETAPAS[e - 1].nome;
-      b.setAttribute("aria-label", `Etapa ${e}: ${nome}${sit === "completa" ? ", completa" : ""}${e === n ? ", atual" : ""}`);
+      // Etapa que já ficou para trás com algo faltando: marcada em vermelho no indicador.
+      const faltando = sit !== "completa" && e < n;
+      b.toggleAttribute("data-faltando", faltando);
+      b.setAttribute("aria-label", `Etapa ${e}: ${nome}${sit === "completa" ? ", completa" : ""}${faltando ? ", falta preencher" : ""}${e === n ? ", atual" : ""}`);
       $(".etapa-num", b).innerHTML = sit === "completa" && e !== n ? icone("check", "ic") : String(e);
     });
   }

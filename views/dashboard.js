@@ -36,6 +36,8 @@ function aplicarMedidas(el) {
   $$("[data-largura]", el).forEach((b) => { b.style.width = `${b.dataset.largura}%`; });
   $$("[data-altura]", el).forEach((b) => { b.style.height = `${b.dataset.altura}%`; });
   $$("[data-baixo]", el).forEach((b) => { b.style.bottom = `${b.dataset.baixo}%`; });
+  // Posição de cada coluna do gráfico: o CSS usa --i para as barras entrarem em sequência.
+  $$(".db-coluna", el).forEach((c, i) => { c.style.setProperty("--i", i); });
 }
 const pctDe = (v, max) => (max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0).toFixed(2);
 

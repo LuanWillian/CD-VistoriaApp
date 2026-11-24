@@ -97,6 +97,28 @@
     return true;
   }
 
+  // Começa a baixar as fontes junto com a página (antes a letra trocava e o texto
+  // "pulava" quando a fonte chegava). Computador usa Satoshi; celular e app, IBM Plex Sans.
+  function precarregarFontes(amb, doc) {
+    doc = doc || globalThis.document;
+    // Este arquivo roda duas vezes (script do <head> e import do dispositivo.js): só a primeira vale.
+    if (!doc || !doc.head || doc.querySelector("link[data-fonte-app]")) return [];
+    var arquivos = isDesktopBrowser(amb)
+      ? ["Satoshi-400", "Satoshi-500", "Satoshi-700"]
+      : ["IBMPlexSans-5.1.1-400", "IBMPlexSans-5.1.1-500", "IBMPlexSans-5.1.1-600"];
+    return arquivos.map(function (nome) {
+      var link = doc.createElement("link");
+      link.rel = "preload";
+      link.as = "font";
+      link.type = "font/woff2";
+      link.crossOrigin = "anonymous";
+      link.href = "vendor/fontes/" + nome + ".woff2";
+      link.setAttribute("data-fonte-app", "");
+      doc.head.appendChild(link);
+      return link.href;
+    });
+  }
+
   globalThis.CDModo = {
     MODOS_INSTALADO: MODOS_INSTALADO,
     ambienteDoNavegador: ambienteDoNavegador,
@@ -107,8 +129,10 @@
     isDesktopBrowser: isDesktopBrowser,
     marcarModoApp: marcarModoApp,
     bloquearZoom: bloquearZoom,
+    precarregarFontes: precarregarFontes,
   };
 
   try { marcarModoApp(); } catch (e) { /* sem DOM (testes) ou sem matchMedia: segue como navegador */ }
   try { bloquearZoom(); } catch (e) { /* idem */ }
+  try { precarregarFontes(); } catch (e) { /* idem */ }
 })();

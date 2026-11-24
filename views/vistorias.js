@@ -14,7 +14,7 @@ const dataHoraCurta = (iso) => formatarDataHora(iso).replace(/^(\d{2}\/\d{2}\/)\
 
 export function seloDaLista(v) {
   if (v.status !== "sincronizada") return seloStatus(v.status);
-  return seloRecebimento(v, { soIcone: true }) || seloStatus(v.status);
+  return seloRecebimento(v, { lista: true }) || seloStatus(v.status);
 }
 
 const PERIODOS = [["hoje", "Hoje"], ["7d", "7 dias"], ["30d", "30 dias"], ["todos", "Todos"], ["personalizado", "Personalizado"]];
@@ -23,7 +23,8 @@ const RECEBIMENTOS = [["", "Recebimento"], ["aguardando", "Aguardando"], ["confo
 export async function montar(el, ctx) {
   const usuario = ctx.auth.usuarioAtual();
   const urls = [];
-  const estado = { busca: "", recebimento: "", periodo: "todos", de: "", ate: "", pagina: 0, temMais: false, remotos: [], falhaRemota: false };
+  const estado = { busca: "", recebimento: "", periodo: "todos", de: "", ate: "", pagina: 0, temMais: false, remotos: null, falhaRemota: false };
+  // remotos: null = o servidor ainda não respondeu (mostra "Carregando…", nunca "Nenhuma vistoria").
   let ativo = true;
   let geracao = 0;
 
@@ -94,7 +95,7 @@ export async function montar(el, ctx) {
       const r = await ctx.remoto.listarVistorias({ pagina, busca: estado.busca, de, ate });
       estado.pagina = pagina;
       estado.temMais = r.temMais;
-      estado.remotos = reiniciar ? r.itens : [...estado.remotos, ...r.itens];
+      estado.remotos = reiniciar ? r.itens : [...(estado.remotos || []), ...r.itens];
       estado.falhaRemota = false;
       for (const item of r.itens) {
         if (!(await ctx.storage.obterVistoria(item.id))) await ctx.storage.salvarVistoria(item);
@@ -187,7 +188,7 @@ export async function montar(el, ctx) {
     const locais = (await ctx.storage.listarVistorias(usuario.id)).filter((v) => v.status !== "excluindo");
     let itens;
     if (ctx.online() && !estado.falhaRemota) {
-      const porId = new Map(estado.remotos.map((v) => [v.id, v]));
+      const porId = new Map((estado.remotos || []).map((v) => [v.id, v]));
       for (const v of locais) {
         if (porId.has(v.id)) porId.set(v.id, juntarComServidor(porId.get(v.id), v));
         else if (v.status !== "sincronizada" && filtrarLocal(v)) porId.set(v.id, v);
@@ -205,8 +206,19 @@ export async function montar(el, ctx) {
     if (!ativo || minha !== geracao) return;
 
     const filtrando = estado.busca.trim() || estado.periodo !== "todos" || estado.recebimento;
+    // Servidor ainda sem resposta: "Carregando…" (e não "Nenhuma vistoria ainda").
+    const buscando = ctx.online() && !estado.falhaRemota && estado.remotos === null;
+    const falhou = ctx.online() && estado.falhaRemota;
     if (!itens.length) {
-      if (filtrando) lista.innerHTML = '<div class="vazio">Nenhuma vistoria encontrada para essa busca.</div>';
+      if (buscando) lista.innerHTML = carregandoHtml("Carregando vistorias…");
+      else if (falhou) {
+        lista.innerHTML = `
+          <div class="vazio">
+            <p class="titulo">Não foi possível carregar as vistorias</p>
+            <p>O servidor não respondeu. Confira a internet e tente de novo.</p>
+            <button type="button" class="btn btn-secundario" data-recarregar>${icone("atualizar")} Tentar de novo</button>
+          </div>`;
+      } else if (filtrando) lista.innerHTML = '<div class="vazio">Nenhuma vistoria encontrada para essa busca.</div>';
       else if (!ctx.online() && !locais.length) lista.innerHTML = '<div class="vazio">Sem internet. As vistorias aparecem aqui quando você se conectar.</div>';
       else {
         lista.innerHTML = `
@@ -225,11 +237,19 @@ export async function montar(el, ctx) {
     contador.textContent = `Mostrando ${itens.length} ${itens.length === 1 ? "vistoria" : "vistorias"}`;
     status.textContent = !ctx.online()
       ? "Offline: mostrando as vistorias guardadas neste aparelho."
-      : estado.falhaRemota ? "Não foi possível atualizar a lista agora. Mostrando as vistorias deste aparelho." : "";
+      : falhou && itens.length ? "Não foi possível atualizar a lista agora. Mostrando as vistorias deste aparelho." : "";
+    // Falha do servidor com itens na tela: a frase vira uma faixa amarela (não some no meio da lista).
+    status.toggleAttribute("data-aviso", Boolean(falhou && itens.length));
   }
 
   async function recarregar() {
     $("#btn-atualizar", el).disabled = true;
+    if (estado.falhaRemota) {
+      // Tentando de novo depois de uma falha: volta a mostrar "Carregando…" enquanto espera.
+      estado.falhaRemota = false;
+      estado.remotos = null;
+      desenharLista();
+    }
     await buscarRemoto({ reiniciar: true });
     if (!ativo) return;
     await desenharLista();
@@ -277,6 +297,10 @@ export async function montar(el, ctx) {
     b.disabled = false;
   });
   el.addEventListener("click", async (e) => {
+    if (e.target.closest("[data-recarregar]")) {
+      recarregar();
+      return;
+    }
     if (e.target.closest("[data-tentar]")) {
       (ctx.sincronizar || ctx.sync.sincronizar)();
       return;

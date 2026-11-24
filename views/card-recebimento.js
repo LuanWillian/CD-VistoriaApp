@@ -10,12 +10,14 @@ const ICONE = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "a
 // Computador: ícones e textos curtos do visual do computador.
 const ICONE_CURTO = { aguardando: "relogio", conforme: "checkCirculo", divergencia: "alertaCirculo" };
 const TEXTO_CURTO = { aguardando: "Aguardando", conforme: "Nenhuma divergência", divergencia: "Com divergência" };
+// Listas do celular: ícone + uma palavra (só o ícone não dizia o que era; o nome completo fica no aria-label).
+const TEXTO_LISTA = { aguardando: "Aguardando", conforme: "Recebido", divergencia: "Divergência" };
 
-// soIcone: só o ícone, para as listas do celular (o modelo do carro precisa do espaço).
-export function seloRecebimento(v, { curto = false, soIcone = false } = {}) {
+// lista: ícone + palavra curta, para as listas do celular (o modelo do carro precisa do espaço).
+export function seloRecebimento(v, { curto = false, lista = false } = {}) {
   const s = situacaoRecebimento(v);
   if (!s) return "";
-  if (soIcone) return `<span class="selo selo-receb-${s} selo-so-icone" role="img" aria-label="${STATUS_RECEBIMENTO[s]}" title="${STATUS_RECEBIMENTO[s]}">${icone(ICONE[s])}</span>`;
+  if (lista) return `<span class="selo selo-receb-${s}" title="${STATUS_RECEBIMENTO[s]}">${icone(ICONE[s])} ${TEXTO_LISTA[s]}</span>`;
   return curto
     ? `<span class="selo selo-receb-${s}">${icone(ICONE_CURTO[s])} ${TEXTO_CURTO[s]}</span>`
     : `<span class="selo selo-receb-${s}">${icone(ICONE[s])} ${STATUS_RECEBIMENTO[s]}</span>`;

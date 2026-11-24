@@ -35,6 +35,8 @@ export async function montar(raiz, ctx, params = {}) {
     busca: "", periodo: "todos", de: hojeCampo(new Date(Date.now() - 29 * 86400000)), ate: hojeCampo(),
     marca: "", loja: "", recebimento: "", pagina: 0, itens: [], remotos: null, carregando: true,
     selecionadas: new Set(), atualizadoEm: null, gerandoPdf: false,
+    // buscando: esperando o servidor; falhaRemota: a última busca deu erro (a tela avisa).
+    buscando: false, falhaRemota: false,
   };
   let ativo = true;
   let geracao = 0;
@@ -51,6 +53,7 @@ export async function montar(raiz, ctx, params = {}) {
           <!-- Botão "Relatório de carros enviados" escondido para um teste do usuário (18/11/2026); volta depois. -->
         </div>
       </div>
+      <p class="cb-aviso" id="dash-aviso" role="alert" hidden></p>
       <section class="cb-cartao cb-tabela-cartao" aria-labelledby="dash-titulo-tabela">
         <h2 class="sr-only" id="dash-titulo-tabela">Vistorias</h2>
         <div class="cb-ferramentas">
@@ -118,6 +121,9 @@ export async function montar(raiz, ctx, params = {}) {
   async function buscarRemotos() {
     estado.remotos = null;
     if (!ctx.online()) return;
+    estado.buscando = true;
+    estado.falhaRemota = false;
+    if (!estado.itens.length) desenharTabela(); // "Carregando…" enquanto o servidor responde
     try {
       const todos = await ctx.remoto.listarTodasVistorias();
       estado.remotos = todos;
@@ -125,6 +131,9 @@ export async function montar(raiz, ctx, params = {}) {
       await ctx.storage.guardarSeAusentes(todos);
     } catch (e) {
       console.error(e);
+      estado.falhaRemota = true; // avisa na tela (antes o erro ficava só no console)
+    } finally {
+      estado.buscando = false;
     }
   }
 
@@ -200,9 +209,18 @@ export async function montar(raiz, ctx, params = {}) {
 
     const vazio = $("#dash-vazio", raiz);
     vazio.replaceChildren();
-    vazio.hidden = p.total > 0 || estado.carregando;
+    // Esperando o servidor sem nada guardado: "Carregando…", nunca "Nenhuma vistoria ainda".
+    const esperando = estado.carregando || (estado.buscando && !estado.itens.length);
+    const falhou = ctx.online() && estado.falhaRemota;
+    vazio.hidden = p.total > 0 || esperando;
     if (!vazio.hidden) {
-      if (estado.itens.length) {
+      if (falhou && !estado.itens.length) {
+        vazio.append(el("p", "", "Não foi possível carregar as vistorias. O servidor não respondeu."));
+        const tentar = el("button", "cb-btn", "Tentar de novo");
+        tentar.type = "button";
+        tentar.dataset.recarregar = "";
+        vazio.append(tentar);
+      } else if (estado.itens.length) {
         vazio.append(el("p", "", "Nenhuma vistoria encontrada."));
         const limpar = el("button", "cb-btn", "Limpar filtros");
         limpar.type = "button";
@@ -212,10 +230,14 @@ export async function montar(raiz, ctx, params = {}) {
         vazio.append(el("p", "", "Nenhuma vistoria ainda."));
       }
     }
-    if (estado.carregando && !estado.itens.length) {
+    if (esperando && !estado.itens.length) {
       vazio.hidden = false;
-      vazio.append(el("p", "", "Carregando…"));
+      vazio.append(el("p", "", "Carregando vistorias…"));
     }
+    // Falha com vistorias guardadas na tela: faixa amarela acima da tabela.
+    const aviso = $("#dash-aviso", raiz);
+    aviso.hidden = !(falhou && estado.itens.length);
+    aviso.textContent = aviso.hidden ? "" : "Não foi possível atualizar com o servidor agora. Mostrando as vistorias guardadas neste computador.";
     const pag = $("#dash-paginacao", raiz);
     pag.hidden = p.total === 0;
     $("#dash-contador", raiz).textContent = `${p.de}–${p.ate} de ${num(p.total)} · ${ITENS_POR_PAGINA_PAINEL} por página`;
@@ -341,6 +363,7 @@ export async function montar(raiz, ctx, params = {}) {
   }
   raiz.addEventListener("click", (e) => {
     if (e.target.closest("[data-limpar]")) limparFiltros();
+    if (e.target.closest("[data-recarregar]")) recarregar();
   });
   $("#dash-atualizar", raiz).addEventListener("click", async () => {
     $("#dash-atualizar", raiz).disabled = true;
