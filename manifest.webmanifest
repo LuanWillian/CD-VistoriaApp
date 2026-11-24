@@ -1,6 +1,6 @@
 {
-  "name": "PG Prime Expedição CD",
-  "short_name": "Expedição CD",
+  "name": "PrimeCheck",
+  "short_name": "PrimeCheck",
   "description": "Vistoria veicular em campo, com laudo em PDF e funcionamento offline.",
   "lang": "pt-BR",
   "start_url": "./#/nova",
