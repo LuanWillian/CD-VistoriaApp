@@ -1569,31 +1569,11 @@ html.computador { --mn-suave-saida: cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes mn-dica { from { opacity: 0; transform: translate(-50%, calc(-100% + 4px)); } to { opacity: 1; transform: translate(-50%, -100%); } }
 @keyframes mn-pulso { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70%, 100% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } }
 
-/* ---------- Entrada da página: cabeçalho, depois os cartões em sequência ---------- */
-html.computador :is(.cb-pagina-cabeca, .cb-migalhas) { animation: mn-surgir 0.5s var(--mn-suave-saida) both; }
-html.computador .cb-cartao { animation: mn-surgir 0.6s var(--mn-suave-saida) 0.06s both; }
-html.computador .cb-cabecalho { animation-delay: 0.04s; }
-html.computador :is(.db-corpo, .cb-principal, .cb-lateral) > :nth-child(2) { animation-delay: 0.12s; }
-html.computador :is(.db-corpo, .cb-principal, .cb-lateral) > :nth-child(3) { animation-delay: 0.18s; }
-html.computador .cb-lateral > :nth-child(1) { animation-delay: 0.09s; }
-
-/* Linhas da tabela entram em cascata (só as primeiras; o resto já vem junto) */
-html.computador .cb-tabela-vistorias tbody tr { animation: mn-surgir-leve 0.3s var(--mn-suave-saida) 0.3s both; transition: background-color 0.18s ease; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(1) { animation-delay: 18ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(2) { animation-delay: 36ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(3) { animation-delay: 54ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(4) { animation-delay: 72ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(5) { animation-delay: 90ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(6) { animation-delay: 108ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(7) { animation-delay: 126ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(8) { animation-delay: 144ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(9) { animation-delay: 162ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(10) { animation-delay: 180ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(11) { animation-delay: 198ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(12) { animation-delay: 216ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(13) { animation-delay: 234ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(14) { animation-delay: 252ms; }
-html.computador .cb-tabela-vistorias tbody tr:nth-child(15) { animation-delay: 270ms; }
+/* ---------- Entrada: a tela inteira aparece uma vez, quando você entra nela ----------
+   (Antes cada cartão e cada linha animavam; como a lista e o dashboard se redesenham
+   ao carregar e ao Atualizar, a tela "piscava" várias vezes.) */
+html.computador #main > div { animation: mn-surgir 0.45s var(--mn-suave-saida) both; }
+html.computador .cb-tabela-vistorias tbody tr { transition: background-color 0.18s ease; }
 
 /* Números do dashboard entram nítidos depois de um leve desfoque */
 html.computador .db-ind-num { animation: mn-numero 0.6s var(--mn-suave-saida) both; }
@@ -1670,8 +1650,6 @@ html.computador .db-coluna:nth-child(31) .db-valor { animation-delay: 980ms; }
 /* Balão do gráfico aparece com um leve deslize */
 html.computador .db-coluna:not(.db-coluna-vazia):hover .db-dica { animation: mn-dica 0.2s var(--mn-suave-saida) both; }
 
-/* Avarias: a faixa de gravidade cresce de cima para baixo */
-html.computador .cb-faixa { transform-origin: top; animation: mn-faixa 0.5s var(--mn-suave-saida) 0.35s both; }
 
 /* ---------- Ícones e controles que respondem ao mouse ---------- */
 html.computador .cb-btn .ic, html.computador .cb-abrir .ic, html.computador .db-ind-ver .ic,
