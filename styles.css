@@ -123,6 +123,7 @@ button:disabled { cursor: default; opacity: 0.55; }
 .topo-link:active { background: rgba(255, 255, 255, 0.16); }
 @media (hover: hover) { .topo-link:hover { background: rgba(255, 255, 255, 0.12); } }
 body.na-inicio .topo-voltar { display: none; }
+body.no-login .topo { display: none; }
 
 /* ---------- Conteúdo ---------- */
 .conteudo {

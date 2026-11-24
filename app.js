@@ -196,6 +196,8 @@ export async function registrarSyncEmSegundoPlano() {
 // ---------- Login e menu ----------
 async function mostrarLogin() {
   noApp = false;
+  // No login o topo fica escondido: o nome do app já aparece junto do logo.
+  document.body.classList.add("no-login");
   try { viewAtual?.desmontar?.(); } catch { /* nada */ }
   viewAtual = null;
   document.body.classList.remove("com-acoes");
@@ -269,6 +271,7 @@ function mostrarUsuarioNoTopo() {
 
 function entrarNoApp() {
   noApp = true;
+  document.body.classList.remove("no-login");
   tituloComoLinkDoMenu(true);
   mostrarUsuarioNoTopo();
   $("#btn-menu").hidden = false;
