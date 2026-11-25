@@ -293,6 +293,9 @@ function abrirMenu() {
     menu = document.createElement("dialog");
     menu.className = "menu";
     menu.setAttribute("aria-label", "Menu");
+    // Ao abrir, o foco fica no próprio menu (ver showModal abaixo): no iPhone, focar
+    // "Sair" direto desenhava um contorno grosso nele. Pelo teclado, Tab chega às opções.
+    menu.tabIndex = -1;
     menu.innerHTML = `
       <div class="menu-lista">
         <div class="email"><p class="menu-nome" id="menu-nome"></p><p id="menu-email"></p></div>
@@ -319,6 +322,7 @@ function abrirMenu() {
   $('[data-acao="instalar"]', menu).hidden = desktop || !window.__podeInstalar;
   menu.classList.remove("fechando");
   menu.showModal();
+  menu.focus(); // o Safari do iPhone ignora autofocus no dialog
   $("#btn-menu").setAttribute("aria-expanded", "true");
 }
 
