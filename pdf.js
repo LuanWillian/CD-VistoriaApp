@@ -497,15 +497,19 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const caixaH = 41;
   const areaAssW = 70;
   const areaAssH = 19;
-  const assinatura = (img, nomePessoa, funcao, x, yy) => {
-    caixa(x, yy, caixaW, caixaH, 3.2, COR.painel);
-    const centro = x + caixaW / 2;
-    const p = encaixar(img, centro - areaAssW / 2, yy + 4.2, areaAssW, areaAssH);
+  // Caixa cinza com a assinatura, o nome e a função. Mais alta que o normal
+  // (ao lado das fotos do recebimento), o conteúdo fica centralizado.
+  const assinatura = (img, nomePessoa, funcao, x, yy, w = caixaW, h = caixaH) => {
+    caixa(x, yy, w, h, 3.2, COR.painel);
+    const centro = x + w / 2;
+    const topo = yy + (h - caixaH) / 2;
+    const areaW = Math.min(areaAssW, w - 8);
+    const p = encaixar(img, centro - areaW / 2, topo + 4.2, areaW, areaAssH);
     doc.addImage(img.dados, "PNG", p.x, p.y, p.w, p.h, undefined, "FAST");
     fonte("bold", 10.5, COR.texto);
-    escrever(umaLinha(nomePessoa || "—", caixaW - 8), centro, yy + 30.4, { align: "center" });
+    escrever(umaLinha(nomePessoa || "—", w - 8), centro, topo + 30.4, { align: "center" });
     fonte("normal", 9, COR.cinza);
-    escrever(funcao, centro, yy + 35.6, { align: "center" });
+    escrever(funcao, centro, topo + 35.6, { align: "center" });
   };
   secao("Assinaturas", caixaH);
   const assinaturas = [
@@ -533,6 +537,8 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
       escrever(desc, M, y + 1, { lineHeightFactor: 5 / (10 * 0.3528) });
       y += desc.length * 5 + 2;
     }
+    const img = await imagem(arquivoAssinaturaReceb(rec), { tipo: "PNG", lado: 900 });
+    let assinou = false;
     if (divergencia && rec.fotos.length) {
       const vao = 4.2;
       const celW = (LARG - 2 * vao) / 3;
@@ -542,13 +548,21 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
         const ids = rec.fotos.slice(l * 3, l * 3 + 3);
         const imgs = await Promise.all(ids.map((id) => imagem(arquivoReceb(id), { proporcao: 4 / 3 })));
         imgs.forEach((img, k) => foto(img, M + k * (celW + vao), y, celW, celH));
+        // Sobrou espaço na última linha de fotos: a assinatura entra ao lado delas.
+        if (ids.length < 3 && l === Math.ceil(rec.fotos.length / 3) - 1) {
+          const x = M + ids.length * (celW + vao);
+          assinatura(img, rec.recebedorNome, "Recebido na loja", x, y, Math.min(caixaW, M + LARG - x), celH);
+          assinou = true;
+        }
         y += celH + vao;
       }
+      if (assinou) y -= vao;
     }
-    garantir(caixaH);
-    const img = await imagem(arquivoAssinaturaReceb(rec), { tipo: "PNG", lado: 900 });
-    assinatura(img, rec.recebedorNome, "Recebido na loja", M, y);
-    y += caixaH;
+    if (!assinou) {
+      garantir(caixaH);
+      assinatura(img, rec.recebedorNome, "Recebido na loja", M, y);
+      y += caixaH;
+    }
   }
 
   // ---------- 7. Rodapé em todas as páginas ----------
