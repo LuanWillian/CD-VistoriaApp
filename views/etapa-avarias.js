@@ -262,7 +262,10 @@ export function montar(el, editor, ctx) {
 
     document.body.append(d);
     d.showModal();
-    area.focus();
+    // Foco no próprio formulário, não no campo "Área da avaria": no iPhone, focar a
+    // lista de opções abria a escolha sozinha, sem a pessoa tocar.
+    d.tabIndex = -1;
+    d.focus();
     desenharFotos();
     editorAberto = { dialog: d, podeFechar };
   }

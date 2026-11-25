@@ -375,6 +375,7 @@ dialog.cheio {
   display: none; flex-direction: column;
 }
 dialog.cheio[open] { display: flex; }
+:root dialog.cheio:is(:focus, :focus-visible) { outline: none; } /* foco no formulário ao abrir, sem contorno */
 @media (min-width: 768px) {
   dialog.cheio { width: min(640px, 100vw); height: min(90dvh, 900px); margin: auto; border-radius: var(--raio); }
 }
