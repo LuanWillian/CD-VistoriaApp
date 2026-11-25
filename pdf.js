@@ -71,7 +71,7 @@ const VAO_SECAO = 5.3; // espaço antes de cada seção
 const FAIXA_FINA = 10.6; // faixa escura das outras páginas
 const LIMITE = 279; // abaixo disso fica o rodapé
 const COR = {
-  escuro: [17, 24, 39], // #111827
+  escuro: [0, 0, 0], // preto da marca nas faixas do topo
   texto: [17, 24, 39],
   texto2: [75, 85, 99], // #4B5563
   cinza: [107, 114, 128], // #6B7280
