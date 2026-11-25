@@ -267,3 +267,15 @@ teste("pdf: varredura — assinatura e fotos da loja nunca ficam sozinhas numa p
     }
   }
 });
+
+teste("pdf: vistoria sem avarias cabe em 1 página; com 1 avaria, ela já começa na página 1", async () => {
+  for (const loja of [true, false]) {
+    const { v, obter } = await cenarioLeve({ loja });
+    const r = await gerarPdf(v, obter, { depurar: true });
+    igual(r.paginas, 1, `sem avarias (loja: ${loja}) deveria caber em 1 página`);
+    ok(r.textos.includes("Veículo sem avarias registradas"), "aviso de sem avarias ausente");
+  }
+  const { v, obter } = await cenarioLeve({ avarias: [[1, 1]] });
+  const r = await gerarPdf(v, obter, { depurar: true });
+  igual(r.posicoes.find((p) => p.texto === "Avaria 1")?.pagina, 1, "a 1ª avaria deveria começar na página 1");
+});

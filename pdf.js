@@ -66,7 +66,8 @@ function carregarFontes() {
 const PAG_L = 210;
 const M = 10.6; // margem lateral (40 px)
 const LARG = PAG_L - 2 * M;
-const FAIXA_TOPO = 36.8; // faixa escura da 1ª página
+const FAIXA_TOPO = 32; // faixa escura da 1ª página
+const VAO_SECAO = 5.3; // espaço antes de cada seção
 const FAIXA_FINA = 10.6; // faixa escura das outras páginas
 const LIMITE = 279; // abaixo disso fica o rodapé
 const COR = {
@@ -253,7 +254,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     const xNumero = M + largura(inicio) + 1.3;
     fonte("bold", 9.5, COR.branco, MONO);
     escrever(identificacao, xNumero, 6.7);
-    y = FAIXA_FINA + 6.3;
+    y = FAIXA_FINA + VAO_SECAO;
     topoPagina = true;
   };
   const garantir = (altura, oQue = "") => {
@@ -261,7 +262,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   };
   // Título da seção em maiúsculas à esquerda, informação (ou selo) à direita e linha fina.
   const secao = (nomeSecao, alturaMinimaConteudo, direita = "", seloDireita = null) => {
-    const vao = topoPagina ? 0 : 6.3;
+    const vao = topoPagina ? 0 : VAO_SECAO;
     if (y + vao + 9 + alturaMinimaConteudo > LIMITE) novaPagina(vao + 9 + alturaMinimaConteudo, `seção ${nomeSecao}`);
     else y += vao;
     const base = y + 3.4;
@@ -281,27 +282,27 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   doc.setFillColor(...COR.escuro);
   doc.rect(0, 0, PAG_L, FAIXA_TOPO, "F");
   medio(8.25, COR.apagado);
-  escrever("PRIMECHECK", M, 12.8, { charSpace: 0.15 });
+  escrever("PRIMECHECK", M, 10.8, { charSpace: 0.15 });
   fonte("normal", 9.75, COR.apagado);
-  escrever(quando, M + LARG, 13.2, { align: "right" });
+  escrever(quando, M + LARG, 11.2, { align: "right" });
   fonte("bold", 16.5, COR.branco);
-  escrever(TITULO, M, 20.8);
+  escrever(TITULO, M, 18.6);
   // Empresa · endereço numa linha só: diminui a letra até caber (mínimo 7,5 pt).
   const endereco = `${EMPRESA.nome} · ${EMPRESA.endereco}`;
   let tamanhoEnd = 9.75;
   while (tamanhoEnd > 7.5 && (fonte("normal", tamanhoEnd, COR.apagado), largura(endereco)) > LARG) tamanhoEnd -= 0.25;
-  escrever(endereco, M, 27.3);
-  y = FAIXA_TOPO + 6.3;
+  escrever(endereco, M, 24.8);
+  y = FAIXA_TOPO + VAO_SECAO;
   topoPagina = true;
 
   // ---------- 2. Dados do veículo ----------
   // Ordem pedida: Chassi, Marca, Modelo / Cor, Quilometragem (km), Combustível.
-  const alturaLinhaDados = 10.6;
-  const passoDados = alturaLinhaDados + 4.2;
+  const alturaLinhaDados = 10;
+  const passoDados = alturaLinhaDados + 3.2;
   const alturaGrade = passoDados + alturaLinhaDados;
   // Loja de destino numa linha própria, na largura toda, depois de uma divisória.
   // Vistorias antigas não têm loja: a linha não aparece.
-  const alturaLoja = v.loja ? 4.2 + 3.2 + alturaLinhaDados : 0;
+  const alturaLoja = v.loja ? 3.2 + 2.6 + alturaLinhaDados : 0;
   secao("Dados do veículo", alturaGrade + alturaLoja);
   const vaoDados = 8.5;
   const colW = (LARG - 2 * vaoDados) / 3;
@@ -310,7 +311,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     escrever(rotulo, x, yy + 3);
     if (mono) fonte("bold", 10.5, COR.texto, MONO);
     else medio(10.5);
-    escrever(umaLinha(valor || "—", w), x, yy + 8.6);
+    escrever(umaLinha(valor || "—", w), x, yy + 8.2);
   };
   [
     ["Chassi", v.chassi, true], ["Marca", formatarMarca(v.marca ?? "")], ["Modelo", v.modelo],
@@ -320,8 +321,8 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   });
   y += alturaGrade;
   if (v.loja) {
-    linha(M, y + 4.2, M + LARG, y + 4.2, COR.suave);
-    campo("Loja de destino", v.loja, M, y + 7.4, LARG);
+    linha(M, y + 3.2, M + LARG, y + 3.2, COR.suave);
+    campo("Loja de destino", v.loja, M, y + 5.8, LARG);
     y += alturaLoja;
   }
 
@@ -334,7 +335,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const presentes = itens.filter((i) => estado(i) === "presente").length;
   const vaoColunas = 12.7;
   const colChk = (LARG - vaoColunas) / 2;
-  const alturaItem = 8.8;
+  const alturaItem = 7.4;
   const linhasChk = Math.ceil(ordenados.length / 2);
   const colunas = [ordenados.slice(0, linhasChk), ordenados.slice(linhasChk)];
   secao("Checklist de equipamentos", Math.min(linhasChk, 3) * alturaItem, `${presentes} de ${itens.length} presentes`);
@@ -344,7 +345,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
       const item = coluna[l];
       if (!item) return;
       const x = M + c * (colChk + vaoColunas);
-      const yBase = y + 5.6;
+      const yBase = y + 4.9;
       fonte("normal", 9.75, COR.texto2);
       escrever(umaLinha(item, colChk - 20), x, yBase);
       if (estado(item) === "presente") seloStatus("OK", x + colChk, yBase, false);
@@ -385,7 +386,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const vaoFoto = 5.3;
   const fotoW = (LARG - 2 * vaoFoto) / 3;
   const fotoH = fotoW * 0.75;
-  secao("Registro fotográfico", fotoH + 6);
+  secao("Registro fotográfico", fotoH + 5.3);
   const fotosVeiculo = await Promise.all(FOTOS_VEICULO.map((f) => imagem(ARQUIVO[f.chave], { proporcao: 4 / 3 })));
   FOTOS_VEICULO.forEach((f, i) => {
     const x = M + i * (fotoW + vaoFoto);
@@ -393,14 +394,14 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     fonte("normal", 9, COR.cinza);
     escrever(f.rotulo, x + fotoW / 2, y + fotoH + 4.6, { align: "center" });
   });
-  y += fotoH + 6;
+  y += fotoH + 5.3;
 
   // ---------- 5. Registro de avarias ----------
   if (!avarias.length) {
-    secao("Registro de avarias", 8);
-    fonte("normal", 10.5, COR.texto2);
-    escrever("Veículo sem avarias registradas.", M, y + 3.6);
-    y += 5.3;
+    // Sem avarias: só a linha do título, com o aviso à direita (economiza espaço
+    // para a vistoria sem avarias caber numa página).
+    secao("Registro de avarias", 0, "Veículo sem avarias registradas");
+    y -= 3.2;
   } else {
     const faixa = 1.06;
     const pad = 4.2;
@@ -500,8 +501,8 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   // ---------- 6. Assinaturas ----------
   const vaoAss = 6.3;
   const caixaW = (LARG - vaoAss) / 2;
-  const caixaH = 41;
-  const areaAssW = 70;
+  const caixaH = 34;
+  const areaAssW = 80;
   const areaAssH = 19;
   // Caixa cinza com a assinatura, o nome e a função. Mais alta que o normal
   // (ao lado das fotos do recebimento), o conteúdo fica centralizado.
@@ -511,8 +512,8 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     const centro = x + w / 2;
     const baseNome = yy + h - 10.6;
     const areaW = Math.min(areaAssW, w - 8);
-    const areaH = Math.min(areaAssH + 5, baseNome - 6 - (yy + 4.2));
-    const p = encaixar(img, centro - areaW / 2, yy + 4.2, areaW, areaH);
+    const areaH = Math.min(areaAssH + 5, baseNome - 5 - (yy + 3.2));
+    const p = encaixar(img, centro - areaW / 2, yy + 3.2, areaW, areaH);
     doc.addImage(img.dados, "PNG", p.x, p.y, p.w, p.h, undefined, "FAST");
     fonte("bold", 10.5, COR.texto);
     escrever(umaLinha(nomePessoa || "—", w - 6), centro, baseNome, { align: "center" });
