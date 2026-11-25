@@ -83,7 +83,7 @@ teste("pdf: sem avarias, número provisório e rodapé", async () => {
   const { v, obter } = await cenario({ semAvarias: true });
   const r = await gerarPdf(v, obter, { depurar: true });
   ok(r.paginas >= 1);
-  for (const t of ["Vistoria de veículo para expedição do CD", "Veículo sem avarias registradas",
+  for (const t of ["Vistoria de expedição do CD", "Veículo sem avarias registradas",
     "PrimeCheck | Provisório 8F3A (aguardando sincronização) | Chassi AB123C", `Página ${r.paginas} de ${r.paginas}`]) {
     ok(r.textos.some((x) => x.includes(t)), `faltou o texto: ${t}`);
   }
@@ -108,16 +108,16 @@ teste("pdf: o título da seção Avarias fica na mesma página da primeira avari
   v.checklistObs = "Estepe sem calota; tapete traseiro rasgado.";
   const r = await gerarPdf(v, obter, { depurar: true });
   const pagina = (texto) => r.posicoes.find((p) => p.texto.startsWith(texto))?.pagina;
-  ok(pagina("Registro de avarias"), "título de avarias ausente");
-  igual(pagina("Registro de avarias"), pagina("Avaria 1"));
+  ok(pagina("REGISTRO DE AVARIAS"), "título de avarias ausente");
+  igual(pagina("REGISTRO DE AVARIAS"), pagina("Avaria 1"));
 });
 
-teste("pdf: visual do modelo — cabeçalho, dados na ordem pedida, checklist e seções", async () => {
+teste("pdf: visual do app — cabeçalho, dados na ordem pedida, checklist e seções", async () => {
   const { v, obter } = await cenario({ avarias: 1, fotosPorAvaria: 2, numero: "VIS-000007" });
   const r = await gerarPdf(v, obter, { depurar: true });
   const t = r.textos;
-  for (const x of ["Vistoria de veículo para expedição do CD", "PG Prime", "Data/hora", "07/11/2026 15:30",
-    "Dados do veículo", "Checklist de equipamentos", "Registro fotográfico", "Registro de avarias", "1 registrada", "Assinaturas"]) {
+  for (const x of ["PRIMECHECK", "Vistoria de expedição do CD", "PG Prime", "07/11/2026 15:30",
+    "DADOS DO VEÍCULO", "CHECKLIST DE EQUIPAMENTOS", "REGISTRO FOTOGRÁFICO", "REGISTRO DE AVARIAS", "1 registrada", "ASSINATURAS"]) {
     ok(t.some((y) => y.includes(x)), `faltou: ${x}`);
   }
   // Grade: Chassi, Marca, Modelo / Cor, Quilometragem (km), Combustível
@@ -129,21 +129,27 @@ teste("pdf: visual do modelo — cabeçalho, dados na ordem pedida, checklist e 
   ok(t.includes(`${presentes} de ${CHECKLIST_ITENS.length} presentes`), "contador do checklist ausente");
   ok(t.filter((x) => x === "OK").length === presentes && t.filter((x) => x === "Ausente").length === CHECKLIST_ITENS.length - presentes,
     "OK/Ausente não batem com o checklist");
-  ok(!t.some((x) => x.includes("Laudo de Vistoria Veicular")), "título antigo ainda aparece");
+  ok(!t.some((x) => x.includes("Laudo de Vistoria Veicular") || x.includes("Vistoria de veículo para expedição")), "título antigo ainda aparece");
+  ok(!t.some((x) => x.includes("Data/hora") || x.startsWith("Checklist:") || x.startsWith("Avarias:")), "o topo não tem mais rótulo Data/hora nem resumo");
+  igual(r.posicoes.filter((p) => p.pagina === 1 && p.texto.includes("VIS-000007")).length, 1,
+    "na 1ª página o número só aparece no rodapé (sem número no topo)");
 });
 
-teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorida e rodapé PrimeCheck", async () => {
+teste("pdf: fonte do app (Satoshi), gravidade colorida, selos com bolinha e rodapé PrimeCheck", async () => {
   const { v, obter } = await cenario({ avarias: 3, fotosPorAvaria: 1, numero: "VIS-000009" });
   const r = await gerarPdf(v, obter, { depurar: true });
-  ok(r.familias.includes("Barlow") && r.familias.includes("BarlowSC"), `fontes registradas: ${r.familias}`);
-  igual(r.fonteTitulo, "BarlowSC");
+  ok(r.familias.includes("Satoshi") && r.familias.includes("SatoshiM"), `fontes registradas: ${r.familias}`);
+  igual(r.fonteTitulo, "Satoshi");
   ok(r.textos.includes("PrimeCheck | VIS-000009 | Chassi AB123C"), "rodapé deveria dizer PrimeCheck");
   ok(!r.textos.some((t) => t.includes("PG Prime Vistoria")), "ainda aparece PG Prime Vistoria");
   const cor = (nome) => r.selos.find((s) => s.texto === nome)?.fundo.join();
+  const texto = (nome) => r.selos.find((s) => s.texto === nome)?.cor.join();
   igual(cor("Leve"), "245,196,0");
   igual(cor("Moderada"), "242,140,40");
   igual(cor("Grave"), "198,40,40");
-  igual(cor("Ausente"), "179,38,30", "Ausente vermelho, como no app");
+  igual(texto("Ausente"), "179,38,30", "Ausente em vermelho, como no app");
+  igual(cor("Ausente"), "253,236,234", "Ausente com fundo vermelho claro, como no app");
+  igual(texto("OK"), "22,101,52", "OK em verde, como no app");
   igual(r.faixas.map((f) => f.join()), ["245,196,0", "242,140,40", "198,40,40"].slice(0, r.faixas.length), "faixa lateral na cor da gravidade");
   ok(r.faixas.length === 3, `uma faixa por avaria (veio ${r.faixas.length})`);
 });
@@ -151,7 +157,7 @@ teste("pdf: fontes do modelo (Barlow e Barlow Semi Condensed), gravidade colorid
 teste("pdf: seção Recebimento na loja só quando há recebimento, com divergência, fotos e assinatura", async () => {
   const sem = await cenario({ avarias: 0, numero: "VIS-000030" });
   const r0 = await gerarPdf(sem.v, sem.obter, { depurar: true });
-  ok(!r0.textos.some((x) => x.includes("Recebimento na loja")), "sem recebimento não pode ter a seção");
+  ok(!r0.textos.some((x) => x.toUpperCase().includes("RECEBIMENTO NA LOJA")), "sem recebimento não pode ter a seção");
 
   const { v, obter } = await cenario({ avarias: 1, fotosPorAvaria: 1, numero: "VIS-000031" });
   const extras = new Map([["receb_assinatura.png", await assinatura()], ["receb_f1.jpg", await foto(91)]]);
@@ -161,12 +167,12 @@ teste("pdf: seção Recebimento na loja só quando há recebimento, com divergê
     assinatura: "uL/v/receb_assinatura.png", fotos: ["f1"],
   };
   const r = await gerarPdf(v, async (nome) => extras.get(nome) ?? obter(nome), { depurar: true });
-  for (const t of ["Recebimento na loja", "Com divergência", "Recebido por Davi Loja — PG Prime BMW Natal", "12/11/2026 14:05",
+  for (const t of ["RECEBIMENTO NA LOJA", "Com divergência", "Recebido por Davi Loja — PG Prime BMW Natal", "12/11/2026 14:05",
     "Risco novo na porta traseira direita", "Recebido na loja"]) {
     ok(r.textos.some((x) => x.includes(t)), `faltou: ${t}`);
   }
   const pos = (texto) => r.textos.findIndex((x) => x.includes(texto));
-  ok(pos("Assinaturas") < pos("Recebimento na loja"), "a seção vem depois das Assinaturas");
-  igual(r.selos.find((s) => s.texto === "Com divergência")?.fundo.join(), "179,38,30", "Com divergência vermelho, como no app");
+  ok(pos("ASSINATURAS") < pos("RECEBIMENTO NA LOJA"), "a seção vem depois das Assinaturas");
+  igual(r.selos.find((s) => s.texto === "Com divergência")?.cor.join(), "179,38,30", "Com divergência vermelho, como no app");
   ok(r.blob.size < 10 * 1024 * 1024);
 });
