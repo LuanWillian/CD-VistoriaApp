@@ -152,6 +152,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const posicoes = [];
   const selos = [];
   const faixas = [];
+  const quebras = [];
   const avarias = v.semAvarias ? [] : v.avarias || [];
   const totalFotos = 3 + avarias.reduce((n, a) => n + a.fotos.length, 0);
   const maxLado = totalFotos > PDF_FOTO.limiteMuitas ? PDF_FOTO.maxLadoMuitas : PDF_FOTO.maxLado;
@@ -239,7 +240,10 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     selo(texto, x, yBase, { alinhar, ...(erro ? SELO.erro : SELO.ok) });
 
   // Da 2ª página em diante: faixa escura fina com o título e o número.
-  const novaPagina = () => {
+  // `precisava` e `oQue` só servem para os testes: cada quebra fica registrada
+  // com o espaço que sobrou na página e a altura do bloco que não coube.
+  const novaPagina = (precisava = 0, oQue = "") => {
+    quebras.push({ pagina: doc.getNumberOfPages(), sobra: LIMITE - y, precisava, oQue });
     doc.addPage();
     doc.setFillColor(...COR.escuro);
     doc.rect(0, 0, PAG_L, FAIXA_FINA, "F");
@@ -252,13 +256,13 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     y = FAIXA_FINA + 6.3;
     topoPagina = true;
   };
-  const garantir = (altura) => {
-    if (y + altura > LIMITE) novaPagina();
+  const garantir = (altura, oQue = "") => {
+    if (y + altura > LIMITE) novaPagina(altura, oQue);
   };
   // Título da seção em maiúsculas à esquerda, informação (ou selo) à direita e linha fina.
   const secao = (nomeSecao, alturaMinimaConteudo, direita = "", seloDireita = null) => {
     const vao = topoPagina ? 0 : 6.3;
-    if (y + vao + 9 + alturaMinimaConteudo > LIMITE) novaPagina();
+    if (y + vao + 9 + alturaMinimaConteudo > LIMITE) novaPagina(vao + 9 + alturaMinimaConteudo, `seção ${nomeSecao}`);
     else y += vao;
     const base = y + 3.4;
     fonte("bold", 9.75, COR.texto);
@@ -335,7 +339,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const colunas = [ordenados.slice(0, linhasChk), ordenados.slice(linhasChk)];
   secao("Checklist de equipamentos", Math.min(linhasChk, 3) * alturaItem, `${presentes} de ${itens.length} presentes`);
   for (let l = 0; l < linhasChk; l++) {
-    garantir(alturaItem);
+    garantir(alturaItem, "linha do checklist");
     colunas.forEach((coluna, c) => {
       const item = coluna[l];
       if (!item) return;
@@ -358,7 +362,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     const prefixo = "Observação:";
     const obs = linhas(`${prefixo} ${v.checklistObs}`, LARG - 6.4 - 1.5, 9.75);
     const alturaObs = obs.length * 5 + 3.4;
-    garantir(alturaObs + 3.2);
+    garantir(alturaObs + 3.2, "observação do checklist");
     y += 3.2;
     caixa(M, y, LARG, alturaObs, 2.1, COR.painel);
     obs.forEach((texto, i) => {
@@ -429,12 +433,14 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     const primeiro = medir(avarias[0]);
     const n = avarias.length;
     secao("Registro de avarias", primeiro.alturaTopo, `${n} ${n === 1 ? "registrada" : "registradas"}`);
-    const alturaUtil = LIMITE - FAIXA_FINA - 6.3;
     for (const [i, a] of avarias.entries()) {
-      const { temFoto, larguraTexto, desc, mini, resto, alturaTopo, linhasResto, alturaTotal } = medir(a);
-      if (i > 0) y += 4.2;
-      // Cartão inteiro na próxima página se não couber (e se couber numa página).
-      garantir(alturaTotal <= alturaUtil ? alturaTotal : alturaTopo);
+      const { temFoto, larguraTexto, desc, mini, resto, alturaTopo, linhasResto } = medir(a);
+      // Começa nesta página se a parte de cima do cartão (texto, foto principal e
+      // miniaturas) couber; as linhas de fotos extras continuam na página seguinte.
+      // Assim não sobra vão branco do tamanho do cartão inteiro.
+      const vaoCartao = i > 0 ? 4.2 : 0;
+      if (y + vaoCartao + alturaTopo > LIMITE) novaPagina(vaoCartao + alturaTopo, `avaria ${i + 1}`);
+      else y += vaoCartao;
 
       const g = GRAVIDADES.find((x) => x.valor === a.gravidade) || GRAVIDADES[0];
       const corFaixa = rgb(g.cor);
@@ -478,7 +484,7 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
       for (let l = 0; l < linhasResto; l++) {
         if (y + celH + vaoMini > LIMITE) {
           fecharSegmento(y);
-          novaPagina();
+          novaPagina(celH + vaoMini, `fotos extras da avaria ${i + 1}`);
           inicioSegmento = y;
           y += 2 * pad - vaoMini; // a próxima linha de fotos começa a `pad` do topo
         }
@@ -499,17 +505,19 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   const areaAssH = 19;
   // Caixa cinza com a assinatura, o nome e a função. Mais alta que o normal
   // (ao lado das fotos do recebimento), o conteúdo fica centralizado.
+  // A assinatura ocupa o alto da caixa; nome e função ficam presos embaixo.
   const assinatura = (img, nomePessoa, funcao, x, yy, w = caixaW, h = caixaH) => {
     caixa(x, yy, w, h, 3.2, COR.painel);
     const centro = x + w / 2;
-    const topo = yy + (h - caixaH) / 2;
+    const baseNome = yy + h - 10.6;
     const areaW = Math.min(areaAssW, w - 8);
-    const p = encaixar(img, centro - areaW / 2, topo + 4.2, areaW, areaAssH);
+    const areaH = Math.min(areaAssH + 5, baseNome - 6 - (yy + 4.2));
+    const p = encaixar(img, centro - areaW / 2, yy + 4.2, areaW, areaH);
     doc.addImage(img.dados, "PNG", p.x, p.y, p.w, p.h, undefined, "FAST");
     fonte("bold", 10.5, COR.texto);
-    escrever(umaLinha(nomePessoa || "—", w - 8), centro, topo + 30.4, { align: "center" });
+    escrever(umaLinha(nomePessoa || "—", w - 6), centro, baseNome, { align: "center" });
     fonte("normal", 9, COR.cinza);
-    escrever(funcao, centro, topo + 35.6, { align: "center" });
+    escrever(umaLinha(funcao, w - 6), centro, baseNome + 5.2, { align: "center" });
   };
   secao("Assinaturas", caixaH);
   const assinaturas = [
@@ -524,7 +532,18 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
   if (rec) {
     const divergencia = rec.status === "divergencia";
     const desc = divergencia && rec.descricao ? linhas(`O que está diferente: ${rec.descricao}`, LARG, 10) : [];
-    secao("Recebimento na loja", 9.5 + caixaH + desc.length * 5, "", { texto: STATUS_RECEBIMENTO[rec.status], erro: divergencia });
+    // Com fotos de divergência, a assinatura é a 1ª caixa da grade de fotos: fica
+    // sempre junto do título da seção e nunca sobra sozinha numa página nova.
+    const comFotos = divergencia && rec.fotos.length > 0;
+    const vao = 4.2;
+    const grade = (colunas) => {
+      const celW = (LARG - (colunas - 1) * vao) / colunas;
+      const celH = celW * 0.75;
+      const linhasGrade = Math.ceil((rec.fotos.length + 1) / colunas);
+      return { colunas, celW, celH, altura: linhasGrade * celH + (linhasGrade - 1) * vao };
+    };
+    secao("Recebimento na loja", 9.5 + desc.length * 5 + (comFotos ? grade(3).celH : caixaH), "",
+      { texto: STATUS_RECEBIMENTO[rec.status], erro: divergencia });
     const dataRec = `Data/hora do recebimento: ${formatarDataHora(rec.recebidoEm)}`;
     fonte("normal", 9.75, COR.cinza);
     const larguraData = largura(dataRec);
@@ -538,28 +557,26 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
       y += desc.length * 5 + 2;
     }
     const img = await imagem(arquivoAssinaturaReceb(rec), { tipo: "PNG", lado: 900 });
-    let assinou = false;
-    if (divergencia && rec.fotos.length) {
-      const vao = 4.2;
-      const celW = (LARG - 2 * vao) / 3;
-      const celH = celW * 0.75;
-      for (let l = 0; l < Math.ceil(rec.fotos.length / 3); l++) {
-        garantir(celH + vao);
-        const ids = rec.fotos.slice(l * 3, l * 3 + 3);
-        const imgs = await Promise.all(ids.map((id) => imagem(arquivoReceb(id), { proporcao: 4 / 3 })));
-        imgs.forEach((img, k) => foto(img, M + k * (celW + vao), y, celW, celH));
-        // Sobrou espaço na última linha de fotos: a assinatura entra ao lado delas.
-        if (ids.length < 3 && l === Math.ceil(rec.fotos.length / 3) - 1) {
-          const x = M + ids.length * (celW + vao);
-          assinatura(img, rec.recebedorNome, "Recebido na loja", x, y, Math.min(caixaW, M + LARG - x), celH);
-          assinou = true;
-        }
-        y += celH + vao;
+    if (comFotos) {
+      // 3 por linha; se assim não couber no resto da página e 4 por linha couber,
+      // usa 4 (fotos um pouco menores) para não levar uma foto sozinha à página seguinte.
+      const tres = grade(3);
+      const quatro = grade(4);
+      const { colunas, celW, celH } = y + tres.altura > LIMITE && y + quatro.altura <= LIMITE ? quatro : tres;
+      const itens = [null, ...rec.fotos]; // null = a caixa da assinatura
+      const totalLinhas = Math.ceil(itens.length / colunas);
+      for (let l = 0; l < totalLinhas; l++) {
+        garantir(celH, "fotos do recebimento");
+        const ids = itens.slice(l * colunas, l * colunas + colunas);
+        const imgs = await Promise.all(ids.map((id) => (id ? imagem(arquivoReceb(id), { proporcao: 4 / 3 }) : null)));
+        imgs.forEach((im, k) => {
+          const x = M + k * (celW + vao);
+          if (im) foto(im, x, y, celW, celH);
+          else assinatura(img, rec.recebedorNome, "Recebido na loja", x, y, celW, celH);
+        });
+        y += celH + (l < totalLinhas - 1 ? vao : 0);
       }
-      if (assinou) y -= vao;
-    }
-    if (!assinou) {
-      garantir(caixaH);
+    } else {
       assinatura(img, rec.recebedorNome, "Recebido na loja", M, y);
       y += caixaH;
     }
@@ -582,6 +599,8 @@ async function montarPdf(v, obterImagem, depurar, fontes) {
     resultado.posicoes = posicoes;
     resultado.selos = selos;
     resultado.faixas = faixas;
+    resultado.quebras = quebras;
+    resultado.fimUltimaPagina = y;
     resultado.familias = Object.keys(doc.getFontList());
     resultado.fonteTitulo = TXT;
   }

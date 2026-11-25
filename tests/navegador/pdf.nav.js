@@ -176,3 +176,94 @@ teste("pdf: seção Recebimento na loja só quando há recebimento, com divergê
   igual(r.selos.find((s) => s.texto === "Com divergência")?.cor.join(), "179,38,30", "Com divergência vermelho, como no app");
   ok(r.blob.size < 10 * 1024 * 1024);
 });
+
+// ---------- Vãos em branco: varredura de muitos laudos ----------
+// Cada quebra de página fica registrada (modo depurar) com o espaço que sobrou
+// e a altura do bloco que não coube. Uma quebra só é aceita se o bloco
+// realmente não cabia. A assinatura e as fotos da loja nunca podem ficar
+// sozinhas numa página nova.
+async function cenarioLeve({ avarias = [], receb = null, obs = 0, extras = 0, loja = true } = {}) {
+  const arquivos = new Map();
+  const miniFoto = (s) => {
+    const c = document.createElement("canvas");
+    c.width = 320;
+    c.height = 240;
+    const g = c.getContext("2d");
+    g.fillStyle = `hsl(${s * 37 % 360} 35% 55%)`;
+    g.fillRect(0, 0, 320, 240);
+    return new Promise((r) => c.toBlob(r, "image/jpeg", 0.6));
+  };
+  let n = 0;
+  for (const nome of ["frente.jpg", "traseira.jpg", "chassi.jpg"]) arquivos.set(nome, await miniFoto(++n));
+  const ass = await assinatura();
+  for (const nome of ["assinatura_vistoriador.png", "assinatura_motorista.png", "receb_assinatura.png"]) arquivos.set(nome, ass);
+  const descricao = (d) => ["", "Risco perto do farol", "Arranhão profundo no canto do para-choque, chegando até a grade. ".repeat(2), "Amassado grande com pintura descascando. ".repeat(14)][d];
+  const lista = [];
+  for (const [i, [nFotos, d]] of avarias.entries()) {
+    const fotos = [];
+    for (let j = 0; j < nFotos; j++) {
+      fotos.push(`v${i}-${j}`);
+      arquivos.set(`avaria_v${i}-${j}.jpg`, await miniFoto(++n));
+    }
+    lista.push({ id: `d${i}`, area: "Para-choque", tipo: "Risco", gravidade: ["Leve", "Moderada", "Grave"][i % 3], descricao: descricao(d), fotos });
+  }
+  const checklist = Object.fromEntries(CHECKLIST_ITENS.map((item) => [item, "presente"]));
+  for (let k = 0; k < extras; k++) checklist[`Item extra ${k + 1}`] = "presente";
+  let recebimento = null;
+  if (receb) {
+    const [status, nFotos, d] = receb;
+    const fotos = [];
+    for (let j = 0; j < nFotos; j++) {
+      fotos.push(`r${j}`);
+      arquivos.set(`receb_r${j}.jpg`, await miniFoto(++n));
+    }
+    recebimento = {
+      id: "r1", userId: "uL", status, recebedorNome: "Davi Loja", loja: "PG Prime BMW Natal",
+      recebidoEm: new Date(2026, 10, 12, 14, 5).toISOString(), descricao: descricao(d), assinatura: "uL/v/receb_assinatura.png", fotos,
+    };
+  }
+  const v = {
+    id: "8f3a1c2e-0000-4000-8000-000000000000", userId: "u1", numero: "VIS-000500", realizadaEm: new Date(2026, 10, 7, 15, 30).toISOString(),
+    loja: loja ? "PG Prime BMW Natal" : null, chassi: "AB123C", marca: "BMW", modelo: "X1", cor: "Preto", km: 10, combustivel: "Flex",
+    checklist, checklistObs: "Observação de teste com várias palavras para ocupar uma linha inteira do laudo. ".repeat(obs).trim(),
+    semAvarias: !lista.length, avarias: lista, vistoriadorNome: "Ana Lima", motoristaNome: "José", recebimento,
+  };
+  return { v, obter: async (nome) => arquivos.get(nome) ?? null };
+}
+
+const CENARIOS_VAOS = [
+  {}, { avarias: [[1, 1]] }, { avarias: [[4, 1], [1, 0], [2, 2], [1, 1]] }, { avarias: [[9, 3]] }, { avarias: [[30, 1]] },
+  { avarias: [[1, 3], [0, 3]] }, { avarias: [[2, 2], [2, 2], [2, 2], [2, 2], [2, 2]] }, { loja: false, obs: 2 },
+  { obs: 4, extras: 6, avarias: [[3, 1], [1, 1]], receb: ["divergencia", 1, 1] },
+  { obs: 3, avarias: [[6, 3], [1, 2], [9, 1], [0, 3], [2, 1], [4, 2]], receb: ["divergencia", 5, 3] },
+  ...[0, 1, 2, 3, 4, 5, 6, 7].map((f) => ({ avarias: [[1, 1]], receb: ["divergencia", f, 1] })),
+  ...[0, 2, 4, 6].map((obs) => ({ obs, avarias: [[3, 1], [0, 1], [6, 2]], receb: ["divergencia", 2, 1] })),
+  ...[0, 4, 8, 12].map((extras) => ({ extras, avarias: [[1, 1], [1, 1], [1, 1]], receb: ["divergencia", 3, 1] })),
+  { avarias: [[5, 1], [5, 1], [5, 1]], receb: ["divergencia", 4, 1] }, { avarias: [], receb: ["conforme", 0, 0] },
+];
+
+teste("pdf: varredura — só quebra a página quando o bloco realmente não cabe", async () => {
+  for (const [i, c] of CENARIOS_VAOS.entries()) {
+    const { v, obter } = await cenarioLeve(c);
+    const r = await gerarPdf(v, obter, { depurar: true });
+    for (const q of r.quebras) {
+      ok(q.sobra < q.precisava, `cenário ${i}: "${q.oQue}" precisava de ${q.precisava.toFixed(1)} mm e sobravam ${q.sobra.toFixed(1)} mm na página ${q.pagina}`);
+    }
+  }
+});
+
+teste("pdf: varredura — assinatura e fotos da loja nunca ficam sozinhas numa página nova", async () => {
+  for (let f = 0; f <= 7; f++) {
+    for (const avarias of [[], [[1, 1]], [[2, 1], [1, 1]]]) {
+      const { v, obter } = await cenarioLeve({ avarias, receb: ["divergencia", f, 1] });
+      const r = await gerarPdf(v, obter, { depurar: true });
+      const pagina = (texto) => r.posicoes.find((p) => p.texto === texto)?.pagina;
+      igual(pagina("Recebido na loja"), pagina("RECEBIMENTO NA LOJA"), `${f} foto(s), ${avarias.length} avaria(s): assinatura longe do título`);
+      // Com até 1 avaria, todas as fotos da loja cabem na mesma página do título
+      // (3 por linha, ou 4 por linha quando assim evita levar fotos à página seguinte).
+      if (avarias.length <= 1) {
+        ok(!r.quebras.some((q) => q.oQue === "fotos do recebimento"), `${f} foto(s), ${avarias.length} avaria(s): fotos da loja foram para outra página`);
+      }
+    }
+  }
+});
